@@ -37,6 +37,14 @@ interface UserProfile {
   dateJoined: string
 }
 
+interface RecentOrder {
+  id: string
+  date: string
+  total: number
+  status: string
+  items: number
+}
+
 export default function AccountPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -57,7 +65,7 @@ export default function AccountPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [recentOrders, setRecentOrders] = useState([])
+  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([])
 
   useEffect(() => {
     if (status === 'loading') return
@@ -485,7 +493,7 @@ export default function AccountPage() {
               <div className="p-6">
                 {recentOrders.length > 0 ? (
                   <div className="space-y-4">
-                    {recentOrders.map((order: any) => (
+                    {recentOrders.map((order: RecentOrder) => (
                       <div key={order.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                         <div className="flex items-center gap-4">
                           <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
