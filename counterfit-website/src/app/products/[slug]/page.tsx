@@ -7,6 +7,7 @@ import { ArrowRight, Star, Heart, Share2, Plus, Minus, ShoppingBag, Truck, Shiel
 import { useState, useEffect } from 'react'
 import { useCart } from '@/contexts/CartContext'
 import { getImageUrl } from '@/lib/api'
+import { useParams } from 'next/navigation'
 
 interface Product {
   _id: string
@@ -47,11 +48,9 @@ interface Product {
   updatedAt: string
 }
 
-interface ProductPageProps {
-  params: { slug: string }
-}
-
-export default function ProductPage({ params }: ProductPageProps) {
+export default function ProductPage() {
+  const params = useParams()
+  const slug = params?.slug as string
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -64,13 +63,15 @@ export default function ProductPage({ params }: ProductPageProps) {
   const [isWishlisted, setIsWishlisted] = useState(false)
 
   useEffect(() => {
-    fetchProduct()
-  }, [params.slug])
+    if (slug) {
+      fetchProduct()
+    }
+  }, [slug])
 
   const fetchProduct = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`/api/products/slug/${params.slug}`)
+      const response = await fetch(`/api/products/slug/${slug}`)
       
       if (response.ok) {
         const data = await response.json()
