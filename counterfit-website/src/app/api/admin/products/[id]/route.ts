@@ -1,35 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
-import { config } from '@/lib/config'
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_URL || 'http://localhost:5000'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
+    
+    // Get session for authentication
     const session = await getServerSession(authOptions)
     
+    // Check if user is authenticated and is admin
     if (!session || session.user?.role !== 'ADMIN') {
       return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
+        { error: 'Unauthorized - Admin access required' },
         { status: 401 }
       )
     }
-
-    const response = await fetch(`${config.apiUrl}/api/admin/products/${params.id}`, {
-      method: 'GET',
+    
+    // Call the backend API to get the product
+    const response = await fetch(`${BACKEND_URL}/api/admin/products/${id}`, {
       headers: {
-        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.accessToken}` // Adjust based on your auth setup
       }
     })
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      console.error('Backend error:', errorData)
+      return NextResponse.json(
+        { error: errorData.message || 'Failed to fetch product' },
+        { status: response.status }
+      )
+    }
+    
+    const result = await response.json()
+    return NextResponse.json(result)
 
-    const data = await response.json()
-    return NextResponse.json(data, { status: response.status })
   } catch (error) {
-    console.error('Admin get product API error:', error)
+    console.error('Get admin product error:', error)
     return NextResponse.json(
-      { success: false, message: 'Server error' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }
@@ -37,34 +52,50 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
+    
+    // Get session for authentication
     const session = await getServerSession(authOptions)
     
+    // Check if user is authenticated and is admin
     if (!session || session.user?.role !== 'ADMIN') {
       return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
+        { error: 'Unauthorized - Admin access required' },
         { status: 401 }
       )
     }
-
-    const body = await request.json()
     
-    const response = await fetch(`${config.apiUrl}/api/admin/products/${params.id}`, {
+    const productData = await request.json()
+    
+    // Call the backend API to update the product
+    const response = await fetch(`${BACKEND_URL}/api/admin/products/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.accessToken}` // Adjust based on your auth setup
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify(productData)
     })
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      console.error('Backend error:', errorData)
+      return NextResponse.json(
+        { error: errorData.message || 'Failed to update product' },
+        { status: response.status }
+      )
+    }
+    
+    const result = await response.json()
+    return NextResponse.json(result)
 
-    const data = await response.json()
-    return NextResponse.json(data, { status: response.status })
   } catch (error) {
-    console.error('Admin update product API error:', error)
+    console.error('Update admin product error:', error)
     return NextResponse.json(
-      { success: false, message: 'Server error' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }
@@ -72,31 +103,46 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
+    
+    // Get session for authentication
     const session = await getServerSession(authOptions)
     
+    // Check if user is authenticated and is admin
     if (!session || session.user?.role !== 'ADMIN') {
       return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
+        { error: 'Unauthorized - Admin access required' },
         { status: 401 }
       )
     }
-
-    const response = await fetch(`${config.apiUrl}/api/admin/products/${params.id}`, {
+    
+    // Call the backend API to delete the product
+    const response = await fetch(`${BACKEND_URL}/api/admin/products/${id}`, {
       method: 'DELETE',
       headers: {
-        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.accessToken}` // Adjust based on your auth setup
       }
     })
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      console.error('Backend error:', errorData)
+      return NextResponse.json(
+        { error: errorData.message || 'Failed to delete product' },
+        { status: response.status }
+      )
+    }
+    
+    const result = await response.json()
+    return NextResponse.json(result)
 
-    const data = await response.json()
-    return NextResponse.json(data, { status: response.status })
   } catch (error) {
-    console.error('Admin delete product API error:', error)
+    console.error('Delete admin product error:', error)
     return NextResponse.json(
-      { success: false, message: 'Server error' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }

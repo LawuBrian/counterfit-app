@@ -1,7 +1,7 @@
 "use client"
 
 import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { 
@@ -68,13 +68,11 @@ interface ProductFormData {
 
 const availableSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL']
 
-interface EditProductPageProps {
-  params: { id: string }
-}
-
-export default function EditProductPage({ params }: EditProductPageProps) {
+export default function EditProductPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const params = useParams()
+  const id = params?.id as string
   const [formData, setFormData] = useState<ProductFormData | null>(null)
   const [loading, setLoading] = useState(false)
   const [fetchLoading, setFetchLoading] = useState(true)
@@ -88,12 +86,14 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       return
     }
 
-    fetchProduct()
-  }, [session, status, router, params.id])
+    if (id) {
+      fetchProduct()
+    }
+  }, [session, status, router, id])
 
   const fetchProduct = async () => {
     try {
-      const response = await fetch(`/api/admin/products/${params.id}`)
+      const response = await fetch(`/api/admin/products/${id}`)
       const data = await response.json()
 
       if (response.ok) {
@@ -219,7 +219,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
     setErrors({})
 
     try {
-      const response = await fetch(`/api/admin/products/${params.id}`, {
+      const response = await fetch(`/api/admin/products/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
