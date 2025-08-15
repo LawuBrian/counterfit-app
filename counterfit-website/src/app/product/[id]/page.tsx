@@ -7,8 +7,34 @@ import { ArrowRight, Star, Heart, Share2, Plus, Minus, ShoppingBag, Truck, Shiel
 import { useState, use } from 'react'
 import { useCart } from '@/contexts/CartContext'
 
+// Define proper types for the product data
+interface ProductData {
+  id: number
+  name: string
+  price: number
+  originalPrice: number | null
+  description: string
+  images: string[]
+  category: string
+  collection: string
+  badge: string
+  rating: number
+  reviews: number
+  sizes: string[]
+  colors: string[]
+  inStock: boolean
+  stockCount: number
+  features: string[]
+  specifications: {
+    material: string
+    fit: string
+    care: string
+    origin: string
+  }
+}
+
 // Sample product data - in a real app this would come from a database
-const products = {
+const products: Record<number, ProductData> = {
   1: {
     id: 1,
     name: "Urban Duo Collection",
@@ -82,7 +108,7 @@ const products = {
 export default function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params)
   const productId = parseInt(resolvedParams.id)
-  const product = products[productId as keyof typeof products]
+  const product = products[productId]
   const { addToCart } = useCart()
   
   const [selectedImage, setSelectedImage] = useState(0)
@@ -229,7 +255,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                   <span className="font-heading text-3xl font-bold text-primary">
                     R{product.price.toLocaleString()}
                   </span>
-                  {product.originalPrice && (
+                  {product.originalPrice !== null && (
                     <span className="text-xl text-secondary/60 line-through">
                       R{product.originalPrice.toLocaleString()}
                     </span>
