@@ -116,7 +116,7 @@ async function CollectionsPage() {
           
           <div className="space-y-16">
             {displayCollections.map((collection, index) => (
-              <div key={collection.id} className={`grid grid-cols-1 lg:grid-cols-2 gap-12 items-center ${index % 2 === 1 ? 'lg:grid-flow-col-dense' : ''}`}>
+              <div key={collection._id || collection.id || index} className={`grid grid-cols-1 lg:grid-cols-2 gap-12 items-center ${index % 2 === 1 ? 'lg:grid-flow-col-dense' : ''}`}>
                 {/* Image */}
                 <div className={index % 2 === 1 ? 'lg:col-start-2' : ''}>
                   <div className="rounded-xl text-primary bg-background overflow-hidden border-0 shadow-xl">
