@@ -1,13 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'export',
+  trailingSlash: true,
   images: {
-    domains: ['static.wixstatic.com', 'localhost'],
     unoptimized: true,
-    // Add your production domains here
+    domains: ['localhost', 'your-backend-domain.onrender.com', 'your-backend-domain.railway.app'],
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'api.yourdomain.com',
+        hostname: '**',
         pathname: '/uploads/**',
       },
       {
@@ -27,7 +28,6 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
   generateEtags: true,
-  trailingSlash: false,
   // Security headers
   async headers() {
     return [

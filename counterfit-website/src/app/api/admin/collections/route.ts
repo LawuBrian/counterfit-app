@@ -1,67 +1,102 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
-import { config } from '@/lib/config'
 
-export async function GET(request: NextRequest) {
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_URL || 'http://localhost:5000'
+
+export async function POST(request: NextRequest) {
   try {
+    console.log('🚀 POST /api/admin/collections - Route hit!')
+    
+    // Get session for authentication
     const session = await getServerSession(authOptions)
     
+    // Check if user is authenticated and is admin
     if (!session || session.user?.role !== 'ADMIN') {
       return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
+        { error: 'Unauthorized - Admin access required' },
         { status: 401 }
       )
     }
-
-    const { searchParams } = new URL(request.url)
-    const queryString = searchParams.toString()
     
-    const response = await fetch(`${config.apiUrl}/api/admin/collections?${queryString}`, {
-      method: 'GET',
+    const collectionData = await request.json()
+    console.log('Collection data received:', collectionData)
+    
+    // Call the backend API to create the collection
+    const response = await fetch(`${BACKEND_URL}/api/admin/collections`, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-      }
+        'Authorization': `Bearer ${session.accessToken}` // Adjust based on your auth setup
+      },
+      body: JSON.stringify(collectionData)
     })
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      console.error('Backend error:', errorData)
+      return NextResponse.json(
+        { error: errorData.message || 'Failed to create collection' },
+        { status: response.status }
+      )
+    }
+    
+    const result = await response.json()
+    console.log('Collection created successfully:', result)
+    
+    return NextResponse.json(result)
 
-    const data = await response.json()
-    return NextResponse.json(data, { status: response.status })
   } catch (error) {
-    console.error('Admin collections API error:', error)
+    console.error('Create collection error:', error)
     return NextResponse.json(
-      { success: false, message: 'Server error' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
+    console.log('🚀 GET /api/admin/collections - Route hit!')
+    
+    // Get session for authentication
     const session = await getServerSession(authOptions)
     
+    // Check if user is authenticated and is admin
     if (!session || session.user?.role !== 'ADMIN') {
       return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
+        { error: 'Unauthorized - Admin access required' },
         { status: 401 }
       )
     }
-
-    const body = await request.json()
     
-    const response = await fetch(`${config.apiUrl}/api/admin/collections`, {
-      method: 'POST',
+    // Get query parameters
+    const { searchParams } = new URL(request.url)
+    const queryString = searchParams.toString()
+    
+    // Call the backend API to get collections
+    const response = await fetch(`${BACKEND_URL}/api/admin/collections${queryString ? `?${queryString}` : ''}`, {
       headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body)
+        'Authorization': `Bearer ${session.accessToken}` // Adjust based on your auth setup
+      }
     })
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      console.error('Backend error:', errorData)
+      return NextResponse.json(
+        { error: errorData.message || 'Failed to fetch collections' },
+        { status: response.status }
+      )
+    }
+    
+    const result = await response.json()
+    return NextResponse.json(result)
 
-    const data = await response.json()
-    return NextResponse.json(data, { status: response.status })
   } catch (error) {
-    console.error('Admin create collection API error:', error)
+    console.error('Get collections error:', error)
     return NextResponse.json(
-      { success: false, message: 'Server error' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }
