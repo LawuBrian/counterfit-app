@@ -1,7 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
-  trailingSlash: true,
   images: {
     unoptimized: true,
     domains: ['localhost', 'your-backend-domain.onrender.com', 'your-backend-domain.railway.app'],
