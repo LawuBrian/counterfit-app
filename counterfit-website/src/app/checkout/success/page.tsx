@@ -1,12 +1,12 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { CheckCircle, Package, Mail, ArrowRight } from 'lucide-react'
 
-export default function CheckoutSuccessPage() {
+function CheckoutSuccessContent() {
   const searchParams = useSearchParams()
   const sessionId = searchParams.get('session_id')
   const orderId = searchParams.get('order_id')
@@ -107,54 +107,71 @@ export default function CheckoutSuccessPage() {
 
               <div>
                 <h3 className="font-heading text-lg font-semibold text-primary mb-4">
-                  What's Next?
+                  Shipping Information
                 </h3>
-                <div className="space-y-4">
-                  <div className="flex items-start gap-3">
-                    <Mail className="w-5 h-5 text-primary mt-0.5" />
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <Package className="w-5 h-5 text-primary" />
                     <div>
-                      <p className="font-medium text-primary">Confirmation Email</p>
-                      <p className="text-sm text-secondary">We've sent a confirmation email with your order details.</p>
+                      <div className="font-medium text-primary">Standard Shipping</div>
+                      <div className="text-sm text-secondary">3-5 business days</div>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <Package className="w-5 h-5 text-primary mt-0.5" />
+                  <div className="flex items-center gap-3">
+                    <Mail className="w-5 h-5 text-primary" />
                     <div>
-                      <p className="font-medium text-primary">Processing</p>
-                      <p className="text-sm text-secondary">Your order is being prepared for shipment.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="w-5 h-5 text-primary mt-0.5" />
-                    <div>
-                      <p className="font-medium text-primary">Delivery</p>
-                      <p className="text-sm text-secondary">You'll receive tracking information once shipped.</p>
+                      <div className="font-medium text-primary">Confirmation Email</div>
+                      <div className="text-sm text-secondary">Sent to your email</div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
+
+            <div className="border-t border-gray-200 pt-6">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button className="flex-1">
+                  <Link href="/account/tracking" className="flex items-center">
+                    Track Your Order
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button variant="outline" className="flex-1">
+                  <Link href="/shop">
+                    Continue Shopping
+                  </Link>
+                </Button>
+              </div>
+            </div>
           </div>
         )}
 
-        <div className="text-center space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="font-semibold">
-              <Link href="/shop" className="flex items-center">
-                Continue Shopping
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
-            <Button variant="outline" size="lg">
-              <Link href="/account/orders">View Order History</Link>
-            </Button>
-          </div>
-          
-          <p className="text-sm text-secondary">
-            Need help? <Link href="/contact" className="text-primary hover:underline">Contact our support team</Link>
+        <div className="text-center">
+          <p className="text-secondary mb-6">
+            If you have any questions about your order, please contact our customer support team.
           </p>
+          <Button variant="outline">
+            <Link href="/contact">
+              Contact Support
+            </Link>
+          </Button>
         </div>
       </div>
     </div>
+  )
+}
+
+export default function CheckoutSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-secondary">Loading...</p>
+        </div>
+      </div>
+    }>
+      <CheckoutSuccessContent />
+    </Suspense>
   )
 }
