@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <circle cx="100" cy="100" r="90" fill="none" stroke="black" stroke-width="3"/>
+  
+  <!-- Outer geometric pattern -->
+  <g stroke="black" stroke-width="2" fill="none">
+    <!-- Top triangular segments -->
+    <path d="M100 20 L140 60 L100 60 Z"/>
+    <path d="M100 20 L60 60 L100 60 Z"/>
+    
+    <!-- Right triangular segments -->
+    <path d="M180 100 L140 60 L140 100 Z"/>
+    <path d="M180 100 L140 140 L140 100 Z"/>
+    
+    <!-- Bottom triangular segments -->
+    <path d="M100 180 L140 140 L100 140 Z"/>
+    <path d="M100 180 L60 140 L100 140 Z"/>
+    
+    <!-- Left triangular segments -->
+    <path d="M20 100 L60 60 L60 100 Z"/>
+    <path d="M20 100 L60 140 L60 100 Z"/>
+    
+    <!-- Inner connecting lines -->
+    <path d="M60 60 L140 140"/>
+    <path d="M140 60 L60 140"/>
+    <path d="M100 60 L100 140"/>
+    <path d="M60 100 L140 100"/>
+    
+    <!-- Inner octagon -->
+    <path d="M100 60 L140 60 L140 100 L140 140 L100 140 L60 140 L60 100 L60 60 Z"/>
+  </g>
+</svg>

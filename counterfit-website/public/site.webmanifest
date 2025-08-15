@@ -1,0 +1,21 @@
+{
+  "name": "Counterfit",
+  "short_name": "Counterfit",
+  "description": "Redefining streetwear with a blend of luxury, innovation, and timeless design",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/Counterfit.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#000000",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "start_url": "/"
+}
