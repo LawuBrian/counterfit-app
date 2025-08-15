@@ -86,7 +86,7 @@ export default function AccountPage() {
           postalCode: localStorage.getItem('userPostalCode') || '',
           country: localStorage.getItem('userCountry') || 'South Africa'
         },
-        dateJoined: session?.user?.createdAt || new Date().toISOString()
+        dateJoined: new Date().toISOString() // Default to current date since createdAt not available in session
       })
     } catch (error) {
       console.error('Error fetching profile:', error)
