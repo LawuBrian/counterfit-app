@@ -4,6 +4,33 @@ import { Button } from '@/components/ui/button'
 import { ArrowRight, Star, Calendar, Users, Tag, Clock } from 'lucide-react'
 import { getFeaturedCollections, getCollections, getImageUrl, getCollectionUrl, type Collection } from '@/lib/api'
 
+// Define fallback collection types
+interface FallbackCollection {
+  id: number
+  name: string
+  subtitle: string
+  description: string
+  image: string
+  badge: string
+  badgeColor: string
+  status: string
+  featuredItems: { name: string; price: string }[]
+}
+
+interface FallbackGridCollection {
+  name: string
+  description: string
+  image: string
+  badge: string
+  items: number
+  priceFrom: string
+  status: string
+}
+
+// Union type for collections that can be either API collections or fallbacks
+type DisplayCollection = Collection | FallbackCollection
+type GridCollection = Collection | FallbackGridCollection
+
 async function CollectionsPage() {
   // Fetch collections from the backend
   const featuredCollectionsResponse = await getFeaturedCollections(6)
@@ -13,7 +40,7 @@ async function CollectionsPage() {
   const allCollections = allCollectionsResponse.success ? allCollectionsResponse.data : []
 
   // Fallback collections for demo purposes when no collections exist
-  const fallbackCollections = [
+  const fallbackCollections: FallbackCollection[] = [
     {
       id: 1,
       name: "Platform Series",
@@ -47,11 +74,11 @@ async function CollectionsPage() {
   ]
 
   // Use actual collections or fallback for demo
-  const displayCollections = featuredCollections.length > 0 ? featuredCollections.slice(0, 2) : fallbackCollections
-  const gridCollections = allCollections.length > 0 ? allCollections.slice(2) : []
+  const displayCollections: DisplayCollection[] = featuredCollections.length > 0 ? featuredCollections.slice(0, 2) : fallbackCollections
+  const gridCollections: GridCollection[] = allCollections.length > 0 ? allCollections.slice(2) : []
 
   // Additional fallback collections for the grid section
-  const fallbackGridCollections = [
+  const fallbackGridCollections: FallbackGridCollection[] = [
     {
       name: "Urban Explorer",
       description: "Bold patterns and textures for the modern adventurer. Pieces that make a statement without saying a word.",
@@ -80,6 +107,21 @@ async function CollectionsPage() {
       status: "Coming Soon"
     }
   ]
+
+  // Helper function to get collection ID safely
+  const getCollectionId = (collection: DisplayCollection | GridCollection, index: number): string | number => {
+    if ('_id' in collection) return collection._id
+    if ('id' in collection) return collection.id
+    return index
+  }
+
+  // Helper function to get collection URL safely
+  const getSafeCollectionUrl = (collection: DisplayCollection | GridCollection): string => {
+    if ('slug' in collection && collection.slug) return `/collections/${collection.slug}`
+    if ('_id' in collection) return `/collections/${collection._id}`
+    if ('id' in collection) return `/collections/${collection.id}`
+    return '/collections'
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -116,7 +158,7 @@ async function CollectionsPage() {
           
           <div className="space-y-16">
             {displayCollections.map((collection, index) => (
-              <div key={collection._id || collection.id || index} className={`grid grid-cols-1 lg:grid-cols-2 gap-12 items-center ${index % 2 === 1 ? 'lg:grid-flow-col-dense' : ''}`}>
+              <div key={getCollectionId(collection, index)} className={`grid grid-cols-1 lg:grid-cols-2 gap-12 items-center ${index % 2 === 1 ? 'lg:grid-flow-col-dense' : ''}`}>
                 {/* Image */}
                 <div className={index % 2 === 1 ? 'lg:col-start-2' : ''}>
                   <div className="rounded-xl text-primary bg-background overflow-hidden border-0 shadow-xl">
@@ -154,7 +196,7 @@ async function CollectionsPage() {
                   </div>
 
                   <div className="flex flex-col sm:flex-row gap-4">
-                    <Link href={getCollectionUrl(collection)}>
+                    <Link href={getSafeCollectionUrl(collection)}>
                       <Button className="flex-1 sm:flex-none">
                         <div className="flex items-center">
                           Explore Collection
@@ -183,7 +225,7 @@ async function CollectionsPage() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {(gridCollections.length > 0 ? gridCollections : fallbackGridCollections).map((collection, index) => (
-              <Link key={collection._id || index} href={getCollectionUrl(collection)} className="rounded-xl text-primary bg-background group overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 block">
+              <Link key={getCollectionId(collection, index)} href={getSafeCollectionUrl(collection)} className="rounded-xl text-primary bg-background group overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 block">
                 <div className="relative aspect-[4/5] overflow-hidden">
                   <Image
                     src={getImageUrl(collection.image || '/placeholder-collection.jpg')}
