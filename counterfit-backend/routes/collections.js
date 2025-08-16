@@ -1,6 +1,5 @@
 const express = require('express');
-const Collection = require('../models/Collection');
-const Product = require('../models/Product');
+const prisma = require('../lib/prisma');
 const { protect, adminOnly } = require('../middleware/auth');
 const router = express.Router();
 
@@ -9,10 +8,10 @@ const router = express.Router();
 // @access  Public
 router.get('/', async (req, res) => {
   try {
-    const collections = await Collection.find({ status: 'active' })
-      .populate('products', 'name slug price images')
-      .sort('sortOrder -createdAt')
-      .lean();
+    const collections = await prisma.collection.findMany({
+      where: { status: 'active' },
+      orderBy: { createdAt: 'desc' }
+    });
 
     res.json({
       success: true,
@@ -32,10 +31,12 @@ router.get('/', async (req, res) => {
 // @access  Public
 router.get('/:slug', async (req, res) => {
   try {
-    const collection = await Collection.findOne({ 
-      slug: req.params.slug, 
-      status: 'active' 
-    }).populate('products').lean();
+    const collection = await prisma.collection.findFirst({
+      where: { 
+        slug: req.params.slug, 
+        status: 'active' 
+      }
+    });
 
     if (!collection) {
       return res.status(404).json({
@@ -62,7 +63,9 @@ router.get('/:slug', async (req, res) => {
 // @access  Private/Admin
 router.post('/', protect, adminOnly, async (req, res) => {
   try {
-    const collection = await Collection.create(req.body);
+    const collection = await prisma.collection.create({
+      data: req.body
+    });
 
     res.status(201).json({
       success: true,
