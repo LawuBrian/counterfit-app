@@ -104,14 +104,6 @@ router.post('/login', [
       });
     }
 
-    // Check if account is active
-    if (!user.isActive) {
-      return res.status(401).json({
-        success: false,
-        message: 'Account is deactivated'
-      });
-    }
-
     // Check password (you'll need to implement password comparison)
     // For now, let's assume password is stored as plain text (not recommended for production)
     if (user.password !== password) {

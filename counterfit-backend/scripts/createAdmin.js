@@ -1,15 +1,17 @@
-const mongoose = require('mongoose');
-const User = require('../models/User');
+const { PrismaClient } = require('@prisma/client');
 require('dotenv').config();
+
+const prisma = new PrismaClient();
 
 async function createAdmin() {
   try {
-    // Connect to MongoDB
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/counterfit');
-    console.log('Connected to MongoDB');
+    console.log('Connecting to Supabase database...');
 
     // Check if admin already exists
-    const existingAdmin = await User.findOne({ email: 'admin@counterfit.com' });
+    const existingAdmin = await prisma.user.findUnique({
+      where: { email: 'admin@counterfit.com' }
+    });
+    
     if (existingAdmin) {
       console.log('Admin user already exists!');
       console.log('Email: admin@counterfit.com');
@@ -18,12 +20,14 @@ async function createAdmin() {
     }
 
     // Create admin user
-    const adminUser = await User.create({
-      firstName: 'Admin',
-      lastName: 'User',
-      email: 'admin@counterfit.com',
-      password: 'admin123', // This will be hashed automatically
-      role: 'ADMIN'
+    const adminUser = await prisma.user.create({
+      data: {
+        firstName: 'Admin',
+        lastName: 'User',
+        email: 'admin@counterfit.com',
+        password: 'admin123', // Note: This is plain text - you should hash it in production
+        role: 'ADMIN'
+      }
     });
 
     console.log('✅ Admin user created successfully!');
@@ -35,15 +39,14 @@ async function createAdmin() {
     console.log('🚨 IMPORTANT: Change this password after first login!');
     console.log('');
     console.log('You can now:');
-    console.log('1. Start your frontend: npm run dev');
-    console.log('2. Go to: http://localhost:3000/auth/signin');
-    console.log('3. Login with the credentials above');
-    console.log('4. Access admin panel: http://localhost:3000/admin');
+    console.log('1. Go to your website: https://counterfit-app.vercel.app/auth/signin');
+    console.log('2. Login with the credentials above');
+    console.log('3. Access admin panel: https://counterfit-app.vercel.app/admin');
 
   } catch (error) {
     console.error('Error creating admin user:', error);
   } finally {
-    await mongoose.connection.close();
+    await prisma.$disconnect();
     console.log('Database connection closed');
   }
 }

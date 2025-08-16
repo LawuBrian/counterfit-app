@@ -19,7 +19,7 @@ router.get('/stats', async (req, res) => {
       recentOrders,
       topProducts
     ] = await Promise.all([
-      prisma.user.count({ where: { isActive: true } }),
+      prisma.user.count(),
       prisma.product.count({ where: { status: 'active' } }),
       prisma.order.count(),
       prisma.collection.count({ where: { status: 'active' } }),
