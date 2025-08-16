@@ -9,6 +9,9 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Import Prisma client
+const prisma = require('./lib/prisma');
+
 // Security middleware
 app.use(helmet());
 app.use(compression());
@@ -71,11 +74,17 @@ app.use('*', (req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-// Database connection
-const connectDB = require('./config/database');
-connectDB();
-
-app.listen(PORT, () => {
-  console.log(`🚀 Counterfit Backend Server running on port ${PORT}`);
-  console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
-});
+// Database connection with Prisma
+prisma.$connect()
+  .then(() => {
+    console.log('✅ Connected to Supabase database');
+    
+    app.listen(PORT, () => {
+      console.log(`🚀 Counterfit Backend Server running on port ${PORT}`);
+      console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
+    });
+  })
+  .catch(err => {
+    console.error('❌ Database connection error:', err);
+    process.exit(1);
+  });

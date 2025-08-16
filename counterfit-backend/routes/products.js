@@ -1,7 +1,6 @@
 const express = require('express');
 const { body, query, validationResult } = require('express-validator');
-const Product = require('../models/Product');
-const Collection = require('../models/Collection');
+const prisma = require('../lib/prisma');
 const { protect, adminOnly, optionalAuth } = require('../middleware/auth');
 const router = express.Router();
 
@@ -40,49 +39,57 @@ router.get('/', [
       status = 'active'
     } = req.query;
 
-    // Build query
-    let query = { status };
+    // Build where clause for Prisma
+    let where = { status };
 
     // Category filter
     if (category) {
-      query.category = category;
-    }
-
-    // Collection filter
-    if (collection) {
-      query.collections = collection;
+      where.category = category;
     }
 
     // Price range filter
     if (minPrice || maxPrice) {
-      query.price = {};
-      if (minPrice) query.price.$gte = parseFloat(minPrice);
-      if (maxPrice) query.price.$lte = parseFloat(maxPrice);
+      where.price = {};
+      if (minPrice) where.price.gte = parseFloat(minPrice);
+      if (maxPrice) where.price.lte = parseFloat(maxPrice);
     }
 
     // Featured filter
     if (featured === 'true') {
-      query.featured = true;
+      where.featured = true;
     }
 
     // Search functionality
     if (search) {
-      query.$text = { $search: search };
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } }
+      ];
     }
 
     // Calculate pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    // Execute query
-    const products = await Product.find(query)
-      .populate('collections', 'name slug')
-      .sort(sort)
-      .skip(skip)
-      .limit(parseInt(limit))
-      .lean();
+    // Parse sort order
+    let orderBy = {};
+    if (sort === '-createdAt') orderBy.createdAt = 'desc';
+    else if (sort === 'createdAt') orderBy.createdAt = 'asc';
+    else if (sort === '-price') orderBy.price = 'desc';
+    else if (sort === 'price') orderBy.price = 'asc';
+    else if (sort === '-name') orderBy.name = 'desc';
+    else if (sort === 'name') orderBy.name = 'asc';
+    else if (sort === 'featured') orderBy.featured = 'desc';
 
-    // Get total count for pagination
-    const total = await Product.countDocuments(query);
+    // Execute query with Prisma
+    const [products, total] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        orderBy,
+        skip,
+        take: parseInt(limit)
+      }),
+      prisma.product.count({ where })
+    ]);
 
     res.json({
       success: true,
@@ -108,9 +115,9 @@ router.get('/', [
 // @access  Public
 router.get('/:id', optionalAuth, async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id)
-      .populate('collections', 'name slug description')
-      .lean();
+    const product = await prisma.product.findUnique({
+      where: { id: req.params.id }
+    });
 
     if (!product) {
       return res.status(404).json({
@@ -119,21 +126,12 @@ router.get('/:id', optionalAuth, async (req, res) => {
       });
     }
 
-    // Increment view count
-    await Product.findByIdAndUpdate(req.params.id, { $inc: { viewCount: 1 } });
-
     res.json({
       success: true,
       data: product
     });
   } catch (error) {
     console.error('Get product error:', error);
-    if (error.name === 'CastError') {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found'
-      });
-    }
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -146,9 +144,12 @@ router.get('/:id', optionalAuth, async (req, res) => {
 // @access  Public
 router.get('/slug/:slug', optionalAuth, async (req, res) => {
   try {
-    const product = await Product.findOne({ slug: req.params.slug, status: 'active' })
-      .populate('collections', 'name slug description')
-      .lean();
+    const product = await prisma.product.findFirst({
+      where: { 
+        slug: req.params.slug, 
+        status: 'active' 
+      }
+    });
 
     if (!product) {
       return res.status(404).json({
@@ -156,9 +157,6 @@ router.get('/slug/:slug', optionalAuth, async (req, res) => {
         message: 'Product not found'
       });
     }
-
-    // Increment view count
-    await Product.findByIdAndUpdate(product._id, { $inc: { viewCount: 1 } });
 
     res.json({
       success: true,
@@ -197,7 +195,9 @@ router.post('/', protect, adminOnly, [
       });
     }
 
-    const product = await Product.create(req.body);
+    const product = await prisma.product.create({
+      data: req.body
+    });
 
     res.status(201).json({
       success: true,
@@ -206,11 +206,10 @@ router.post('/', protect, adminOnly, [
     });
   } catch (error) {
     console.error('Create product error:', error);
-    if (error.code === 11000) {
+    if (error.code === 'P2002') {
       let message = 'Duplicate field error';
-      if (error.keyPattern?.sku) message = 'Product with this SKU already exists';
-      else if (error.keyPattern?.barcode) message = 'Product with this barcode already exists';
-      else if (error.keyPattern?.stockCode) message = 'Product with this stock code already exists';
+      if (error.meta?.target?.includes('stockCode')) message = 'Product with this stock code already exists';
+      else if (error.meta?.target?.includes('slug')) message = 'Product with this slug already exists';
       
       return res.status(400).json({
         success: false,
@@ -244,18 +243,10 @@ router.put('/:id', protect, adminOnly, [
       });
     }
 
-    const product = await Product.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
-
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found'
-      });
-    }
+    const product = await prisma.product.update({
+      where: { id: req.params.id },
+      data: req.body
+    });
 
     res.json({
       success: true,
@@ -264,7 +255,7 @@ router.put('/:id', protect, adminOnly, [
     });
   } catch (error) {
     console.error('Update product error:', error);
-    if (error.name === 'CastError') {
+    if (error.code === 'P2025') {
       return res.status(404).json({
         success: false,
         message: 'Product not found'
@@ -282,14 +273,9 @@ router.put('/:id', protect, adminOnly, [
 // @access  Private/Admin
 router.delete('/:id', protect, adminOnly, async (req, res) => {
   try {
-    const product = await Product.findByIdAndDelete(req.params.id);
-
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found'
-      });
-    }
+    await prisma.product.delete({
+      where: { id: req.params.id }
+    });
 
     res.json({
       success: true,
@@ -297,7 +283,7 @@ router.delete('/:id', protect, adminOnly, async (req, res) => {
     });
   } catch (error) {
     console.error('Delete product error:', error);
-    if (error.name === 'CastError') {
+    if (error.code === 'P2025') {
       return res.status(404).json({
         success: false,
         message: 'Product not found'
@@ -315,7 +301,9 @@ router.delete('/:id', protect, adminOnly, async (req, res) => {
 // @access  Public
 router.get('/:id/related', async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const product = await prisma.product.findUnique({
+      where: { id: req.params.id }
+    });
     
     if (!product) {
       return res.status(404).json({
@@ -324,22 +312,21 @@ router.get('/:id/related', async (req, res) => {
       });
     }
 
-    // Find related products in same category or collections
-    const related = await Product.find({
-      $and: [
-        { _id: { $ne: product._id } },
-        { status: 'active' },
-        {
-          $or: [
-            { category: product.category },
-            { collections: { $in: product.collections } }
-          ]
-        }
+    // Find related products in same category
+    const related = await prisma.product.findMany({
+      where: {
+        AND: [
+          { id: { not: product.id } },
+          { status: 'active' },
+          { category: product.category }
+        ]
+      },
+      take: 4,
+      orderBy: [
+        { featured: 'desc' },
+        { createdAt: 'desc' }
       ]
-    })
-    .limit(4)
-    .sort('-featured -createdAt')
-    .lean();
+    });
 
     res.json({
       success: true,
@@ -347,43 +334,6 @@ router.get('/:id/related', async (req, res) => {
     });
   } catch (error) {
     console.error('Get related products error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error'
-    });
-  }
-});
-
-// @desc    Get single product by slug
-// @route   GET /api/products/slug/:slug
-// @access  Public
-router.get('/slug/:slug', async (req, res) => {
-  try {
-    const product = await Product.findOne({ 
-      slug: req.params.slug,
-      status: 'active',
-      isAvailable: true 
-    });
-
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      data: product
-    });
-  } catch (error) {
-    console.error('Get product by slug error:', error);
-    if (error.name === 'CastError') {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found'
-      });
-    }
     res.status(500).json({
       success: false,
       message: 'Server error'

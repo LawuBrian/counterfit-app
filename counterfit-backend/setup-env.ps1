@@ -4,7 +4,7 @@
 # Replace YOUR_CONNECTION_STRING with your actual MongoDB Atlas connection string
 # Example: mongodb+srv://counterfit-admin:yourpassword@counterfit-cluster.xxxxx.mongodb.net/counterfit?retryWrites=true&w=majority
 
-$env:MONGODB_URI = "YOUR_CONNECTION_STRING_HERE"
+$env:MONGODB_URI = "mongodb+srv://helpcounterfit:qdiHFOaJHPNsRHlV@counterfit-cluster.ydrm51b.mongodb.net/"
 $env:JWT_SECRET = "counterfit-jwt-secret-12345"
 $env:JWT_EXPIRE = "30d"
 $env:NODE_ENV = "development"
