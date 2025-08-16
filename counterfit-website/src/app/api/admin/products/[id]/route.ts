@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/lib/auth'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://counterfit-backend.onrender.com'
 
@@ -8,14 +10,32 @@ export async function GET(
 ) {
   try {
     const { id } = await params
+    const session = await getServerSession(authOptions)
     
-    // For now, return a simple response since backend isn't deployed
-    // This will be replaced when backend is deployed
-    return NextResponse.json({
-      message: 'Product endpoint - backend not yet deployed',
-      id: id,
-      status: 'pending'
+    if (!session?.user?.accessToken) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Call the backend API to get the product
+    const response = await fetch(`${BACKEND_URL}/api/admin/products/${id}`, {
+      headers: {
+        'Authorization': `Bearer ${session.user.accessToken}`
+      }
     })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      return NextResponse.json(
+        { error: errorData.message || 'Failed to fetch product' },
+        { status: response.status }
+      )
+    }
+
+    const product = await response.json()
+    return NextResponse.json(product)
 
   } catch (error) {
     console.error('Get admin product error:', error)
@@ -32,13 +52,37 @@ export async function PUT(
 ) {
   try {
     const { id } = await params
+    const session = await getServerSession(authOptions)
     
-    // For now, return a simple response since backend isn't deployed
-    return NextResponse.json({
-      message: 'Product update endpoint - backend not yet deployed',
-      id: id,
-      status: 'pending'
+    if (!session?.user?.accessToken) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const productData = await request.json()
+
+    // Call the backend API to update the product
+    const response = await fetch(`${BACKEND_URL}/api/admin/products/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.user.accessToken}`
+      },
+      body: JSON.stringify(productData)
     })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      return NextResponse.json(
+        { error: errorData.message || 'Failed to update product' },
+        { status: response.status }
+      )
+    }
+
+    const result = await response.json()
+    return NextResponse.json(result)
 
   } catch (error) {
     console.error('Update admin product error:', error)
@@ -55,13 +99,33 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
+    const session = await getServerSession(authOptions)
     
-    // For now, return a simple response since backend isn't deployed
-    return NextResponse.json({
-      message: 'Product delete endpoint - backend not yet deployed',
-      id: id,
-      status: 'pending'
+    if (!session?.user?.accessToken) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Call the backend API to delete the product
+    const response = await fetch(`${BACKEND_URL}/api/admin/products/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${session.user.accessToken}`
+      }
     })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      return NextResponse.json(
+        { error: errorData.message || 'Failed to delete product' },
+        { status: response.status }
+      )
+    }
+
+    const result = await response.json()
+    return NextResponse.json(result)
 
   } catch (error) {
     console.error('Delete admin product error:', error)
