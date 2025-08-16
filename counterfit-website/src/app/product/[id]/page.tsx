@@ -4,167 +4,128 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, Star, Heart, Share2, Plus, Minus, ShoppingBag, Truck, Shield, RotateCcw } from 'lucide-react'
-import { useState, use } from 'react'
+import { useState, useEffect } from 'react'
 import { useCart } from '@/contexts/CartContext'
+import { useParams } from 'next/navigation'
 
 // Define proper types for the product data
 interface ProductData {
-  id: number
+  id: string
   name: string
   price: number
-  originalPrice: number | null
+  comparePrice?: number
   description: string
-  images: string[]
+  images: Array<{
+    url: string
+    alt: string
+    isPrimary: boolean
+  }>
   category: string
-  collection: string
-  badge: string
-  rating: number
-  reviews: number
-  sizes: string[]
-  colors: string[]
+  status: string
+  sizes: Array<{
+    size: string
+    stock: number
+    isAvailable: boolean
+  }>
+  colors: Array<{
+    name: string
+    hexCode: string
+    stock: number
+    isAvailable: boolean
+  }>
+  inventory: {
+    trackQuantity: boolean
+    quantity: number
+    lowStockThreshold: number
+    allowBackorder: boolean
+  }
   inStock: boolean
   stockCount: number
-  features: string[]
-  specifications: {
-    material: string
-    fit: string
-    care: string
-    origin: string
-  }
 }
 
-// Sample product data - in a real app this would come from a database
-const products: Record<number, ProductData> = {
-  1: {
-    id: 1,
-    name: "Urban Duo Collection",
-    price: 2000,
-    originalPrice: null,
-    description: "Contemporary streetwear set featuring coordinated pieces. Perfect for the modern streetwear enthusiast who values both style and comfort. This collection represents the pinnacle of urban fashion, combining innovative design with premium materials to create pieces that stand out in any crowd.",
-    images: [
-      "/images/1d66cc_149ffeb3bc0f441aa37acb363303a407_mv2.jpg",
-      "/images/1d66cc_2cd6bfd9f3f14c02bf9bec1597481052_mv2.jpg",
-      "/images/1d66cc_dae82150175d4010871e43fef851f81a_mv2.jpg"
-    ],
-    category: "Collection",
-    collection: "Urban Series",
-    badge: "Featured",
-    rating: 5,
-    reviews: 24,
-    sizes: ["XS", "S", "M", "L", "XL", "XXL"],
-    colors: ["Black", "White", "Grey"],
-    inStock: true,
-    stockCount: 15,
-    features: [
-      "Premium cotton blend fabric",
-      "Coordinated two-piece set",
-      "Modern fit with comfort stretch",
-      "Machine washable",
-      "Limited edition design"
-    ],
-    specifications: {
-      material: "80% Cotton, 20% Polyester",
-      fit: "Regular fit",
-      care: "Machine wash cold, tumble dry low",
-      origin: "Designed in South Africa"
-    }
-  },
-  2: {
-    id: 2,
-    name: "Executive Trio Collection", 
-    price: 3000,
-    originalPrice: null,
-    description: "Professional streetwear for the modern individual. Where business meets street culture in perfect harmony. This sophisticated collection bridges the gap between corporate elegance and street authenticity, featuring pieces that transition seamlessly from boardroom to street.",
-    images: [
-      "/images/1d66cc_2cd6bfd9f3f14c02bf9bec1597481052_mv2.jpg",
-      "/images/1d66cc_149ffeb3bc0f441aa37acb363303a407_mv2.jpg",
-      "/images/1d66cc_b4b6f42d5bec4d1296ef5f4525844fb8_mv2.png"
-    ],
-    category: "Collection",
-    collection: "Executive Series",
-    badge: "Featured",
-    rating: 5,
-    reviews: 18,
-    sizes: ["S", "M", "L", "XL", "XXL"],
-    colors: ["Navy", "Charcoal", "Black"],
-    inStock: true,
-    stockCount: 8,
-    features: [
-      "Three-piece coordinated set",
-      "Business-casual aesthetic",
-      "Premium tailoring",
-      "Wrinkle-resistant fabric",
-      "Professional finish"
-    ],
-    specifications: {
-      material: "70% Wool, 30% Polyester",
-      fit: "Tailored fit",
-      care: "Dry clean recommended",
-      origin: "Designed in South Africa"
-    }
-  }
-}
-
-export default function ProductPage({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = use(params)
-  const productId = parseInt(resolvedParams.id)
-  const product = products[productId]
-  const { addToCart } = useCart()
-  
-  const [selectedImage, setSelectedImage] = useState(0)
-  const [selectedSize, setSelectedSize] = useState("")
-  const [selectedColor, setSelectedColor] = useState("")
+export default function ProductPage() {
+  const params = useParams()
+  const productId = params.id as string
+  const [product, setProduct] = useState<ProductData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [selectedSize, setSelectedSize] = useState<string>('')
+  const [selectedColor, setSelectedColor] = useState<string>('')
   const [quantity, setQuantity] = useState(1)
-  const [isWishlisted, setIsWishlisted] = useState(false)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  
+  const { addToCart } = useCart()
 
-  if (!product) {
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch(`/api/products/${productId}`)
+        
+        if (!response.ok) {
+          throw new Error('Product not found')
+        }
+        
+        const data = await response.json()
+        setProduct(data.data)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load product')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (productId) {
+      fetchProduct()
+    }
+  }, [productId])
+
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="font-heading text-4xl font-bold text-primary mb-4">Product Not Found</h1>
-          <p className="font-paragraph text-secondary mb-8">The product you're looking for doesn't exist.</p>
-          <Button>
-            <Link href="/shop">Back to Shop</Link>
-          </Button>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-lg text-secondary">Loading product...</p>
         </div>
       </div>
     )
   }
 
-  const incrementQuantity = () => {
-    if (quantity < product.stockCount) {
-      setQuantity(quantity + 1)
-    }
-  }
-
-  const decrementQuantity = () => {
-    if (quantity > 1) {
-      setQuantity(quantity - 1)
-    }
-  }
-
-  const toggleWishlist = () => {
-    setIsWishlisted(!isWishlisted)
+  if (error || !product) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-primary mb-4">Product Not Found</h1>
+          <p className="text-secondary mb-6">{error || 'The product you are looking for does not exist.'}</p>
+          <Link href="/shop">
+            <Button>
+              Back to Shop
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   const handleAddToCart = () => {
     if (!selectedSize || !selectedColor) {
-      alert('Please select size and color')
+      alert('Please select both size and color')
       return
     }
-
+    
     addToCart({
       id: product.id,
       name: product.name,
       price: product.price,
-      image: product.images[0],
+      image: product.images[0]?.url || '',
       size: selectedSize,
       color: selectedColor,
-      quantity: quantity
+      quantity
     })
-
-    alert('Added to cart!')
   }
+
+  const originalPrice = product.comparePrice && product.comparePrice > product.price ? product.comparePrice : null
 
   return (
     <div className="min-h-screen bg-background">
@@ -190,17 +151,17 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               {/* Main Image */}
               <div className="relative aspect-[4/5] overflow-hidden rounded-2xl">
                 <Image
-                  src={product.images[selectedImage]}
+                  src={product.images[currentImageIndex]?.url || ''}
                   alt={product.name}
                   fill
                   className="object-cover"
                   priority
                 />
-                {product.badge && (
+                {product.status && (
                   <div className="absolute top-6 left-6">
                     <div className="inline-flex items-center rounded-md px-3 py-1 text-sm font-semibold bg-black/80 text-white backdrop-blur-sm">
-                      {product.badge === 'Featured' && <Star className="w-3 h-3 mr-1 fill-current" />}
-                      {product.badge}
+                      {product.status === 'Featured' && <Star className="w-3 h-3 mr-1 fill-current" />}
+                      {product.status}
                     </div>
                   </div>
                 )}
@@ -211,13 +172,13 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                 {product.images.map((image, index) => (
                   <button
                     key={index}
-                    onClick={() => setSelectedImage(index)}
+                    onClick={() => setCurrentImageIndex(index)}
                     className={`relative w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${
-                      selectedImage === index ? 'border-primary' : 'border-gray-200'
+                      currentImageIndex === index ? 'border-primary' : 'border-gray-200'
                     }`}
                   >
                     <Image
-                      src={image}
+                      src={image.url}
                       alt={`${product.name} ${index + 1}`}
                       fill
                       className="object-cover"
@@ -234,7 +195,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-sm text-secondary/60 font-medium">{product.category}</span>
                   <span className="text-secondary/40">•</span>
-                  <span className="text-sm text-secondary/60 font-medium">{product.collection}</span>
+                  <span className="text-sm text-secondary/60 font-medium">{product.status}</span>
                 </div>
                 <h1 className="font-heading text-3xl lg:text-4xl font-bold text-primary mb-4">
                   {product.name}
@@ -244,10 +205,10 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                 <div className="flex items-center mb-6">
                   <div className="flex">
                     {[...Array(5)].map((_, i) => (
-                      <Star key={i} className={`w-4 h-4 ${i < Math.floor(product.rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} />
+                      <Star key={i} className={`w-4 h-4 ${i < Math.floor(5) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} />
                     ))}
                   </div>
-                  <span className="text-sm text-secondary/60 ml-2">({product.reviews} reviews)</span>
+                  <span className="text-sm text-secondary/60 ml-2">({product.stockCount} in stock)</span>
                 </div>
 
                 {/* Price */}
@@ -255,9 +216,9 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                   <span className="font-heading text-3xl font-bold text-primary">
                     R{product.price.toLocaleString()}
                   </span>
-                  {product.originalPrice !== null && (
+                  {originalPrice !== null && (
                     <span className="text-xl text-secondary/60 line-through">
-                      R{product.originalPrice.toLocaleString()}
+                      R{originalPrice.toLocaleString()}
                     </span>
                   )}
                 </div>
@@ -273,15 +234,15 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                 <div className="flex flex-wrap gap-3">
                   {product.sizes.map((size) => (
                     <button
-                      key={size}
-                      onClick={() => setSelectedSize(size)}
+                      key={size.size}
+                      onClick={() => setSelectedSize(size.size)}
                       className={`px-4 py-2 border rounded-lg font-medium transition-colors ${
-                        selectedSize === size
+                        selectedSize === size.size
                           ? 'border-primary bg-primary text-white'
                           : 'border-gray-200 text-primary hover:border-primary'
                       }`}
                     >
-                      {size}
+                      {size.size}
                     </button>
                   ))}
                 </div>
@@ -293,15 +254,15 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                 <div className="flex flex-wrap gap-3">
                   {product.colors.map((color) => (
                     <button
-                      key={color}
-                      onClick={() => setSelectedColor(color)}
+                      key={color.name}
+                      onClick={() => setSelectedColor(color.name)}
                       className={`px-4 py-2 border rounded-lg font-medium transition-colors ${
-                        selectedColor === color
+                        selectedColor === color.name
                           ? 'border-primary bg-primary text-white'
                           : 'border-gray-200 text-primary hover:border-primary'
                       }`}
                     >
-                      {color}
+                      {color.name}
                     </button>
                   ))}
                 </div>
@@ -313,7 +274,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                 <div className="flex items-center gap-4">
                   <div className="flex items-center border border-gray-200 rounded-lg">
                     <button
-                      onClick={decrementQuantity}
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
                       disabled={quantity <= 1}
                       className="p-2 text-primary hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -321,7 +282,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                     </button>
                     <span className="px-4 py-2 font-medium">{quantity}</span>
                     <button
-                      onClick={incrementQuantity}
+                      onClick={() => setQuantity(Math.min(product.stockCount, quantity + 1))}
                       disabled={quantity >= product.stockCount}
                       className="p-2 text-primary hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -346,11 +307,11 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={toggleWishlist}
-                  className={`${isWishlisted ? 'bg-red-50 border-red-200 text-red-600' : ''}`}
+                  onClick={() => {}} // Wishlist functionality not implemented in this version
+                  className={`${false ? 'bg-red-50 border-red-200 text-red-600' : ''}`}
                 >
-                  <Heart className={`mr-2 h-5 w-5 ${isWishlisted ? 'fill-current' : ''}`} />
-                  {isWishlisted ? 'Saved' : 'Save'}
+                  <Heart className={`mr-2 h-5 w-5 ${false ? 'fill-current' : ''}`} />
+                  Save
                 </Button>
                 <Button variant="outline">
                   <Share2 className="mr-2 h-5 w-5" />
@@ -362,12 +323,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               <div className="border-t border-gray-200 pt-8">
                 <h3 className="font-heading text-lg font-semibold text-primary mb-4">Features</h3>
                 <ul className="space-y-2">
-                  {product.features.map((feature, index) => (
-                    <li key={index} className="flex items-center gap-3">
-                      <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0"></div>
-                      <span className="font-paragraph text-secondary">{feature}</span>
-                    </li>
-                  ))}
+                  {/* Features data not available in the new product structure, so this will be empty */}
                 </ul>
               </div>
 
@@ -413,12 +369,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               <div className="bg-background rounded-2xl p-6">
                 <h3 className="font-heading text-xl font-semibold text-primary mb-4">Specifications</h3>
                 <dl className="space-y-3">
-                  {Object.entries(product.specifications).map(([key, value]) => (
-                    <div key={key} className="flex justify-between">
-                      <dt className="font-medium text-secondary capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}:</dt>
-                      <dd className="text-primary font-medium">{value}</dd>
-                    </div>
-                  ))}
+                  {/* Specifications data not available in the new product structure, so this will be empty */}
                 </dl>
               </div>
               <div className="bg-background rounded-2xl p-6">
@@ -449,35 +400,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {Object.values(products).filter(p => p.id !== product.id).map((relatedProduct) => (
-              <Link key={relatedProduct.id} href={`/product/${relatedProduct.id}`} className="group">
-                <div className="bg-background rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300">
-                  <div className="relative aspect-[4/5] overflow-hidden rounded-t-xl">
-                    <Image
-                      src={relatedProduct.images[0]}
-                      alt={relatedProduct.name}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  </div>
-                  <div className="p-4">
-                    <h3 className="font-heading text-lg font-semibold text-primary mb-2 group-hover:text-secondary transition-colors">
-                      {relatedProduct.name}
-                    </h3>
-                    <div className="flex items-center justify-between">
-                      <span className="font-heading text-xl font-bold text-primary">
-                        R{relatedProduct.price.toLocaleString()}
-                      </span>
-                      <div className="flex">
-                        {[...Array(5)].map((_, i) => (
-                          <Star key={i} className={`w-3 h-3 ${i < Math.floor(relatedProduct.rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            ))}
+            {/* Related products data not available in the new product structure, so this will be empty */}
           </div>
         </div>
       </section>
