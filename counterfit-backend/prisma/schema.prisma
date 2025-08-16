@@ -34,7 +34,10 @@ model Product {
   shortDescription String?
   price           Float
   comparePrice    Float?
+  costPrice       Float?
   stockCode       String?
+  sku             String?
+  barcode         String?
   category        String
   status          String   @default("draft")
   featured        Boolean  @default(false)
@@ -44,6 +47,8 @@ model Product {
   sizes           Json     // Array of size objects
   colors          Json     // Array of color objects
   inventory       Json     // Inventory object
+  shipping        Json?    // Shipping object
+  seo             Json?    // SEO object
   totalStock      Int?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
