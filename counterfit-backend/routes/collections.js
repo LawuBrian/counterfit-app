@@ -8,9 +8,19 @@ const router = express.Router();
 // @access  Public
 router.get('/', async (req, res) => {
   try {
+    const { status, limit } = req.query;
+    
+    let where = {};
+    
+    // If status is specified, filter by it, otherwise show all
+    if (status) {
+      where.status = status;
+    }
+    
     const collections = await prisma.collection.findMany({
-      where: { status: 'active' },
-      orderBy: { createdAt: 'desc' }
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: limit ? parseInt(limit) : undefined
     });
 
     res.json({
@@ -33,8 +43,8 @@ router.get('/:slug', async (req, res) => {
   try {
     const collection = await prisma.collection.findFirst({
       where: { 
-        slug: req.params.slug, 
-        status: 'active' 
+        slug: req.params.slug
+        // Removed status filter so draft collections can be viewed
       }
     });
 
