@@ -1,0 +1,5 @@
+[33mcae79b9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Temporarily simplify admin API routes to get build working
+[33m21df544[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Fix recentOrders type definition in account page
+[33m9944f34[m Fix createdAt property error in account page
+[33mc7a1518[m Fix products page params type for Next.js 15 compatibility
+[33m886d2d4[m Fix products slug route params type for Next.js 15
