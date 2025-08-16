@@ -11,17 +11,8 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadsDir);
-  },
-  filename: (req, file, cb) => {
-    // Generate unique filename
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'product-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Configure multer for file uploads with optimizations
+const storage = multer.memoryStorage(); // Use memory storage for faster processing
 
 const fileFilter = (req, file, cb) => {
   // Check if file is an image
@@ -36,14 +27,29 @@ const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB limit
+    fileSize: 5 * 1024 * 1024, // Reduced to 5MB for faster uploads
+    files: 10 // Maximum 10 files
   }
 });
+
+// Helper function to save file to disk
+const saveFileToDisk = (file, filename) => {
+  return new Promise((resolve, reject) => {
+    const filePath = path.join(uploadsDir, filename);
+    const writeStream = fs.createWriteStream(filePath);
+    
+    writeStream.on('finish', () => resolve(filePath));
+    writeStream.on('error', reject);
+    
+    writeStream.write(file.buffer);
+    writeStream.end();
+  });
+};
 
 // @desc    Upload single product image
 // @route   POST /api/upload/product-image
 // @access  Public (for now - TODO: Add proper auth)
-router.post('/product-image', upload.single('image'), (req, res) => {
+router.post('/product-image', upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -52,15 +58,22 @@ router.post('/product-image', upload.single('image'), (req, res) => {
       });
     }
 
-    // Return the file URL
-    const fileUrl = `/uploads/products/${req.file.filename}`;
+    // Generate unique filename
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const filename = 'product-' + uniqueSuffix + path.extname(req.file.originalname);
+    
+    // Save file to disk
+    await saveFileToDisk(req.file, filename);
+
+    // Return the file URL immediately
+    const fileUrl = `/uploads/products/${filename}`;
     
     res.json({
       success: true,
       message: 'Image uploaded successfully',
       data: {
         url: fileUrl,
-        filename: req.file.filename,
+        filename: filename,
         originalName: req.file.originalname,
         size: req.file.size
       }
@@ -77,7 +90,7 @@ router.post('/product-image', upload.single('image'), (req, res) => {
 // @desc    Upload multiple product images
 // @route   POST /api/upload/product-images
 // @access  Public (for now - TODO: Add proper auth)
-router.post('/product-images', upload.array('images', 10), (req, res) => {
+router.post('/product-images', upload.array('images', 10), async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({
@@ -86,13 +99,22 @@ router.post('/product-images', upload.array('images', 10), (req, res) => {
       });
     }
 
-    // Return array of file URLs
-    const uploadedFiles = req.files.map(file => ({
-      url: `/uploads/products/${file.filename}`,
-      filename: file.filename,
-      originalName: file.originalname,
-      size: file.size
-    }));
+    // Process files in parallel for faster uploads
+    const uploadPromises = req.files.map(async (file) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const filename = 'product-' + uniqueSuffix + path.extname(file.originalname);
+      
+      await saveFileToDisk(file, filename);
+      
+      return {
+        url: `/uploads/products/${filename}`,
+        filename: filename,
+        originalName: file.originalname,
+        size: file.size
+      };
+    });
+
+    const uploadedFiles = await Promise.all(uploadPromises);
     
     res.json({
       success: true,
@@ -146,7 +168,7 @@ router.use((error, req, res, next) => {
     if (error.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({
         success: false,
-        message: 'File too large. Maximum size is 10MB.'
+        message: 'File too large. Maximum size is 5MB.'
       });
     }
     if (error.code === 'LIMIT_FILE_COUNT') {
