@@ -1,5 +1,5 @@
 const express = require('express');
-const User = require('../models/User');
+const prisma = require('../lib/prisma');
 const { protect } = require('../middleware/auth');
 const router = express.Router();
 
@@ -8,25 +8,40 @@ const router = express.Router();
 // @access  Private
 router.post('/wishlist/:productId', protect, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-    const productId = req.params.productId;
-
-    const isInWishlist = user.wishlist.includes(productId);
-
-    if (isInWishlist) {
-      // Remove from wishlist
-      user.wishlist = user.wishlist.filter(id => id.toString() !== productId);
-    } else {
-      // Add to wishlist
-      user.wishlist.push(productId);
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id }
+    });
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
     }
 
-    await user.save();
+    const productId = req.params.productId;
+    const currentWishlist = user.wishlist || [];
+
+    const isInWishlist = currentWishlist.includes(productId);
+
+    let newWishlist;
+    if (isInWishlist) {
+      // Remove from wishlist
+      newWishlist = currentWishlist.filter(id => id !== productId);
+    } else {
+      // Add to wishlist
+      newWishlist = [...currentWishlist, productId];
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { wishlist: newWishlist }
+    });
 
     res.json({
       success: true,
       message: isInWishlist ? 'Removed from wishlist' : 'Added to wishlist',
-      wishlist: user.wishlist
+      wishlist: updatedUser.wishlist
     });
   } catch (error) {
     console.error('Wishlist error:', error);
@@ -42,9 +57,17 @@ router.post('/wishlist/:productId', protect, async (req, res) => {
 // @access  Private
 router.get('/wishlist', protect, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id)
-      .populate('wishlist', 'name slug price images category')
-      .lean();
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { wishlist: true }
+    });
+
+    if (!user || !user.wishlist) {
+      return res.json({
+        success: true,
+        data: []
+      });
+    }
 
     res.json({
       success: true,

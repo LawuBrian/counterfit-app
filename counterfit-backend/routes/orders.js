@@ -1,5 +1,5 @@
 const express = require('express');
-const Order = require('../models/Order');
+const prisma = require('../lib/prisma');
 const { protect, adminOnly } = require('../middleware/auth');
 const router = express.Router();
 
@@ -8,7 +8,9 @@ const router = express.Router();
 // @access  Public
 router.post('/', async (req, res) => {
   try {
-    const order = await Order.create(req.body);
+    const order = await prisma.order.create({
+      data: req.body
+    });
 
     res.status(201).json({
       success: true,
@@ -29,10 +31,10 @@ router.post('/', async (req, res) => {
 // @access  Private
 router.get('/my', protect, async (req, res) => {
   try {
-    const orders = await Order.find({ user: req.user.id })
-      .sort('-createdAt')
-      .populate('items.product', 'name slug images')
-      .lean();
+    const orders = await prisma.order.findMany({
+      where: { userId: req.user.id },
+      orderBy: { createdAt: 'desc' }
+    });
 
     res.json({
       success: true,
@@ -52,16 +54,16 @@ router.get('/my', protect, async (req, res) => {
 // @access  Private
 router.get('/:id', protect, async (req, res) => {
   try {
-    let query = { _id: req.params.id };
+    let where = { id: req.params.id };
     
     // Non-admin users can only see their own orders
-    if (req.user.role !== 'admin') {
-      query.user = req.user.id;
+    if (req.user.role !== 'ADMIN') {
+      where.userId = req.user.id;
     }
 
-    const order = await Order.findOne(query)
-      .populate('items.product', 'name slug images')
-      .lean();
+    const order = await prisma.order.findUnique({
+      where
+    });
 
     if (!order) {
       return res.status(404).json({
