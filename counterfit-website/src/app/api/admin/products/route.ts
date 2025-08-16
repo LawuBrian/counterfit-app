@@ -25,6 +25,14 @@ export async function POST(request: NextRequest) {
     const productData = await request.json()
     console.log('Product data received:', productData)
     
+    // Generate slug from product name if not provided
+    if (!productData.slug) {
+      productData.slug = productData.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+    }
+    
     // Call the backend API to create the product
     const response = await fetch(`${BACKEND_URL}/api/admin/products`, {
       method: 'POST',
