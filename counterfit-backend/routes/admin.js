@@ -1,8 +1,5 @@
 const express = require('express');
-const User = require('../models/User');
-const Product = require('../models/Product');
-const Order = require('../models/Order');
-const Collection = require('../models/Collection');
+const prisma = require('../lib/prisma');
 const { protect, adminOnly } = require('../middleware/auth');
 const router = express.Router();
 
@@ -22,20 +19,28 @@ router.get('/stats', async (req, res) => {
       recentOrders,
       topProducts
     ] = await Promise.all([
-      User.countDocuments({ isActive: true }),
-      Product.countDocuments({ status: 'active' }),
-      Order.countDocuments(),
-      Collection.countDocuments({ status: 'active' }),
-      Order.find().sort('-createdAt').limit(5).populate('user', 'firstName lastName email'),
-      Product.find({ status: 'active' }).sort('-salesCount').limit(5)
+      prisma.user.count({ where: { isActive: true } }),
+      prisma.product.count({ where: { status: 'active' } }),
+      prisma.order.count(),
+      prisma.collection.count({ where: { status: 'active' } }),
+      prisma.order.findMany({
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        include: { user: { select: { firstName: true, lastName: true, email: true } } }
+      }),
+      prisma.product.findMany({
+        where: { status: 'active' },
+        take: 5,
+        orderBy: { salesCount: 'desc' }
+      })
     ]);
 
     // Calculate total revenue
-    const revenueResult = await Order.aggregate([
-      { $match: { 'payment.status': 'paid' } },
-      { $group: { _id: null, total: { $sum: '$total' } } }
-    ]);
-    const totalRevenue = revenueResult[0]?.total || 0;
+    const revenueResult = await prisma.order.aggregate({
+      where: { 'payment.status': 'paid' },
+      _sum: { total: true }
+    });
+    const totalRevenue = revenueResult._sum.total || 0;
 
     res.json({
       success: true,
@@ -67,19 +72,20 @@ router.get('/orders', async (req, res) => {
   try {
     const { page = 1, limit = 20, status } = req.query;
     
-    let query = {};
+    let where = {};
     if (status) {
-      query.status = status;
+      where.status = status;
     }
 
-    const orders = await Order.find(query)
-      .populate('user', 'firstName lastName email')
-      .sort('-createdAt')
-      .limit(parseInt(limit))
-      .skip((parseInt(page) - 1) * parseInt(limit))
-      .lean();
+    const orders = await prisma.order.findMany({
+      where,
+      include: { user: { select: { firstName: true, lastName: true, email: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: parseInt(limit),
+      skip: (parseInt(page) - 1) * parseInt(limit)
+    });
 
-    const total = await Order.countDocuments(query);
+    const total = await prisma.order.count({ where });
 
     res.json({
       success: true,
@@ -107,11 +113,11 @@ router.put('/orders/:id/status', async (req, res) => {
   try {
     const { status } = req.body;
     
-    const order = await Order.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { new: true }
-    );
+    const order = await prisma.order.update({
+      where: { id: req.params.id },
+      data: { status },
+      include: { user: true }
+    });
 
     if (!order) {
       return res.status(404).json({
@@ -141,14 +147,20 @@ router.get('/users', async (req, res) => {
   try {
     const { page = 1, limit = 20 } = req.query;
 
-    const users = await User.find()
-      .select('-password')
-      .sort('-createdAt')
-      .limit(parseInt(limit))
-      .skip((parseInt(page) - 1) * parseInt(limit))
-      .lean();
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: parseInt(limit),
+      skip: (parseInt(page) - 1) * parseInt(limit)
+    });
 
-    const total = await User.countDocuments();
+    const total = await prisma.user.count();
 
     res.json({
       success: true,
@@ -174,7 +186,9 @@ router.get('/users', async (req, res) => {
 // @access  Private/Admin
 router.delete('/products/:id', async (req, res) => {
   try {
-    const product = await Product.findByIdAndDelete(req.params.id);
+    const product = await prisma.product.delete({
+      where: { id: req.params.id }
+    });
 
     if (!product) {
       return res.status(404).json({
@@ -189,7 +203,7 @@ router.delete('/products/:id', async (req, res) => {
     });
   } catch (error) {
     console.error('Delete product error:', error);
-    if (error.name === 'CastError') {
+    if (error.code === 'P2025') { // Prisma's not found error code
       return res.status(404).json({
         success: false,
         message: 'Product not found'
@@ -207,11 +221,11 @@ router.delete('/products/:id', async (req, res) => {
 // @access  Private/Admin
 router.put('/products/:id', async (req, res) => {
   try {
-    const product = await Product.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
+    const product = await prisma.product.update({
+      where: { id: req.params.id },
+      data: req.body,
+      include: { collections: true }
+    });
 
     if (!product) {
       return res.status(404).json({
@@ -227,17 +241,17 @@ router.put('/products/:id', async (req, res) => {
     });
   } catch (error) {
     console.error('Update product error:', error);
-    if (error.name === 'CastError') {
+    if (error.code === 'P2025') { // Prisma's not found error code
       return res.status(404).json({
         success: false,
         message: 'Product not found'
       });
     }
-    if (error.code === 11000) {
+    if (error.code === 'P2002') { // Prisma's unique constraint error code
       let message = 'Duplicate field error';
-      if (error.keyPattern?.sku) message = 'Product with this SKU already exists';
-      else if (error.keyPattern?.barcode) message = 'Product with this barcode already exists';
-      else if (error.keyPattern?.stockCode) message = 'Product with this stock code already exists';
+      if (error.meta?.target?.includes('sku')) message = 'Product with this SKU already exists';
+      else if (error.meta?.target?.includes('barcode')) message = 'Product with this barcode already exists';
+      else if (error.meta?.target?.includes('stockCode')) message = 'Product with this stock code already exists';
       
       return res.status(400).json({
         success: false,
@@ -256,7 +270,9 @@ router.put('/products/:id', async (req, res) => {
 // @access  Public (for now - TODO: Add proper auth)
 router.post('/products', async (req, res) => {
   try {
-    const product = await Product.create(req.body);
+    const product = await prisma.product.create({
+      data: req.body
+    });
 
     res.status(201).json({
       success: true,
@@ -265,11 +281,11 @@ router.post('/products', async (req, res) => {
     });
   } catch (error) {
     console.error('Create product error:', error);
-    if (error.code === 11000) {
+    if (error.code === 'P2002') { // Prisma's unique constraint error code
       let message = 'Duplicate field error';
-      if (error.keyPattern?.sku) message = 'Product with this SKU already exists';
-      else if (error.keyPattern?.barcode) message = 'Product with this barcode already exists';
-      else if (error.keyPattern?.stockCode) message = 'Product with this stock code already exists';
+      if (error.meta?.target?.includes('sku')) message = 'Product with this SKU already exists';
+      else if (error.meta?.target?.includes('barcode')) message = 'Product with this barcode already exists';
+      else if (error.meta?.target?.includes('stockCode')) message = 'Product with this stock code already exists';
       
       return res.status(400).json({
         success: false,
@@ -298,36 +314,37 @@ router.get('/products', async (req, res) => {
       isAvailable,
       stockCode,
       search,
-      sort = '-createdAt'
+      sort = 'createdAt'
     } = req.query;
     
-    let query = {};
+    let where = {};
     
     // Apply filters
-    if (category) query.category = category;
-    if (status) query.status = status;
-    if (featured !== undefined) query.featured = featured === 'true';
-    if (isNew !== undefined) query.isNew = isNew === 'true';
-    if (isAvailable !== undefined) query.isAvailable = isAvailable === 'true';
-    if (stockCode) query.stockCode = new RegExp(stockCode, 'i');
+    if (category) where.category = category;
+    if (status) where.status = status;
+    if (featured !== undefined) where.featured = featured === 'true';
+    if (isNew !== undefined) where.isNew = isNew === 'true';
+    if (isAvailable !== undefined) where.isAvailable = isAvailable === 'true';
+    if (stockCode) where.stockCode = { contains: stockCode, mode: 'insensitive' };
     
     // Text search across name and description
     if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { stockCode: { $regex: search, $options: 'i' } }
+      where.$or = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { stockCode: { contains: search, mode: 'insensitive' } }
       ];
     }
 
-    const products = await Product.find(query)
-      .populate('collections', 'name slug')
-      .sort(sort)
-      .limit(parseInt(limit))
-      .skip((parseInt(page) - 1) * parseInt(limit))
-      .lean();
+    const products = await prisma.product.findMany({
+      where,
+      include: { collections: true },
+      orderBy: sort === 'salesCount' ? { salesCount: 'desc' } : { [sort]: 'desc' },
+      take: parseInt(limit),
+      skip: (parseInt(page) - 1) * parseInt(limit)
+    });
 
-    const total = await Product.countDocuments(query);
+    const total = await prisma.product.count({ where });
 
     res.json({
       success: true,
@@ -353,8 +370,10 @@ router.get('/products', async (req, res) => {
 // @access  Private/Admin
 router.get('/products/:id', async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id)
-      .populate('collections', 'name slug');
+    const product = await prisma.product.findUnique({
+      where: { id: req.params.id },
+      include: { collections: true }
+    });
 
     if (!product) {
       return res.status(404).json({
@@ -369,7 +388,7 @@ router.get('/products/:id', async (req, res) => {
     });
   } catch (error) {
     console.error('Get admin product error:', error);
-    if (error.name === 'CastError') {
+    if (error.code === 'P2025') { // Prisma's not found error code
       return res.status(404).json({
         success: false,
         message: 'Product not found'
@@ -389,7 +408,7 @@ router.put('/products/:id/stock', async (req, res) => {
   try {
     const { type, identifier, stock } = req.body; // type: 'size'|'color', identifier: size name or color name
     
-    const product = await Product.findById(req.params.id);
+    const product = await prisma.product.findUnique({ where: { id: req.params.id } });
     if (!product) {
       return res.status(404).json({
         success: false,
@@ -411,7 +430,13 @@ router.put('/products/:id/stock', async (req, res) => {
       }
     }
 
-    await product.save();
+    await prisma.product.update({
+      where: { id: req.params.id },
+      data: {
+        sizes: product.sizes,
+        colors: product.colors
+      }
+    });
 
     res.json({
       success: true,
@@ -434,15 +459,15 @@ router.put('/products/bulk/status', async (req, res) => {
   try {
     const { productIds, status } = req.body;
     
-    const result = await Product.updateMany(
-      { _id: { $in: productIds } },
-      { status }
-    );
+    const result = await prisma.product.updateMany({
+      where: { id: { in: productIds } },
+      data: { status }
+    });
 
     res.json({
       success: true,
-      message: `Updated ${result.modifiedCount} products`,
-      data: { modifiedCount: result.modifiedCount }
+      message: `Updated ${result.count} products`,
+      data: { modifiedCount: result.count }
     });
   } catch (error) {
     console.error('Bulk update products error:', error);
@@ -468,26 +493,30 @@ router.get('/products/analytics', async (req, res) => {
       topSellingProducts,
       categoryStats
     ] = await Promise.all([
-      Product.countDocuments(),
-      Product.countDocuments({ status: 'active' }),
-      Product.countDocuments({ status: 'draft' }),
-      Product.countDocuments({ featured: true }),
-      Product.countDocuments({ isNew: true }),
-      Product.countDocuments({ 
-        $or: [
-          { 'inventory.quantity': { $lte: 10 } },
-          { 'sizes.stock': { $lte: 10 } },
-          { 'colors.stock': { $lte: 10 } }
-        ]
+      prisma.product.count(),
+      prisma.product.count({ where: { status: 'active' } }),
+      prisma.product.count({ where: { status: 'draft' } }),
+      prisma.product.count({ where: { featured: true } }),
+      prisma.product.count({ where: { isNew: true } }),
+      prisma.product.count({ 
+        where: { 
+          OR: [
+            { 'inventory.quantity': { lte: 10 } },
+            { 'sizes.stock': { lte: 10 } },
+            { 'colors.stock': { lte: 10 } }
+          ]
+        }
       }),
-      Product.find({ status: 'active' })
-        .sort('-salesCount')
-        .limit(10)
-        .select('name salesCount price primaryImage'),
-      Product.aggregate([
-        { $group: { _id: '$category', count: { $sum: 1 } } },
-        { $sort: { count: -1 } }
-      ])
+      prisma.product.findMany({
+        where: { status: 'active' },
+        take: 10,
+        select: { name: true, salesCount: true, price: true, primaryImage: true }
+      }),
+      prisma.product.groupBy({
+        by: 'category',
+        _count: { _all: true },
+        orderBy: { _count: { _all: 'desc' } }
+      })
     ]);
 
     res.json({
@@ -525,30 +554,31 @@ router.get('/collections', async (req, res) => {
       featured,
       status,
       search,
-      sort = '-createdAt'
+      sort = 'createdAt'
     } = req.query;
     
-    let query = {};
+    let where = {};
     
     // Apply filters
-    if (featured !== undefined) query.featured = featured === 'true';
-    if (status) query.status = status;
+    if (featured !== undefined) where.featured = featured === 'true';
+    if (status) where.status = status;
     
     // Text search across name and description
     if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
+      where.$or = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } }
       ];
     }
 
-    const collections = await Collection.find(query)
-      .sort(sort)
-      .limit(parseInt(limit))
-      .skip((parseInt(page) - 1) * parseInt(limit))
-      .lean();
+    const collections = await prisma.collection.findMany({
+      where,
+      orderBy: sort === 'createdAt' ? { createdAt: 'desc' } : { [sort]: 'desc' },
+      take: parseInt(limit),
+      skip: (parseInt(page) - 1) * parseInt(limit)
+    });
 
-    const total = await Collection.countDocuments(query);
+    const total = await prisma.collection.count({ where });
 
     res.json({
       success: true,
@@ -574,7 +604,9 @@ router.get('/collections', async (req, res) => {
 // @access  Private/Admin
 router.get('/collections/:id', async (req, res) => {
   try {
-    const collection = await Collection.findById(req.params.id);
+    const collection = await prisma.collection.findUnique({
+      where: { id: req.params.id }
+    });
 
     if (!collection) {
       return res.status(404).json({
@@ -589,7 +621,7 @@ router.get('/collections/:id', async (req, res) => {
     });
   } catch (error) {
     console.error('Get admin collection error:', error);
-    if (error.name === 'CastError') {
+    if (error.code === 'P2025') { // Prisma's not found error code
       return res.status(404).json({
         success: false,
         message: 'Collection not found'
@@ -607,7 +639,9 @@ router.get('/collections/:id', async (req, res) => {
 // @access  Private/Admin
 router.post('/collections', async (req, res) => {
   try {
-    const collection = await Collection.create(req.body);
+    const collection = await prisma.collection.create({
+      data: req.body
+    });
 
     res.status(201).json({
       success: true,
@@ -616,7 +650,7 @@ router.post('/collections', async (req, res) => {
     });
   } catch (error) {
     console.error('Create collection error:', error);
-    if (error.code === 11000) {
+    if (error.code === 'P2002') { // Prisma's unique constraint error code
       return res.status(400).json({
         success: false,
         message: 'Collection with this name already exists'
@@ -634,11 +668,11 @@ router.post('/collections', async (req, res) => {
 // @access  Private/Admin
 router.put('/collections/:id', async (req, res) => {
   try {
-    const collection = await Collection.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
+    const collection = await prisma.collection.update({
+      where: { id: req.params.id },
+      data: req.body,
+      include: { products: true }
+    });
 
     if (!collection) {
       return res.status(404).json({
@@ -654,7 +688,7 @@ router.put('/collections/:id', async (req, res) => {
     });
   } catch (error) {
     console.error('Update collection error:', error);
-    if (error.name === 'CastError') {
+    if (error.code === 'P2025') { // Prisma's not found error code
       return res.status(404).json({
         success: false,
         message: 'Collection not found'
@@ -672,7 +706,9 @@ router.put('/collections/:id', async (req, res) => {
 // @access  Private/Admin
 router.delete('/collections/:id', async (req, res) => {
   try {
-    const collection = await Collection.findByIdAndDelete(req.params.id);
+    const collection = await prisma.collection.delete({
+      where: { id: req.params.id }
+    });
 
     if (!collection) {
       return res.status(404).json({
@@ -687,7 +723,7 @@ router.delete('/collections/:id', async (req, res) => {
     });
   } catch (error) {
     console.error('Delete collection error:', error);
-    if (error.name === 'CastError') {
+    if (error.code === 'P2025') { // Prisma's not found error code
       return res.status(404).json({
         success: false,
         message: 'Collection not found'
