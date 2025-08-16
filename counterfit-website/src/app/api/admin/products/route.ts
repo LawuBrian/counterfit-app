@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.accessToken}`
+        'Authorization': `Bearer ${session.user.accessToken}`
       },
       body: JSON.stringify(productData)
     })
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
     // Call the backend API to get products
     const response = await fetch(`${BACKEND_URL}/api/products${queryString ? `?${queryString}` : ''}`, {
       headers: {
-        'Authorization': `Bearer ${session.accessToken}`
+        'Authorization': `Bearer ${session.user.accessToken}`
       }
     })
     

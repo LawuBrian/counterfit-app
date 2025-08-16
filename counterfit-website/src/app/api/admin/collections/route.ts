@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.accessToken}`
+        'Authorization': `Bearer ${session.user.accessToken}`
       },
       body: JSON.stringify(collectionData)
     })
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
     // Call the backend API to get collections
     const response = await fetch(`${BACKEND_URL}/api/admin/collections${queryString ? `?${queryString}` : ''}`, {
       headers: {
-        'Authorization': `Bearer ${session.accessToken}`
+        'Authorization': `Bearer ${session.user.accessToken}`
       }
     })
     
