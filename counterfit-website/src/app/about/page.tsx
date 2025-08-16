@@ -6,12 +6,12 @@ import { ArrowRight, Target, Award, Users, Globe } from 'lucide-react'
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-background">
-      {/* Hero Section - Matching scraped HTML exactly */}
+      {/* Hero Section - Updated with group image and simplified text */}
       <section className="relative py-20 lg:py-32 overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img
-            src="/1d66cc_dc09395d524b42e2a9c625edaf733302_mv2.png"
-            alt="About Hero"
+            src="/1d66cc_02957a89db7f40e2a786b097e46c6c79_mv2.png"
+            alt="COUNTERFIT Team - Luxury Streetwear Excellence"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-primary/70"></div>
@@ -21,11 +21,11 @@ export default function AboutPage() {
             <div className="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 shadow hover:bg-primary/80 mb-6 bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30">
               Our Story
             </div>
-            <h1 className="font-heading text-5xl lg:text-7xl font-bold text-primary-foreground mb-6 tracking-tight">
-              Redefining streetwear with a blend of luxury, innovation, and timeless design
+            <h1 className="font-heading text-4xl lg:text-6xl font-bold text-primary-foreground mb-6 tracking-tight leading-tight">
+              Luxury Streetwear Redefined
             </h1>
-            <p className="font-paragraph text-lg md:text-xl text-primary-foreground/90 leading-relaxed max-w-3xl">
-              Counterfit represents the evolution of streetwear—where luxury meets innovation and timeless design. Founded by visionary Paki and Jareed, our brand redefines what premium streetwear can be, creating pieces that transcend trends and establish new standards of excellence in contemporary fashion.
+            <p className="font-paragraph text-base lg:text-xl text-primary-foreground/90 leading-relaxed max-w-3xl">
+              Founded by Paki and Jareed, Counterfit creates premium streetwear that blends luxury with innovation. Every piece tells a story of craftsmanship and timeless design.
             </p>
           </div>
         </div>
@@ -50,6 +50,21 @@ export default function AboutPage() {
         <div className="max-w-screen-2xl mx-auto px-6 lg:px-8 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="font-heading text-4xl lg:text-5xl font-bold text-primary mb-8">Paki and Jareed's Vision</h2>
+            
+            {/* New Product Showcase Image */}
+            <div className="mb-12">
+              <div className="rounded-2xl overflow-hidden shadow-2xl max-w-2xl mx-auto">
+                <img
+                  src="/1d66cc_02957a89db7f40e2a786b097e46c6c79_mv2.png"
+                  alt="COUNTERFIT Premium Fleece Jacket - Luxury Streetwear Excellence"
+                  className="w-full h-auto object-cover"
+                />
+              </div>
+              <p className="text-sm text-secondary/70 mt-3 italic">
+                Premium COUNTERFIT fleece jacket - embodying luxury, innovation, and timeless design
+              </p>
+            </div>
+            
             <p className="font-paragraph text-xl text-secondary leading-relaxed mb-8">
               "Redefining streetwear with a blend of luxury, innovation, and timeless design" isn't just our tagline— it's the foundation of everything we create. Our mission is to bridge the gap between high fashion and street culture, crafting pieces that honor both heritage and future possibilities.
             </p>
