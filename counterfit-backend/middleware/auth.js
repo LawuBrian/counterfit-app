@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const prisma = require('../lib/prisma');
 
 // Protect routes - require authentication
 exports.protect = async (req, res, next) => {
@@ -24,19 +24,15 @@ exports.protect = async (req, res, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
       // Get user from token
-      req.user = await User.findById(decoded.id).select('-password');
+      req.user = await prisma.user.findUnique({
+        where: { id: decoded.id },
+        select: { id: true, email: true, firstName: true, lastName: true, role: true, avatar: true }
+      });
 
       if (!req.user) {
         return res.status(401).json({
           success: false,
           message: 'User not found'
-        });
-      }
-
-      if (!req.user.isActive) {
-        return res.status(401).json({
-          success: false,
-          message: 'Account has been deactivated'
         });
       }
 
@@ -57,7 +53,7 @@ exports.protect = async (req, res, next) => {
 
 // Admin only access
 exports.adminOnly = (req, res, next) => {
-  if (req.user && req.user.role === 'admin') {
+  if (req.user && req.user.role === 'ADMIN') {
     next();
   } else {
     res.status(403).json({
@@ -79,7 +75,10 @@ exports.optionalAuth = async (req, res, next) => {
     if (token) {
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = await User.findById(decoded.id).select('-password');
+        req.user = await prisma.user.findUnique({
+          where: { id: decoded.id },
+          select: { id: true, email: true, firstName: true, lastName: true, role: true, avatar: true }
+        });
       } catch (err) {
         // Invalid token, but continue without user
         req.user = null;
