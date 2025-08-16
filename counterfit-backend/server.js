@@ -61,6 +61,16 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/upload', require('./routes/upload'));
 
+// Root route for health checks
+app.get('/', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
+    message: 'Counterfit Backend API',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({
