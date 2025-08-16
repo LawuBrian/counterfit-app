@@ -4,7 +4,7 @@ const { protect, adminOnly } = require('../middleware/auth');
 const router = express.Router();
 
 // Apply admin protection to all routes
-// router.use(protect, adminOnly); // TODO: Re-enable after fixing auth flow
+router.use(protect, adminOnly); // Re-enabled after fixing auth flow
 
 // @desc    Get dashboard stats
 // @route   GET /api/admin/stats

@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     console.log('Product data received:', productData)
     
     // Call the backend API to create the product
-    const response = await fetch(`${BACKEND_URL}/api/products`, {
+    const response = await fetch(`${BACKEND_URL}/api/admin/products`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
