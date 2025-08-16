@@ -5,11 +5,16 @@ const router = express.Router();
 
 // @desc    Create new order
 // @route   POST /api/orders
-// @access  Public
-router.post('/', async (req, res) => {
+// @access  Private
+router.post('/', protect, async (req, res) => {
   try {
+    const orderData = {
+      ...req.body,
+      userId: req.user.id
+    }
+
     const order = await prisma.order.create({
-      data: req.body
+      data: orderData
     });
 
     res.status(201).json({
@@ -78,6 +83,38 @@ router.get('/:id', protect, async (req, res) => {
     });
   } catch (error) {
     console.error('Get order error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// @desc    Update order status (Admin only)
+// @route   PUT /api/orders/:id/status
+// @access  Private/Admin
+router.put('/:id/status', protect, adminOnly, async (req, res) => {
+  try {
+    const { status, paymentStatus, trackingNumber, carrier, estimatedDelivery } = req.body;
+
+    const order = await prisma.order.update({
+      where: { id: req.params.id },
+      data: {
+        status,
+        paymentStatus,
+        trackingNumber,
+        carrier,
+        estimatedDelivery: estimatedDelivery ? new Date(estimatedDelivery) : undefined
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Order status updated successfully',
+      data: order
+    });
+  } catch (error) {
+    console.error('Update order status error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'

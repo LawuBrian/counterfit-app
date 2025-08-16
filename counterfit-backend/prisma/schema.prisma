@@ -70,9 +70,19 @@ model Order {
   id          String   @id @default(cuid())
   userId      String
   user        User     @relation(fields: [userId], references: [id])
+  orderNumber String   @unique // e.g., "ORD-202412-0001"
   items       Json     // Array of order items
   totalAmount Float
-  status      String   @default("pending")
+  status      String   @default("pending") // pending, confirmed, processing, shipped, delivered, cancelled
+  paymentStatus String @default("pending") // pending, paid, failed, refunded
+  paymentMethod String? // yoco, card, etc.
+  paymentId   String?  // Yoco payment ID
+  trackingNumber String? // Unique tracking number
+  carrier     String?  // Delivery company (PostNet, etc.)
+  estimatedDelivery DateTime?
+  shippingAddress Json // Shipping address object
+  billingAddress Json? // Billing address object
+  notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
