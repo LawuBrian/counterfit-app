@@ -10,6 +10,9 @@ export async function POST(request: NextRequest) {
     
     // Get session for authentication
     const session = await getServerSession(authOptions)
+    console.log('🔍 Session object:', JSON.stringify(session, null, 2))
+    console.log('🔍 Session user:', session?.user)
+    console.log('🔍 Access token:', session?.accessToken)
     
     // Check if user is authenticated and is admin
     if (!session || session.user?.role !== 'ADMIN') {
