@@ -13,6 +13,11 @@ interface CollectionFormData {
   image: string
   featured: boolean
   status: 'active' | 'draft' | 'archived'
+  collectionType: 'singular' | 'combo' | 'duo' | 'trio' | 'mixed'
+  basePrice: number
+  allowCustomSelection: boolean
+  maxSelections?: number
+  productCategories: string[]
 }
 
 const initialFormData: CollectionFormData = {
@@ -20,7 +25,12 @@ const initialFormData: CollectionFormData = {
   description: '',
   image: '',
   featured: false,
-  status: 'draft'
+  status: 'draft',
+  collectionType: 'singular',
+  basePrice: 0,
+  allowCustomSelection: false,
+  maxSelections: 1,
+  productCategories: []
 }
 
 export default function NewCollectionPage() {
@@ -179,6 +189,101 @@ export default function NewCollectionPage() {
                     placeholder="Describe this collection and what makes it special..."
                   />
                   {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
+                </div>
+              </div>
+            </div>
+
+            {/* Collection Configuration */}
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">Collection Configuration</h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Collection Type *
+                  </label>
+                  <select
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    value={formData.collectionType}
+                    onChange={(e) => handleInputChange('collectionType', e.target.value)}
+                  >
+                    <option value="singular">Singular Product</option>
+                    <option value="combo">Combo Package</option>
+                    <option value="duo">Duo Collection (2 items)</option>
+                    <option value="trio">Trio Collection (3 items)</option>
+                    <option value="mixed">Mixed Collection</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Base Price (R) *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    step="100"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    value={formData.basePrice}
+                    onChange={(e) => handleInputChange('basePrice', parseInt(e.target.value) || 0)}
+                    placeholder="1000"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={formData.allowCustomSelection}
+                      onChange={(e) => handleInputChange('allowCustomSelection', e.target.checked)}
+                      className="rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Allow Customer Customization</span>
+                  </label>
+                  <p className="text-xs text-gray-500">Customers can select specific products for this collection</p>
+                </div>
+
+                {formData.allowCustomSelection && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Maximum Selections
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                      value={formData.maxSelections || 1}
+                      onChange={(e) => handleInputChange('maxSelections', parseInt(e.target.value) || 1)}
+                      placeholder="2"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Product Categories
+                  </label>
+                  <div className="space-y-2">
+                    {['jackets', 'pants', 'accessories', 'collections'].map((category) => (
+                      <label key={category} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={formData.productCategories.includes(category)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              handleInputChange('productCategories', [...formData.productCategories, category])
+                            } else {
+                              handleInputChange('productCategories', formData.productCategories.filter(c => c !== category))
+                            }
+                          }}
+                          className="rounded border-gray-300 text-primary focus:ring-primary"
+                        />
+                        <span className="ml-2 text-sm text-gray-700 capitalize">{category}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>

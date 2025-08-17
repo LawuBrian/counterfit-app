@@ -27,6 +27,11 @@ interface Collection {
   image?: string
   featured: boolean
   status: 'active' | 'draft' | 'archived'
+  collectionType: 'singular' | 'combo' | 'duo' | 'trio' | 'mixed'
+  basePrice: number
+  allowCustomSelection: boolean
+  maxSelections?: number
+  productCategories: string[]
   createdAt: string
   updatedAt: string
 }
@@ -241,6 +246,9 @@ export default function AdminCollectionsPage() {
                     Collection
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Type & Price
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -288,6 +296,21 @@ export default function AdminCollectionsPage() {
                             }
                           </div>
                         </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm">
+                        <div className="font-medium text-gray-900 capitalize">
+                          {collection.collectionType || 'singular'}
+                        </div>
+                        <div className="text-gray-500">
+                          R{collection.basePrice?.toLocaleString() || '0'}
+                        </div>
+                        {collection.allowCustomSelection && (
+                          <div className="text-xs text-blue-600">
+                            Customizable
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

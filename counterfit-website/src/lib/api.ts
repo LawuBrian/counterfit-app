@@ -53,6 +53,14 @@ export interface Collection {
   image?: string
   featured: boolean
   status: 'active' | 'draft' | 'archived'
+  collectionType: 'singular' | 'combo' | 'duo' | 'trio' | 'mixed'
+  products: string[] // Array of product IDs included in collection
+  basePrice: number // Base price for the collection
+  customizationRules?: {
+    allowCustomSelection: boolean
+    maxSelections?: number
+    productCategories?: string[]
+  }
   createdAt: string
   updatedAt: string
 }
@@ -121,7 +129,7 @@ export async function getProducts(params?: {
 }
 
 export async function getFeaturedProducts(limit = 5, cacheBuster?: number): Promise<ApiResponse<Product[]>> {
-  const params = { featured: true, status: 'active', limit }
+  const params: any = { featured: true, status: 'active', limit }
   if (cacheBuster) {
     params._t = cacheBuster
   }
