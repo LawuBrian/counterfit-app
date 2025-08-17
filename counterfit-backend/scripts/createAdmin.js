@@ -39,9 +39,9 @@ async function createAdmin() {
     console.log('🚨 IMPORTANT: Change this password after first login!');
     console.log('');
     console.log('You can now:');
-    console.log('1. Go to your website: https://counterfit-app.vercel.app/auth/signin');
+    console.log('1. Go to your website: https://counterfit.co.za/auth/signin');
     console.log('2. Login with the credentials above');
-    console.log('3. Access admin panel: https://counterfit-app.vercel.app/admin');
+    console.log('3. Access admin panel: https://counterfit.co.za/admin');
 
   } catch (error) {
     console.error('Error creating admin user:', error);

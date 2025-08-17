@@ -281,15 +281,37 @@ router.post('/products', async (req, res) => {
   console.log('🖼️ Images in request:', req.body.images)
   
   try {
+    // Ensure required fields are present and handle defaults
     const productData = {
       ...req.body,
+      // Ensure these fields have default values if not provided
+      featured: req.body.featured || false,
+      isNew: req.body.isNew || false,
+      isAvailable: req.body.isAvailable !== undefined ? req.body.isAvailable : true,
+      totalStock: req.body.totalStock || 0,
+      salesCount: req.body.salesCount || 0,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
 
+    console.log('📝 Prepared product data:', JSON.stringify(productData, null, 2));
+
+    // Try to insert with explicit ID generation if needed
+    let insertData = productData;
+    
+    // If the database doesn't auto-generate UUIDs, generate one manually
+    if (!productData.id) {
+      const { v4: uuidv4 } = require('uuid');
+      insertData = {
+        ...productData,
+        id: uuidv4()
+      };
+      console.log('🔑 Generated UUID for product:', insertData.id);
+    }
+
     const { data: product, error } = await supabase
       .from('Product')
-      .insert(productData)
+      .insert(insertData)
       .select()
       .single();
 

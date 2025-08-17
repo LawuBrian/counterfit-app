@@ -94,8 +94,8 @@ router.post('/product-image', upload.single('image'), (req, res) => {
       path: req.file.path
     })
 
-    // Return the file URL immediately - use full backend URL
-    const backendUrl = process.env.BACKEND_URL || `https://${req.get('host')}`;
+    // Return the file URL immediately - use Render backend URL
+    const backendUrl = process.env.BACKEND_URL || 'https://counterfit-backend.onrender.com';
     const fileUrl = `${backendUrl}/uploads/products/${req.file.filename}`;
     console.log('🔗 Generated file URL:', fileUrl)
     
@@ -150,8 +150,8 @@ router.post('/product-images', upload.array('images', 10), (req, res) => {
       });
     }
 
-    // Return array of file URLs - use full backend URL
-    const backendUrl = process.env.BACKEND_URL || `https://${req.get('host')}`;
+    // Return array of file URLs - use Render backend URL
+    const backendUrl = process.env.BACKEND_URL || 'https://counterfit-backend.onrender.com';
     const uploadedFiles = req.files.map(file => ({
       url: `${backendUrl}/uploads/products/${file.filename}`,
       filename: file.filename,

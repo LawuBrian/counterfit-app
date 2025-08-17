@@ -94,7 +94,7 @@ npx prisma db seed
 
 #### Configure Webhooks
 1. Go to Stripe Dashboard → Developers → Webhooks
-2. Add endpoint: `https://yourdomain.com/api/webhooks/stripe`
+2. Add endpoint: `https://counterfit.co.za/api/webhooks/stripe`
 3. Select events: `checkout.session.completed`, `payment_intent.succeeded`
 4. Copy webhook secret to `STRIPE_WEBHOOK_SECRET`
 
@@ -119,7 +119,7 @@ stripe listen --forward-to localhost:3000/api/webhooks/stripe
 4. Create OAuth 2.0 credentials
 5. Add authorized redirect URIs:
    - `http://localhost:3000/api/auth/callback/google`
-   - `https://yourdomain.com/api/auth/callback/google`
+   - `https://counterfit.co.za/api/auth/callback/google`
 
 #### Create Admin User
 ```bash
