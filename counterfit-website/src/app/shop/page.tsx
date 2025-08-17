@@ -275,7 +275,7 @@ export default function ShopPage() {
                 ))
               ) : products.length > 0 ? (
                 products.map((product) => (
-                  <Link key={product._id} href={getProductUrl(product)} className="rounded-xl text-primary bg-background group overflow-hidden border-0 shadow-md hover:shadow-lg transition-all duration-300 block">
+                  <Link key={product.id} href={getProductUrl(product)} className="rounded-xl text-primary bg-background group overflow-hidden border-0 shadow-md hover:shadow-lg transition-all duration-300 block">
                     <div className="relative overflow-hidden aspect-[4/5]">
                       <Image
                         src={getImageUrl(product.images[0]?.url || '/placeholder-product.jpg')}
