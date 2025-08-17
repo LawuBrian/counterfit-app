@@ -179,7 +179,7 @@ export function formatPrice(price: number): string {
 }
 
 export function getProductUrl(product: Product): string {
-  return `/products/${product.slug || product._id}`
+  return `/product/${product._id}`
 }
 
 export function getCollectionUrl(collection: Collection): string {
