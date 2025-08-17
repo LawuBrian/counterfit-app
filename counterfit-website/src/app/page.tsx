@@ -8,10 +8,6 @@ import NewsletterSignup from '@/components/NewsletterSignup'
 import { getFeaturedProducts, getImageUrl, formatPrice, getProductUrl, type Product } from '@/lib/api'
 import { useState, useEffect } from 'react'
 
-// Force dynamic rendering and prevent caching
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
-
 export default function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
