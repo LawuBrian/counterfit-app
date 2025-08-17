@@ -89,7 +89,7 @@ export default function NewCollectionPage() {
   const handleCategoryChange = (categoryIndex: number, field: keyof ProductCategory, value: any) => {
     setCategories(prev => prev.map((cat, index) => 
       index === categoryIndex ? { ...cat, [field]: value } : cat
-    )))
+    ))
   }
 
   const handleProductSelection = (categoryIndex: number, productId: string, selected: boolean) => {
