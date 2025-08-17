@@ -296,20 +296,20 @@ router.post('/products', async (req, res) => {
 
     console.log('📝 Prepared product data:', JSON.stringify(productData, null, 2));
 
-    // Try to insert with explicit ID generation if needed
-    let insertData = productData;
+    // Always generate a UUID to ensure the ID is set
+    const crypto = require('crypto');
+    const uuid = crypto.randomUUID();
+    const insertData = {
+      ...productData,
+      id: uuid
+    };
     
-    // If the database doesn't auto-generate UUIDs, generate one manually
-    if (!productData.id) {
-      const crypto = require('crypto');
-      const uuid = crypto.randomUUID();
-      insertData = {
-        ...productData,
-        id: uuid
-      };
-      console.log('🔑 Generated UUID for product:', insertData.id);
-    }
+    console.log('🔑 Generated UUID for product:', insertData.id);
+    console.log('📝 Final insert data:', JSON.stringify(insertData, null, 2));
 
+    console.log('🚀 Attempting to insert into Supabase...');
+    console.log('📊 Insert data being sent:', JSON.stringify(insertData, null, 2));
+    
     const { data: product, error } = await supabase
       .from('Product')
       .insert(insertData)
