@@ -17,9 +17,13 @@ export default function HomePage() {
       try {
         const timestamp = Date.now()
         const response = await getFeaturedProducts(5, timestamp)
+        console.log('🛍️ Featured products response:', response)
         if (response.success) {
+          console.log('🛍️ Featured products data:', response.data)
+          console.log('🛍️ First product images:', response.data[0]?.images)
           setFeaturedProducts(response.data)
         } else {
+          console.log('❌ Failed to fetch featured products:', response.message)
           setFeaturedProducts([])
         }
       } catch (error) {
@@ -104,21 +108,52 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+            {/* Debug Section - Remove this after fixing */}
+            {featuredProducts.length > 0 && (
+              <div className="col-span-full mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <h3 className="font-bold text-yellow-800 mb-2">🔍 Debug: Product Data</h3>
+                <div className="text-sm text-yellow-700 space-y-2">
+                  <p><strong>Total Products:</strong> {featuredProducts.length}</p>
+                  <p><strong>First Product:</strong> {featuredProducts[0]?.name}</p>
+                  <p><strong>First Product Images:</strong> {JSON.stringify(featuredProducts[0]?.images, null, 2)}</p>
+                  <p><strong>First Product ID:</strong> {featuredProducts[0]?.id || featuredProducts[0]?._id}</p>
+                </div>
+              </div>
+            )}
+            
             {loading ? (
               // Fallback when products are loading
               <div className="col-span-full text-center py-12">
                 <p className="text-secondary text-lg">Loading featured products...</p>
               </div>
             ) : featuredProducts.length > 0 ? (
-              featuredProducts.map((product) => (
+              featuredProducts.map((product) => {
+                const imageUrl = getImageUrl(product.images[0]?.url || '/placeholder-product.jpg')
+                console.log('🖼️ Product:', product.name, 'Image URL:', imageUrl, 'Original:', product.images[0]?.url)
+                return (
                 <Link key={product.id || product._id} href={getProductUrl(product)} className="group overflow-hidden rounded-xl bg-background shadow-md hover:shadow-lg transition-all duration-300 block">
                   <div className="relative aspect-[4/5] overflow-hidden">
                     <Image
-                      src={getImageUrl(product.images[0]?.url || '/placeholder-product.jpg')}
+                      src={imageUrl}
                       alt={product.images[0]?.alt || product.name}
                       fill
                       className="object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                      onError={(e) => {
+                        console.error('❌ Image failed to load:', imageUrl, e)
+                      }}
+                      onLoad={() => {
+                        console.log('✅ Image loaded successfully:', imageUrl)
+                      }}
                     />
+                    {/* Fallback background in case image fails */}
+                    <div className="absolute inset-0 bg-gray-200 flex items-center justify-center">
+                      <div className="text-gray-500 text-sm text-center">
+                        <div className="w-16 h-16 mx-auto mb-2 bg-gray-300 rounded-full flex items-center justify-center">
+                          <span className="text-2xl">🖼️</span>
+                        </div>
+                        <p>Product Image</p>
+                      </div>
+                    </div>
                     <div className="absolute top-4 left-4">
                       <div className="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold bg-black/80 text-white backdrop-blur-sm">
                         <Star className="w-3 h-3 mr-1 fill-current" />
@@ -159,7 +194,7 @@ export default function HomePage() {
                     </div>
                   </div>
                 </Link>
-              ))
+              )})
             ) : (
               // Fallback when no products are available
               <div className="col-span-full text-center py-12">

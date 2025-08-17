@@ -170,8 +170,15 @@ export async function getCollection(id: string): Promise<ApiResponse<Collection>
 export function getImageUrl(imagePath: string): string {
   console.log('🖼️ getImageUrl called with:', imagePath)
   
-  if (imagePath.startsWith('http')) {
-    console.log('🌐 External URL detected, returning as-is')
+  // If no image path provided, return placeholder
+  if (!imagePath) {
+    console.log('❌ No image path provided, returning placeholder')
+    return '/placeholder-product.jpg'
+  }
+  
+  // If path starts with http/https, it's already a full URL
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    console.log('🌐 Full URL detected, returning as-is')
     return imagePath
   }
   
@@ -181,8 +188,16 @@ export function getImageUrl(imagePath: string): string {
     return imagePath
   }
   
-  // Otherwise, serve from backend API
-  const backendUrl = `${API_BASE_URL}${imagePath}`
+  // If it's a relative path (like uploads/products/filename.jpg), construct backend URL
+  if (imagePath.startsWith('uploads/') || imagePath.startsWith('/uploads/')) {
+    const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath
+    const backendUrl = `${API_BASE_URL}/${cleanPath}`
+    console.log('🔗 Backend URL generated:', backendUrl)
+    return backendUrl
+  }
+  
+  // Otherwise, assume it's a backend path and construct full URL
+  const backendUrl = `${API_BASE_URL}${imagePath.startsWith('/') ? imagePath : `/${imagePath}`}`
   console.log('🔗 Backend URL generated:', backendUrl)
   return backendUrl
 }
