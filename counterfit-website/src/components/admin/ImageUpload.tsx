@@ -61,10 +61,14 @@ export default function ImageUpload({ images, onChange, maxImages = 10 }: ImageU
           imageValue: formData.get('image')
         })
 
-        console.log('🌐 Making request to:', '/api/upload/product-image')
-        const response = await fetch('/api/upload/product-image', {
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://counterfit-backend.onrender.com';
+        console.log('🌐 Making request directly to backend:', `${backendUrl}/api/upload/product-image`)
+        const response = await fetch(`${backendUrl}/api/upload/product-image`, {
           method: 'POST',
-          body: formData
+          body: formData,
+          headers: {
+            'Accept': 'application/json'
+          }
         })
 
         console.log('📥 Response received:', {
