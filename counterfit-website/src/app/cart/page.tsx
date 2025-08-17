@@ -43,33 +43,8 @@ export default function CartPage() {
       return
     }
 
-    try {
-      const response = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          items: items.map(item => ({
-            productId: item.id,
-            variantId: null, // You might want to add variant support
-            quantity: item.quantity,
-            price: item.price,
-          })),
-        }),
-      })
-
-      const data = await response.json()
-
-      if (response.ok && data.url) {
-        window.location.href = data.url
-      } else {
-        alert('Error creating checkout session. Please try again.')
-      }
-    } catch (error) {
-      console.error('Checkout error:', error)
-      alert('Error processing checkout. Please try again.')
-    }
+    // Navigate to checkout page instead of calling API directly
+    router.push('/checkout')
   }
 
   if (items.length === 0) {

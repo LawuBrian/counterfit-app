@@ -13,14 +13,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { initializeYoco, generateOrderNumber, generateTrackingNumber } from '@/lib/yoco'
-
-interface CartItem {
-  id: string
-  name: string
-  price: number
-  quantity: number
-  image: string
-}
+import { useCart } from '@/contexts/CartContext'
 
 interface CheckoutForm {
   firstName: string
@@ -37,8 +30,8 @@ interface CheckoutForm {
 export default function CheckoutPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const { items: cartItems, getTotalPrice } = useCart()
   const [loading, setLoading] = useState(false)
-  const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [formData, setFormData] = useState<CheckoutForm>({
     firstName: '',
     lastName: '',
@@ -59,26 +52,15 @@ export default function CheckoutPage() {
       return
     }
 
-    // Load cart items from localStorage or context
-    loadCartItems()
-  }, [session, status, router])
-
-  const loadCartItems = () => {
-    // Mock cart data - replace with actual cart context
-    const mockItems: CartItem[] = [
-      {
-        id: '1',
-        name: 'Skull Cap',
-        price: 200,
-        quantity: 1,
-        image: '/uploads/products/product-1755340201035-715577257.jpg'
-      }
-    ]
-    setCartItems(mockItems)
-  }
+    // Check if cart has items
+    if (cartItems.length === 0) {
+      router.push('/cart')
+      return
+    }
+  }, [session, status, router, cartItems])
 
   const calculateTotal = () => {
-    const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+    const subtotal = getTotalPrice()
     const shipping = 50 // Fixed shipping cost
     const tax = subtotal * 0.15 // 15% VAT
     return subtotal + shipping + tax
@@ -97,6 +79,36 @@ export default function CheckoutPage() {
 
     setLoading(true)
     try {
+      // Structure the shipping address properly
+      const shippingAddress = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        postalCode: formData.postalCode,
+        country: formData.country
+      }
+
+      // Convert cart items to the format expected by the API
+      const orderItems = cartItems.map(item => ({
+        id: item.id.toString(), // Convert number to string
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        image: item.image,
+        size: item.size,
+        color: item.color
+      }))
+
+      console.log('📦 Sending checkout data:', {
+        items: orderItems,
+        totalAmount: calculateTotal(),
+        shippingAddress
+      })
+
       // Create order first
       const orderResponse = await fetch('/api/checkout', {
         method: 'POST',
@@ -104,18 +116,21 @@ export default function CheckoutPage() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          items: cartItems,
+          items: orderItems,
           totalAmount: calculateTotal(),
-          shippingAddress: formData,
-          billingAddress: formData
+          shippingAddress: shippingAddress,
+          billingAddress: shippingAddress
         })
       })
 
       if (!orderResponse.ok) {
-        throw new Error('Failed to create order')
+        const errorData = await orderResponse.json()
+        console.error('❌ Checkout failed:', errorData)
+        throw new Error(errorData.error || 'Failed to create order')
       }
 
       const orderData = await orderResponse.json()
+      console.log('✅ Order created:', orderData)
 
       // Initialize Yoco payment
       const yoco = await initializeYoco((result: any) => {
@@ -143,7 +158,7 @@ export default function CheckoutPage() {
 
     } catch (error) {
       console.error('Checkout error:', error)
-      alert('Checkout failed. Please try again.')
+      alert(`Checkout failed: ${error instanceof Error ? error.message : 'Please try again.'}`)
     } finally {
       setLoading(false)
     }
@@ -298,15 +313,17 @@ export default function CheckoutPage() {
               {/* Cart Items */}
               <div className="space-y-4 mb-6">
                 {cartItems.map((item) => (
-                  <div key={item.id} className="flex items-center space-x-4">
+                  <div key={`${item.id}-${item.size}-${item.color}`} className="flex items-center space-x-4">
                     <img
-                      src={item.image}
+                      src={item.image || '/placeholder-product.jpg'}
                       alt={item.name}
                       className="w-16 h-16 object-cover rounded-lg"
                     />
                     <div className="flex-1">
                       <h3 className="font-medium">{item.name}</h3>
-                      <p className="text-sm text-secondary">Qty: {item.quantity}</p>
+                      <p className="text-sm text-secondary">
+                        Qty: {item.quantity} | Size: {item.size} | Color: {item.color}
+                      </p>
                     </div>
                     <p className="font-medium">R{item.price}</p>
                   </div>
@@ -317,7 +334,7 @@ export default function CheckoutPage() {
               <div className="border-t pt-4 space-y-2">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
-                  <span>R{cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)}</span>
+                  <span>R{getTotalPrice()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Shipping</span>
@@ -325,7 +342,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between">
                   <span>VAT (15%)</span>
-                  <span>R{(cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) * 0.15).toFixed(2)}</span>
+                  <span>R{(getTotalPrice() * 0.15).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-lg font-bold border-t pt-2">
                   <span>Total</span>

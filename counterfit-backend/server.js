@@ -30,6 +30,10 @@ const limiter = rateLimit({
 
 app.use('/api/', limiter);
 
+// Body parsing middleware
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
 // CORS configuration - allow both localhost and Vercel
 app.use(cors({
   origin: [
@@ -37,12 +41,10 @@ app.use(cors({
     'https://counterfit-app.vercel.app',
     'https://counterfit.co.za'
   ],
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
-
-// Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Static files - serve uploads with proper headers and ensure directory exists
 const path = require('path');
@@ -64,9 +66,23 @@ if (!fs.existsSync(productsUploadsDir)) {
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
   setHeaders: (res, filePath) => {
+    // Allow cross-origin requests for images
     res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+    
+    // Set proper content type for images
+    if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) {
+      res.setHeader('Content-Type', 'image/jpeg');
+    } else if (filePath.endsWith('.png')) {
+      res.setHeader('Content-Type', 'image/png');
+    } else if (filePath.endsWith('.gif')) {
+      res.setHeader('Content-Type', 'image/gif');
+    } else if (filePath.endsWith('.webp')) {
+      res.setHeader('Content-Type', 'image/webp');
+    }
   }
 }));
 
@@ -78,7 +94,8 @@ app.get('/debug/uploads', (req, res) => {
       uploadsDir,
       productsUploadsDir,
       files,
-      exists: fs.existsSync(productsUploadsDir)
+      exists: fs.existsSync(productsUploadsDir),
+      totalFiles: files.length
     });
   } catch (error) {
     res.json({
@@ -86,6 +103,36 @@ app.get('/debug/uploads', (req, res) => {
       uploadsDir,
       productsUploadsDir,
       exists: fs.existsSync(productsUploadsDir)
+    });
+  }
+});
+
+// Test route to check if a specific image exists
+app.get('/test-image/:filename', (req, res) => {
+  try {
+    const { filename } = req.params;
+    const filePath = path.join(productsUploadsDir, filename);
+    const exists = fs.existsSync(filePath);
+    
+    if (exists) {
+      const stats = fs.statSync(filePath);
+      res.json({
+        filename,
+        exists: true,
+        size: stats.size,
+        path: filePath
+      });
+    } else {
+      res.json({
+        filename,
+        exists: false,
+        path: filePath
+      });
+    }
+  } catch (error) {
+    res.json({
+      error: error.message,
+      filename: req.params.filename
     });
   }
 });

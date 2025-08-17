@@ -8,14 +8,26 @@ const router = express.Router();
 // @access  Private
 router.post('/', protect, async (req, res) => {
   try {
+    console.log('🚀 POST /api/orders - Route hit!')
+    console.log('📦 Request body:', JSON.stringify(req.body, null, 2))
+    console.log('👤 User ID from token:', req.user.id)
+    
     const orderData = {
       ...req.body,
       userId: req.user.id
     }
 
+    console.log('📋 Final order data:', JSON.stringify(orderData, null, 2))
+
     const order = await prisma.order.create({
       data: orderData
     });
+
+    console.log('✅ Order created successfully:', {
+      id: order.id,
+      orderNumber: order.orderNumber,
+      totalAmount: order.totalAmount
+    })
 
     res.status(201).json({
       success: true,
@@ -23,7 +35,7 @@ router.post('/', protect, async (req, res) => {
       data: order
     });
   } catch (error) {
-    console.error('Create order error:', error);
+    console.error('❌ Create order error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'

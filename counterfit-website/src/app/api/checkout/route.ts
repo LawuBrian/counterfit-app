@@ -7,16 +7,32 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://counterfit-b
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('🚀 POST /api/checkout - Route hit!')
+    
     // Get session for authentication
     const session = await getServerSession(authOptions)
+    console.log('🔍 Session object:', JSON.stringify(session, null, 2))
+    console.log('🔍 Session user:', session?.user)
     
     if (!session) {
+      console.log('❌ No session found')
       return NextResponse.json(
         { error: 'Unauthorized - Please login to checkout' },
         { status: 401 }
       )
     }
 
+    if (!session.user?.accessToken) {
+      console.log('❌ No access token found in session')
+      return NextResponse.json(
+        { error: 'No access token found - please login again' },
+        { status: 401 }
+      )
+    }
+
+    const requestBody = await request.json()
+    console.log('📦 Request body:', JSON.stringify(requestBody, null, 2))
+    
     const { 
       items, 
       totalAmount, 
@@ -24,12 +40,29 @@ export async function POST(request: NextRequest) {
       billingAddress,
       paymentMethod = 'yoco',
       notes 
-    } = await request.json()
+    } = requestBody
 
     // Validate required fields
-    if (!items || !totalAmount || !shippingAddress) {
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      console.log('❌ Invalid or missing items:', items)
       return NextResponse.json(
-        { error: 'Missing required fields: items, totalAmount, shippingAddress' },
+        { error: 'Missing or invalid items array' },
+        { status: 400 }
+      )
+    }
+
+    if (!totalAmount || isNaN(parseFloat(totalAmount))) {
+      console.log('❌ Invalid totalAmount:', totalAmount)
+      return NextResponse.json(
+        { error: 'Invalid total amount' },
+        { status: 400 }
+      )
+    }
+
+    if (!shippingAddress || typeof shippingAddress !== 'object') {
+      console.log('❌ Invalid shippingAddress:', shippingAddress)
+      return NextResponse.json(
+        { error: 'Invalid shipping address' },
         { status: 400 }
       )
     }
@@ -50,6 +83,10 @@ export async function POST(request: NextRequest) {
       notes: notes || ''
     }
 
+    console.log('📋 Generated order data:', JSON.stringify(orderData, null, 2))
+    console.log('🌐 Calling backend API:', `${BACKEND_URL}/api/orders`)
+    console.log('🔑 Authorization header:', `Bearer ${session.user.accessToken ? 'TOKEN_PRESENT' : 'NO_TOKEN'}`)
+
     // Create order in backend
     const response = await fetch(`${BACKEND_URL}/api/orders`, {
       method: 'POST',
@@ -60,9 +97,11 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(orderData)
     })
 
+    console.log('📥 Backend response status:', response.status, response.statusText)
+
     if (!response.ok) {
       const errorData = await response.json()
-      console.error('Backend error:', errorData)
+      console.error('❌ Backend error:', errorData)
       return NextResponse.json(
         { error: errorData.message || 'Failed to create order' },
         { status: response.status }
@@ -70,6 +109,7 @@ export async function POST(request: NextRequest) {
     }
 
     const order = await response.json()
+    console.log('✅ Order created successfully:', JSON.stringify(order, null, 2))
 
     // Return order data for Yoco payment
     return NextResponse.json({
@@ -84,7 +124,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Checkout error:', error)
+    console.error('❌ Checkout error:', error)
     return NextResponse.json(
       { error: 'Internal server error during checkout' },
       { status: 500 }

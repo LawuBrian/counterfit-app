@@ -47,15 +47,31 @@ const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
+    fileSize: 50 * 1024 * 1024, // 50MB limit
     files: 10 // Maximum 10 files
   }
+});
+
+// @desc    Handle preflight CORS request
+// @route   OPTIONS /api/upload/product-image
+// @access  Public
+router.options('/product-image', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
+  res.status(200).end();
 });
 
 // @desc    Upload single product image
 // @route   POST /api/upload/product-image
 // @access  Public (for now - TODO: Add proper auth)
 router.post('/product-image', upload.single('image'), (req, res) => {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
   console.log('🖼️ Upload route hit - /api/upload/product-image')
   console.log('📁 Request body:', req.body)
   console.log('📁 Request file:', req.file)
@@ -105,10 +121,26 @@ router.post('/product-image', upload.single('image'), (req, res) => {
   }
 });
 
+// @desc    Handle preflight CORS request for multiple images
+// @route   OPTIONS /api/upload/product-images
+// @access  Public
+router.options('/product-images', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
+  res.status(200).end();
+});
+
 // @desc    Upload multiple product images
 // @route   POST /api/upload/product-images
 // @access  Public (for now - TODO: Add proper auth)
 router.post('/product-images', upload.array('images', 10), (req, res) => {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({
