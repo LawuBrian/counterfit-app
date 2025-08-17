@@ -301,10 +301,11 @@ router.post('/products', async (req, res) => {
     
     // If the database doesn't auto-generate UUIDs, generate one manually
     if (!productData.id) {
-      const { v4: uuidv4 } = require('uuid');
+      const crypto = require('crypto');
+      const uuid = crypto.randomUUID();
       insertData = {
         ...productData,
-        id: uuidv4()
+        id: uuid
       };
       console.log('🔑 Generated UUID for product:', insertData.id);
     }
