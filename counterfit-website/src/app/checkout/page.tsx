@@ -12,7 +12,7 @@ import {
   CheckCircle
 } from 'lucide-react'
 import Link from 'next/link'
-import { initializeYoco, generateOrderNumber, generateTrackingNumber } from '@/lib/yoco'
+import { createYocoCheckout, generateOrderNumber, generateTrackingNumber } from '@/lib/yoco'
 import { useCart } from '@/contexts/CartContext'
 
 interface CheckoutForm {
@@ -132,33 +132,41 @@ export default function CheckoutPage() {
       const orderData = await orderResponse.json()
       console.log('✅ Order created:', orderData)
 
-      // Initialize Yoco payment
-      console.log('💳 Initializing Yoco payment...')
-      const yoco = await initializeYoco((result: any) => {
-        if (result.error) {
-          console.error('Payment failed:', result.error)
-          alert('Payment failed. Please try again.')
-        } else {
-          // Payment successful - redirect to success page
-          console.log('✅ Payment successful, redirecting to success page')
-          router.push(`/checkout/success?orderId=${orderData.order.id}`)
-        }
-      })
-
-      console.log('💳 Yoco initialized, opening checkout...')
+      // Create Yoco checkout
+      console.log('💳 Creating Yoco checkout...')
       
-      // Open Yoco checkout
-      yoco.open({
-        amount: Math.round(calculateTotal() * 100), // Convert to cents
-        currency: 'ZAR',
-        name: 'Counterfit',
-        description: `Order ${orderData.order.orderNumber}`,
-        metadata: {
-          orderId: orderData.order.id,
-          orderNumber: orderData.order.orderNumber,
-          customerEmail: formData.email
+      try {
+        const checkout = await createYocoCheckout({
+          amount: Math.round(calculateTotal() * 100), // Convert to cents
+          currency: 'ZAR',
+          metadata: {
+            orderId: orderData.order.id,
+            orderNumber: orderData.order.orderNumber,
+            customerEmail: formData.email
+          }
+        })
+        
+        console.log('✅ Yoco checkout created, redirecting customer...')
+        
+        // Redirect customer to Yoco checkout page
+        if (checkout.redirectUrl) {
+          window.location.href = checkout.redirectUrl
+        } else {
+          throw new Error('No redirect URL received from Yoco')
         }
-      })
+        
+      } catch (yocoError) {
+        console.error('💳 Yoco checkout creation failed:', yocoError)
+        
+        // Check if it's a configuration error
+        if (yocoError instanceof Error && yocoError.message.includes('secret key')) {
+          alert('Payment system not configured. Please contact support.')
+        } else {
+          alert('Payment system temporarily unavailable. Please try again later.')
+        }
+        
+        throw yocoError
+      }
 
     } catch (error) {
       console.error('Checkout error:', error)

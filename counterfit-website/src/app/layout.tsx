@@ -9,15 +9,15 @@ export const metadata: Metadata = {
   description: "Redefining streetwear with a blend of luxury, innovation, and timeless design. Discover our premium collections designed for the modern individual.",
   icons: {
     icon: [
-      { url: '/favicon.ico', sizes: '32x32' },
-      { url: '/Counterfit.png', sizes: '16x16', type: 'image/png' },
-      { url: '/Counterfit.png', sizes: '32x32', type: 'image/png' },
-      { url: '/android-chrome-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/ICON WHITE.png', sizes: '32x32', type: 'image/png' },
+      { url: '/ICON WHITE.png', sizes: '16x16', type: 'image/png' },
+      { url: '/ICON WHITE.png', sizes: '48x48', type: 'image/png' },
+      { url: '/ICON WHITE.png', sizes: '192x192', type: 'image/png' },
     ],
     apple: [
-      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+      { url: '/ICON WHITE.png', sizes: '180x180', type: 'image/png' },
     ],
-    shortcut: '/favicon.ico',
+    shortcut: '/ICON WHITE.png',
   },
   manifest: '/site.webmanifest',
 }

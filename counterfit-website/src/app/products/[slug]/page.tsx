@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { ArrowRight, Star, Heart, Share2, Plus, Minus, ShoppingBag, Truck, Shield, RotateCcw } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useCart } from '@/contexts/CartContext'
-import { getImageUrl } from '@/lib/api'
+import { getImageUrl, formatPrice } from '@/lib/api'
 import { useParams } from 'next/navigation'
 
 interface Product {
@@ -75,6 +75,9 @@ export default function ProductPage() {
       
       if (response.ok) {
         const data = await response.json()
+        console.log('🛒 Product API response:', data)
+        console.log('🛒 Product price:', data.data?.price, 'Type:', typeof data.data?.price)
+        console.log('🛒 Product comparePrice:', data.data?.comparePrice, 'Type:', typeof data.data?.comparePrice)
         setProduct(data.data)
       } else if (response.status === 404) {
         setError('Product not found')
@@ -249,11 +252,11 @@ export default function ProductPage() {
                 {/* Price */}
                 <div className="flex items-center gap-4 mb-6">
                   <span className="font-heading text-3xl font-bold text-primary">
-                    R{product.price.toLocaleString()}
+                    {formatPrice(product.price)}
                   </span>
                   {product.comparePrice && product.comparePrice > 0 && product.comparePrice > product.price && (
                     <span className="text-xl text-secondary/60 line-through">
-                      R{product.comparePrice.toLocaleString()}
+                      {formatPrice(product.comparePrice)}
                     </span>
                   )}
                 </div>

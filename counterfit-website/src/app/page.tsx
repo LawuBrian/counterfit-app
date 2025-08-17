@@ -7,9 +7,14 @@ import { ArrowRight, Star, Zap, Tag } from 'lucide-react'
 import NewsletterSignup from '@/components/NewsletterSignup'
 import { getFeaturedProducts, getImageUrl, formatPrice, getProductUrl, type Product } from '@/lib/api'
 
+// Force dynamic rendering and prevent caching
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 async function HomePage() {
-  // Fetch featured products from the backend
-  const featuredProductsResponse = await getFeaturedProducts(5)
+  // Fetch featured products from the backend with cache busting
+  const timestamp = Date.now()
+  const featuredProductsResponse = await getFeaturedProducts(5, timestamp)
   const featuredProducts = featuredProductsResponse.success ? featuredProductsResponse.data : []
   return (
     <div className="min-h-screen">
@@ -64,12 +69,21 @@ async function HomePage() {
                 Signature pieces that embody Paki and Jareed's vision of luxury streetwear excellence
               </p>
             </div>
-            <Link href="/shop">
-              <Button variant="outline" className="mt-6 md:mt-0 border-primary text-primary bg-transparent shadow-sm hover:bg-primary/90 hover:text-primary-foreground h-9 px-4 py-2 rounded-md text-sm font-medium">
-                View All Products
-                <ArrowRight className="ml-2 h-4 w-4" />
+            <div className="flex gap-3 mt-6 md:mt-0">
+              <Button 
+                variant="outline" 
+                onClick={() => window.location.reload()}
+                className="border-primary text-primary bg-transparent shadow-sm hover:bg-primary/90 hover:text-primary-foreground h-9 px-4 py-2 rounded-md text-sm font-medium"
+              >
+                🔄 Refresh
               </Button>
-            </Link>
+              <Link href="/shop">
+                <Button variant="outline" className="border-primary text-primary bg-transparent shadow-sm hover:bg-primary/90 hover:text-primary-foreground h-9 px-4 py-2 rounded-md text-sm font-medium">
+                  View All Products
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
@@ -127,10 +141,23 @@ async function HomePage() {
             ) : (
               // Fallback when no products are available
               <div className="col-span-full text-center py-12">
-                <p className="text-secondary text-lg mb-4">No featured products available at the moment.</p>
-                <Link href="/shop">
-                  <Button>Browse All Products</Button>
-                </Link>
+                <div className="bg-gray-50 rounded-lg p-8">
+                  <p className="text-secondary text-lg mb-4">No featured products available at the moment.</p>
+                  <p className="text-sm text-secondary/60 mb-6">This could be because:</p>
+                  <ul className="text-sm text-secondary/60 mb-6 space-y-1">
+                    <li>• No products are marked as featured</li>
+                    <li>• All featured products are inactive</li>
+                    <li>• Products were recently deleted</li>
+                  </ul>
+                  <div className="flex gap-3 justify-center">
+                    <Button onClick={() => window.location.reload()}>
+                      🔄 Refresh Page
+                    </Button>
+                    <Link href="/shop">
+                      <Button variant="outline">Browse All Products</Button>
+                    </Link>
+                  </div>
+                </div>
               </div>
             )}
           </div>

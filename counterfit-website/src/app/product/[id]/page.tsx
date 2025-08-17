@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react'
 import { useCart } from '@/contexts/CartContext'
 import { useParams } from 'next/navigation'
 import { getImageUrl } from '@/lib/utils'
+import { formatPrice } from '@/lib/api'
 
 // Define proper types for the product data
 interface ProductData {
@@ -71,6 +72,9 @@ export default function ProductPage() {
         const data = await response.json()
         console.log('🛒 Raw API response:', data)
         console.log('🛒 Product data:', data.data)
+        console.log('🛒 Product price:', data.data?.price, 'Type:', typeof data.data?.price)
+        console.log('🛒 Product comparePrice:', data.data?.comparePrice, 'Type:', typeof data.data?.comparePrice)
+        console.log('🛒 Full product object:', JSON.stringify(data.data, null, 2))
         setProduct(data.data)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load product')
@@ -231,11 +235,11 @@ export default function ProductPage() {
                 {/* Price */}
                 <div className="flex items-center gap-4 mb-6">
                   <span className="font-heading text-3xl font-bold text-primary">
-                    R{product.price.toLocaleString()}
+                    {formatPrice(product.price)}
                   </span>
-                  {originalPrice !== null && (
+                  {originalPrice !== null && originalPrice > 0 && originalPrice > product.price && (
                     <span className="text-xl text-secondary/60 line-through">
-                      R{originalPrice.toLocaleString()}
+                      {formatPrice(originalPrice)}
                     </span>
                   )}
                 </div>
