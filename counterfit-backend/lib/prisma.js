@@ -4,26 +4,11 @@ const { PrismaClient } = require('@prisma/client')
 let prisma
 
 if (process.env.NODE_ENV === 'production') {
-  // In production, create a single instance with connection pooling
+  // In production, create a single instance
   if (!global.prisma) {
     global.prisma = new PrismaClient({
       log: ['error', 'warn'],
       errorFormat: 'minimal',
-      datasources: {
-        db: {
-          url: process.env.DATABASE_URL
-        }
-      },
-      // Connection pooling settings for Supabase
-      __internal: {
-        engine: {
-          connectionLimit: 5,
-          pool: {
-            min: 2,
-            max: 10
-          }
-        }
-      }
     })
   }
   prisma = global.prisma
