@@ -12,6 +12,7 @@ import { getImageUrl } from '@/lib/utils'
 // Define proper types for the product data
 interface ProductData {
   id: string
+  _id?: string // Fallback for compatibility
   name: string
   price: number
   comparePrice?: number
@@ -68,6 +69,8 @@ export default function ProductPage() {
         }
         
         const data = await response.json()
+        console.log('🛒 Raw API response:', data)
+        console.log('🛒 Product data:', data.data)
         setProduct(data.data)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load product')
@@ -110,20 +113,33 @@ export default function ProductPage() {
   }
 
   const handleAddToCart = () => {
-    if (!selectedSize || !selectedColor) {
-      alert('Please select both size and color')
+    if (!selectedSize) {
+      alert('Please select a size')
       return
     }
     
-    addToCart({
-      id: product.id,
+    console.log('🛒 Product data:', product)
+    console.log('🛒 Selected size:', selectedSize)
+    console.log('🛒 Selected color:', selectedColor)
+    console.log('🛒 Quantity:', quantity)
+    console.log('🛒 Product ID:', product.id || product._id)
+    
+    const cartItem = {
+      id: product.id || product._id,
       name: product.name,
       price: product.price,
       image: product.images[0]?.url || '',
       size: selectedSize,
-      color: selectedColor,
+      color: selectedColor || undefined,
       quantity
-    })
+    }
+    
+    console.log('🛒 Cart item being added:', cartItem)
+    
+    addToCart(cartItem)
+    
+    // Show success feedback
+    alert(`Added ${quantity} ${product.name} (${selectedSize}) to cart!`)
   }
 
   const originalPrice = product.comparePrice && product.comparePrice > product.price ? product.comparePrice : null
@@ -249,25 +265,27 @@ export default function ProductPage() {
                 </div>
               </div>
 
-              {/* Color Selection */}
-              <div>
-                <h3 className="font-heading text-lg font-semibold text-primary mb-3">Color</h3>
-                <div className="flex flex-wrap gap-3">
-                  {product.colors.map((color) => (
-                    <button
-                      key={color.name}
-                      onClick={() => setSelectedColor(color.name)}
-                      className={`px-4 py-2 border rounded-lg font-medium transition-colors ${
-                        selectedColor === color.name
-                          ? 'border-primary bg-primary text-white'
-                          : 'border-gray-200 text-primary hover:border-primary'
-                      }`}
-                    >
-                      {color.name}
-                    </button>
-                  ))}
+              {/* Color Selection - Only show if colors exist */}
+              {product.colors && product.colors.length > 0 && (
+                <div>
+                  <h3 className="font-heading text-lg font-semibold text-primary mb-3">Color</h3>
+                  <div className="flex flex-wrap gap-3">
+                    {product.colors.map((color) => (
+                      <button
+                        key={color.name}
+                        onClick={() => setSelectedColor(color.name)}
+                        className={`px-4 py-2 border rounded-lg font-medium transition-colors ${
+                          selectedColor === color.name
+                            ? 'border-primary bg-primary text-white'
+                            : 'border-gray-200 text-primary hover:border-primary'
+                        }`}
+                      >
+                        {color.name}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Quantity */}
               <div>
@@ -301,7 +319,7 @@ export default function ProductPage() {
                 <Button 
                   className="flex-1 font-semibold"
                   onClick={handleAddToCart}
-                  disabled={!selectedSize || !selectedColor}
+                  disabled={!selectedSize}
                 >
                   <ShoppingBag className="mr-2 h-5 w-5" />
                   Add to Cart

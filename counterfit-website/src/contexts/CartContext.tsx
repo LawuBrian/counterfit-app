@@ -3,20 +3,20 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react'
 
 export interface CartItem {
-  id: number
+  id: string
   name: string
   price: number
   image: string
   size: string
-  color: string
+  color?: string // Make color optional
   quantity: number
 }
 
 interface CartContextType {
   items: CartItem[]
   addToCart: (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => void
-  removeFromCart: (id: number, size: string, color: string) => void
-  updateQuantity: (id: number, size: string, color: string, quantity: number) => void
+  removeFromCart: (id: string, size: string, color?: string) => void
+  updateQuantity: (id: string, size: string, color?: string, quantity: number) => void
   clearCart: () => void
   getTotalItems: () => number
   getTotalPrice: () => number
@@ -28,12 +28,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
 
   const addToCart = (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => {
+    console.log('🛒 Adding to cart:', item)
+    console.log('🛒 Quantity being added:', item.quantity)
+    
     setItems(currentItems => {
       const existingItem = currentItems.find(
         cartItem => cartItem.id === item.id && cartItem.size === item.size && cartItem.color === item.color
       )
 
       if (existingItem) {
+        console.log('🛒 Existing item found, updating quantity')
         return currentItems.map(cartItem =>
           cartItem.id === item.id && cartItem.size === item.size && cartItem.color === item.color
             ? { ...cartItem, quantity: cartItem.quantity + (item.quantity || 1) }
@@ -41,17 +45,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
         )
       }
 
+      console.log('🛒 New item, adding to cart')
       return [...currentItems, { ...item, quantity: item.quantity || 1 }]
     })
   }
 
-  const removeFromCart = (id: number, size: string, color: string) => {
+  const removeFromCart = (id: string, size: string, color?: string) => {
     setItems(currentItems =>
       currentItems.filter(item => !(item.id === id && item.size === size && item.color === color))
     )
   }
 
-  const updateQuantity = (id: number, size: string, color: string, quantity: number) => {
+  const updateQuantity = (id: string, size: string, color?: string, quantity: number) => {
     if (quantity <= 0) {
       removeFromCart(id, size, color)
       return
