@@ -21,7 +21,8 @@ import Link from 'next/link'
 import { getImageUrl } from '@/lib/utils'
 
 interface Product {
-  _id: string
+  id: string
+  _id?: string // Fallback for compatibility
   name: string
   slug: string
   description: string
@@ -109,6 +110,12 @@ export default function AdminProductsPage() {
       
       if (response.ok) {
         const data = await response.json()
+        console.log('🔍 Products API response:', data)
+        console.log('🔍 Products array:', data.data)
+                 if (data.data && data.data.length > 0) {
+           console.log('🔍 First product structure:', data.data[0])
+           console.log('🔍 Product ID field:', data.data[0].id || data.data[0]._id)
+         }
         setProducts(data.data)
         setTotalPages(data.pagination.pages)
       } else {
@@ -173,6 +180,10 @@ export default function AdminProductsPage() {
   }
 
   const handleSelectProduct = (productId: string) => {
+    if (!productId) {
+      console.error('❌ Cannot select product with undefined ID')
+      return
+    }
     setSelectedProducts(prev => 
       prev.includes(productId) 
         ? prev.filter(id => id !== productId)
@@ -184,7 +195,7 @@ export default function AdminProductsPage() {
     if (selectedProducts.length === products.length) {
       setSelectedProducts([])
     } else {
-      setSelectedProducts(products.map(p => p._id))
+      setSelectedProducts(products.map(p => p.id || p._id).filter(Boolean))
     }
   }
 
@@ -408,12 +419,12 @@ export default function AdminProductsPage() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {products.map((product) => (
-                  <tr key={product._id} className="hover:bg-gray-50">
+                  <tr key={product.id || product._id || `product-${Math.random()}`} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <input
                         type="checkbox"
-                        checked={selectedProducts.includes(product._id)}
-                        onChange={() => handleSelectProduct(product._id)}
+                        checked={selectedProducts.includes(product.id || product._id)}
+                        onChange={() => handleSelectProduct(product.id || product._id)}
                         className="rounded border-gray-300 text-primary focus:ring-primary"
                       />
                     </td>
@@ -482,20 +493,21 @@ export default function AdminProductsPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center gap-2">
                         <Link 
-                          href={`/admin/products/${product._id}`}
+                          href={`/admin/products/${product.id || product._id || 'no-id'}`}
                           className="text-primary hover:text-primary/80"
                         >
                           <Eye className="h-4 w-4" />
                         </Link>
                         <Link 
-                          href={`/admin/products/${product._id}/edit`}
+                          href={`/admin/products/${product.id || product._id || 'no-id'}/edit`}
                           className="text-blue-600 hover:text-blue-500"
                         >
                           <Edit className="h-4 w-4" />
                         </Link>
                         <button 
-                          onClick={() => handleDelete(product._id)}
+                          onClick={() => handleDelete(product.id || product._id)}
                           className="text-red-600 hover:text-red-500"
+                          disabled={!product.id && !product._id}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
