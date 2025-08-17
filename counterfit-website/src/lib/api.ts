@@ -5,7 +5,7 @@ import { config } from './config'
 const API_BASE_URL = config.apiUrl
 
 export interface Product {
-  _id: string
+  id: string
   name: string
   slug: string
   description: string
@@ -45,7 +45,7 @@ export interface Product {
 }
 
 export interface Collection {
-  _id: string
+  id: string
   name: string
   slug: string
   description?: string
@@ -163,15 +163,23 @@ export async function getCollection(id: string): Promise<ApiResponse<Collection>
 
 // Utility functions
 export function getImageUrl(imagePath: string): string {
+  console.log('🖼️ getImageUrl called with:', imagePath)
+  
   if (imagePath.startsWith('http')) {
+    console.log('🌐 External URL detected, returning as-is')
     return imagePath
   }
+  
   // If path starts with /images/, /resources/, or is a public folder path, serve from Next.js public folder
   if (imagePath.startsWith('/images/') || imagePath.startsWith('/resources/') || imagePath.startsWith('/1d66cc_') || imagePath.startsWith('/placeholder-')) {
+    console.log('📁 Public folder path detected, serving from Next.js public folder')
     return imagePath
   }
+  
   // Otherwise, serve from backend API
-  return `${API_BASE_URL}${imagePath}`
+  const backendUrl = `${API_BASE_URL}${imagePath}`
+  console.log('🔗 Backend URL generated:', backendUrl)
+  return backendUrl
 }
 
 export function formatPrice(price: number): string {
@@ -183,5 +191,5 @@ export function getProductUrl(product: Product): string {
 }
 
 export function getCollectionUrl(collection: Collection): string {
-  return `/collections/${collection.slug || collection._id}`
+  return `/collections/${collection.slug || collection.id}`
 }

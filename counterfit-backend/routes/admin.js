@@ -269,10 +269,20 @@ router.put('/products/:id', async (req, res) => {
 // @route   POST /api/admin/products
 // @access  Public (for now - TODO: Add proper auth)
 router.post('/products', async (req, res) => {
+  console.log('🚀 POST /api/admin/products - Backend route hit!')
+  console.log('📦 Request body:', JSON.stringify(req.body, null, 2))
+  console.log('🖼️ Images in request:', req.body.images)
+  
   try {
     const product = await prisma.product.create({
       data: req.body
     });
+
+    console.log('✅ Product created in database:', {
+      id: product.id,
+      name: product.name,
+      images: product.images
+    })
 
     res.status(201).json({
       success: true,
@@ -280,7 +290,7 @@ router.post('/products', async (req, res) => {
       data: product
     });
   } catch (error) {
-    console.error('Create product error:', error);
+    console.error('❌ Create product error:', error);
     if (error.code === 'P2002') { // Prisma's unique constraint error code
       let message = 'Duplicate field error';
       if (error.meta?.target?.includes('sku')) message = 'Product with this SKU already exists';

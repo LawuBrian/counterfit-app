@@ -20,10 +20,21 @@ export default function ImageUpload({ images, onChange, maxImages = 10 }: ImageU
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFiles = async (files: FileList | null) => {
-    if (!files || files.length === 0) return
+    console.log('🖼️ handleFiles called with:', files)
+    
+    if (!files || files.length === 0) {
+      console.log('❌ No files provided')
+      return
+    }
 
     const remainingSlots = maxImages - images.length
     const filesToUpload = Array.from(files).slice(0, remainingSlots)
+    
+    console.log('📊 Upload stats:', {
+      totalFiles: files.length,
+      remainingSlots,
+      filesToUpload: filesToUpload.length
+    })
 
     if (filesToUpload.length === 0) {
       alert(`Maximum ${maxImages} images allowed`)
@@ -34,21 +45,41 @@ export default function ImageUpload({ images, onChange, maxImages = 10 }: ImageU
 
     try {
       // Upload files one by one to avoid body size limit issues
-      const uploadPromises = filesToUpload.map(async (file) => {
+      const uploadPromises = filesToUpload.map(async (file, index) => {
+        console.log(`🔄 Uploading file ${index + 1}/${filesToUpload.length}:`, {
+          name: file.name,
+          size: file.size,
+          type: file.type
+        })
+        
         const formData = new FormData()
         formData.append('image', file)
+        
+        console.log('📤 FormData created:', {
+          hasImage: formData.has('image'),
+          imageValue: formData.get('image')
+        })
 
+        console.log('🌐 Making request to:', '/api/upload/product-image')
         const response = await fetch('/api/upload/product-image', {
           method: 'POST',
           body: formData
         })
 
+        console.log('📥 Response received:', {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok
+        })
+
         const data = await response.json()
+        console.log('📄 Response data:', data)
 
         if (!response.ok) {
           throw new Error(data.message || 'Upload failed')
         }
 
+        console.log('✅ File uploaded successfully:', data.data.url)
         return {
           url: data.data.url,
           alt: '',
@@ -57,18 +88,24 @@ export default function ImageUpload({ images, onChange, maxImages = 10 }: ImageU
       })
 
       const newImages = await Promise.all(uploadPromises)
+      console.log('🎉 All files uploaded:', newImages)
       
       // Set first image as primary if no images exist
       if (images.length === 0 && newImages.length > 0) {
         newImages[0].isPrimary = true
+        console.log('⭐ Set first image as primary')
       }
 
-      onChange([...images, ...newImages])
+      const updatedImages = [...images, ...newImages]
+      console.log('🔄 Updating images state:', updatedImages)
+      onChange(updatedImages)
+      
     } catch (error) {
-      console.error('Upload error:', error)
+      console.error('❌ Upload error:', error)
       alert(error instanceof Error ? error.message : 'Upload failed. Please try again.')
     } finally {
       setUploading(false)
+      console.log('🏁 Upload process completed')
     }
   }
 

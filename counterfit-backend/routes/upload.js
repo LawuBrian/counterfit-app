@@ -5,21 +5,32 @@ const fs = require('fs');
 const { protect, adminOnly } = require('../middleware/auth');
 const router = express.Router();
 
-// Ensure uploads directory exists
-const uploadsDir = 'uploads/products';
+// Ensure uploads directory exists with absolute paths
+const uploadsDir = path.join(__dirname, '..', 'uploads');
+const productsUploadsDir = path.join(uploadsDir, 'products');
+
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
+  console.log('📁 Created uploads directory:', uploadsDir);
+}
+
+if (!fs.existsSync(productsUploadsDir)) {
+  fs.mkdirSync(productsUploadsDir, { recursive: true });
+  console.log('📁 Created products uploads directory:', productsUploadsDir);
 }
 
 // Configure multer for file uploads - simplified version
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, uploadsDir);
+    console.log('📁 Multer destination:', productsUploadsDir);
+    cb(null, productsUploadsDir);
   },
   filename: (req, file, cb) => {
     // Generate unique filename
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'product-' + uniqueSuffix + path.extname(file.originalname));
+    const filename = 'product-' + uniqueSuffix + path.extname(file.originalname);
+    console.log('📝 Generated filename:', filename);
+    cb(null, filename);
   }
 });
 
@@ -45,18 +56,33 @@ const upload = multer({
 // @route   POST /api/upload/product-image
 // @access  Public (for now - TODO: Add proper auth)
 router.post('/product-image', upload.single('image'), (req, res) => {
+  console.log('🖼️ Upload route hit - /api/upload/product-image')
+  console.log('📁 Request body:', req.body)
+  console.log('📁 Request file:', req.file)
+  console.log('📁 Request headers:', req.headers)
+  
   try {
     if (!req.file) {
+      console.log('❌ No file uploaded - req.file is undefined')
       return res.status(400).json({
         success: false,
         message: 'No file uploaded'
       });
     }
 
+    console.log('✅ File received:', {
+      filename: req.file.filename,
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      path: req.file.path
+    })
+
     // Return the file URL immediately
     const fileUrl = `/uploads/products/${req.file.filename}`;
+    console.log('🔗 Generated file URL:', fileUrl)
     
-    res.json({
+    const response = {
       success: true,
       message: 'Image uploaded successfully',
       data: {
@@ -65,9 +91,13 @@ router.post('/product-image', upload.single('image'), (req, res) => {
         originalName: req.file.originalname,
         size: req.file.size
       }
-    });
+    }
+    
+    console.log('📤 Sending response:', response)
+    res.json(response)
+    
   } catch (error) {
-    console.error('Upload error:', error);
+    console.error('❌ Upload error:', error)
     res.status(500).json({
       success: false,
       message: 'Server error during upload'
@@ -115,7 +145,7 @@ router.post('/product-images', upload.array('images', 10), (req, res) => {
 router.delete('/product-image/:filename', protect, adminOnly, (req, res) => {
   try {
     const { filename } = req.params;
-    const filePath = path.join(uploadsDir, filename);
+    const filePath = path.join(productsUploadsDir, filename);
 
     // Check if file exists
     if (!fs.existsSync(filePath)) {

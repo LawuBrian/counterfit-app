@@ -52,6 +52,14 @@ const fs = require('fs');
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
+  console.log('📁 Created uploads directory:', uploadsDir);
+}
+
+// Ensure products subdirectory exists
+const productsUploadsDir = path.join(uploadsDir, 'products');
+if (!fs.existsSync(productsUploadsDir)) {
+  fs.mkdirSync(productsUploadsDir, { recursive: true });
+  console.log('📁 Created products uploads directory:', productsUploadsDir);
 }
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
@@ -61,6 +69,26 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
     res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
   }
 }));
+
+// Debug route to check uploads directory
+app.get('/debug/uploads', (req, res) => {
+  try {
+    const files = fs.readdirSync(productsUploadsDir);
+    res.json({
+      uploadsDir,
+      productsUploadsDir,
+      files,
+      exists: fs.existsSync(productsUploadsDir)
+    });
+  } catch (error) {
+    res.json({
+      error: error.message,
+      uploadsDir,
+      productsUploadsDir,
+      exists: fs.existsSync(productsUploadsDir)
+    });
+  }
+});
 
 // API Routes
 app.use('/api/auth', require('./routes/auth'));

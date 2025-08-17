@@ -22,7 +22,8 @@ export async function POST(request: NextRequest) {
     }
     
     const productData = await request.json()
-    console.log('Product data received:', productData)
+    console.log('📦 Product data received:', JSON.stringify(productData, null, 2))
+    console.log('🖼️ Images in product data:', productData.images)
     
     // Generate slug from product name if not provided
     if (!productData.slug) {
@@ -30,7 +31,14 @@ export async function POST(request: NextRequest) {
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '')
+      console.log('🔗 Generated slug:', productData.slug)
     }
+    
+    console.log('🌐 Calling backend API:', `${BACKEND_URL}/api/admin/products`)
+    console.log('📤 Request headers:', {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.user.accessToken ? 'TOKEN_PRESENT' : 'NO_TOKEN'}`
+    })
     
     // Call the backend API to create the product
     const response = await fetch(`${BACKEND_URL}/api/admin/products`, {
@@ -42,9 +50,11 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(productData)
     })
     
+    console.log('📥 Backend response status:', response.status, response.statusText)
+    
     if (!response.ok) {
       const errorData = await response.json()
-      console.error('Backend error:', errorData)
+      console.error('❌ Backend error:', errorData)
       return NextResponse.json(
         { error: errorData.message || 'Failed to create product' },
         { status: response.status }
@@ -52,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
     
     const result = await response.json()
-    console.log('Product created successfully:', result)
+    console.log('✅ Product created successfully:', JSON.stringify(result, null, 2))
     
     return NextResponse.json(result)
 
