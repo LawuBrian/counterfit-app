@@ -108,19 +108,6 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
-            {/* Debug Section - Remove this after fixing */}
-            {featuredProducts.length > 0 && (
-              <div className="col-span-full mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <h3 className="font-bold text-yellow-800 mb-2">🔍 Debug: Product Data</h3>
-                <div className="text-sm text-yellow-700 space-y-2">
-                  <p><strong>Total Products:</strong> {featuredProducts.length}</p>
-                  <p><strong>First Product:</strong> {featuredProducts[0]?.name}</p>
-                  <p><strong>First Product Images:</strong> {JSON.stringify(featuredProducts[0]?.images, null, 2)}</p>
-                  <p><strong>First Product ID:</strong> {featuredProducts[0]?.id || featuredProducts[0]?._id}</p>
-                </div>
-              </div>
-            )}
-            
             {loading ? (
               // Fallback when products are loading
               <div className="col-span-full text-center py-12">
@@ -140,13 +127,19 @@ export default function HomePage() {
                       className="object-cover object-center group-hover:scale-105 transition-transform duration-500"
                       onError={(e) => {
                         console.error('❌ Image failed to load:', imageUrl, e)
+                        // Show fallback when image fails
+                        const fallback = document.getElementById(`fallback-${product.id || product._id}`)
+                        if (fallback) fallback.classList.remove('opacity-0')
                       }}
                       onLoad={() => {
                         console.log('✅ Image loaded successfully:', imageUrl)
+                        // Hide fallback when image loads successfully
+                        const fallback = document.getElementById(`fallback-${product.id || product._id}`)
+                        if (fallback) fallback.classList.add('opacity-0')
                       }}
                     />
-                    {/* Fallback background in case image fails */}
-                    <div className="absolute inset-0 bg-gray-200 flex items-center justify-center">
+                    {/* Fallback background - only shows if image fails to load */}
+                    <div className="absolute inset-0 bg-gray-200 flex items-center justify-center opacity-0 transition-opacity duration-300" id={`fallback-${product.id || product._id}`}>
                       <div className="text-gray-500 text-sm text-center">
                         <div className="w-16 h-16 mx-auto mb-2 bg-gray-300 rounded-full flex items-center justify-center">
                           <span className="text-2xl">🖼️</span>
