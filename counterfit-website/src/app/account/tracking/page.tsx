@@ -105,7 +105,7 @@ export default function TrackingPage() {
           ],
           items: [
             {
-              name: 'Premium Streetwear Item',
+              name: 'Premium Camo Hoodie',
               quantity: 1,
               image: '/api/placeholder/100/100'
             }

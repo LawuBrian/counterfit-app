@@ -409,7 +409,24 @@ export default function ProductPage() {
         </div>
       </section>
 
-
+      {/* Related Products */}
+      <section className="py-16">
+        <div className="max-w-screen-2xl mx-auto px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-12">
+            <h2 className="font-heading text-3xl font-bold text-primary">You Might Also Like</h2>
+            <Button variant="outline">
+              <Link href="/shop" className="flex items-center">
+                View All
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {/* Related products data not available in the new product structure, so this will be empty */}
+          </div>
+        </div>
+      </section>
     </div>
   )
 }
