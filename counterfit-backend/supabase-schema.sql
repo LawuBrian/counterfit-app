@@ -27,6 +27,11 @@ CREATE TABLE IF NOT EXISTS "Collection" (
     image VARCHAR(500),
     featured BOOLEAN DEFAULT false,
     status VARCHAR(20) DEFAULT 'draft' CHECK (status IN ('draft', 'published', 'archived')),
+    "collectionType" VARCHAR(20) DEFAULT 'singular' CHECK ("collectionType" IN ('singular', 'combo', 'duo', 'trio', 'mixed')),
+    "basePrice" DECIMAL(10,2) DEFAULT 0,
+    "allowCustomSelection" BOOLEAN DEFAULT false,
+    "maxSelections" INTEGER DEFAULT 1,
+    "productCategories" JSONB DEFAULT '[]', -- Array of product category objects
     "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -69,7 +74,7 @@ CREATE TABLE IF NOT EXISTS "Order" (
     items JSONB NOT NULL, -- Array of order items
     "totalAmount" DECIMAL(10,2) NOT NULL,
     status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled')),
-    "paymentStatus" VARCHAR(20) DEFAULT 'pending' CHECK (paymentStatus IN ('pending', 'paid', 'failed', 'refunded')),
+    "paymentStatus" VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'paid', 'failed', 'refunded')),
     "paymentMethod" VARCHAR(50),
     "paymentId" VARCHAR(255),
     "trackingNumber" VARCHAR(100),
@@ -87,6 +92,7 @@ CREATE INDEX IF NOT EXISTS idx_user_email ON "User"(email);
 CREATE INDEX IF NOT EXISTS idx_user_role ON "User"(role);
 CREATE INDEX IF NOT EXISTS idx_collection_slug ON "Collection"(slug);
 CREATE INDEX IF NOT EXISTS idx_collection_status ON "Collection"(status);
+CREATE INDEX IF NOT EXISTS idx_collection_type ON "Collection"("collectionType");
 CREATE INDEX IF NOT EXISTS idx_product_slug ON "Product"(slug);
 CREATE INDEX IF NOT EXISTS idx_product_category ON "Product"(category);
 CREATE INDEX IF NOT EXISTS idx_product_status ON "Product"(status);
@@ -109,16 +115,45 @@ CREATE TRIGGER update_collection_updated_at BEFORE UPDATE ON "Collection" FOR EA
 CREATE TRIGGER update_product_updated_at BEFORE UPDATE ON "Product" FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_order_updated_at BEFORE UPDATE ON "Order" FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- Insert sample data (optional)
--- You can uncomment these lines to add initial data
+-- Insert default admin user
+INSERT INTO "User" (id, email, password, "firstName", "lastName", role, "createdAt", "updatedAt") 
+VALUES (
+    '00000000-0000-0000-0000-000000000000',
+    'admin@counterfit.co.za',
+    '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', -- password: password
+    'Admin',
+    'User',
+    'ADMIN',
+    NOW(),
+    NOW()
+) ON CONFLICT (id) DO NOTHING;
 
--- Sample collections
-INSERT INTO "Collection" (name, slug, description, featured, status) VALUES
-('Platform Series', 'platform-series', 'Elevated streetwear that puts you on another level', true, 'published'),
-('Dynamic Motion', 'dynamic-motion', 'Athletic-inspired pieces that blur the line between performance and style', true, 'published')
-ON CONFLICT (slug) DO NOTHING;
-
--- Sample admin user (password: admin123)
-INSERT INTO "User" (email, password, "firstName", "lastName", role) VALUES
-('admin@counterfit.co.za', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/8Kq8Kq8', 'Admin', 'User', 'ADMIN')
-ON CONFLICT (email) DO NOTHING;
+-- Insert sample collections
+INSERT INTO "Collection" (id, name, slug, description, "collectionType", "basePrice", "allowCustomSelection", "maxSelections", "productCategories", "createdAt", "updatedAt") 
+VALUES 
+(
+    '11111111-1111-1111-1111-111111111111',
+    'Premium Jacket Collection',
+    'premium-jacket-collection',
+    'Our finest selection of premium jackets',
+    'combo',
+    2500.00,
+    true,
+    3,
+    '[{"name": "jackets", "maxSelections": 2, "selectedProducts": []}]',
+    NOW(),
+    NOW()
+),
+(
+    '22222222-2222-2222-2222-222222222222',
+    'Urban Street Style',
+    'urban-street-style',
+    'Complete urban street style look',
+    'duo',
+    1800.00,
+    false,
+    2,
+    '[{"name": "jackets", "maxSelections": 1, "selectedProducts": []}, {"name": "pants", "maxSelections": 1, "selectedProducts": []}]',
+    NOW(),
+    NOW()
+) ON CONFLICT (id) DO NOTHING;

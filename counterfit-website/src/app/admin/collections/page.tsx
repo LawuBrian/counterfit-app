@@ -15,19 +15,20 @@ import {
   Download,
   Upload,
   MoreHorizontal,
-  Star
+  Star,
+  Settings
 } from 'lucide-react'
 import Link from 'next/link'
 import BulkCollectionImport from '@/components/admin/BulkCollectionImport'
 
 interface Collection {
-  _id: string
+  id: string
   name: string
   slug: string
   description?: string
   image?: string
   featured: boolean
-  status: 'active' | 'draft' | 'archived'
+  status: 'draft' | 'published' | 'archived'
   collectionType: 'singular' | 'combo' | 'duo' | 'trio' | 'mixed'
   basePrice: number
   allowCustomSelection: boolean
@@ -83,8 +84,8 @@ export default function AdminCollectionsPage() {
       
       if (response.ok) {
         const data = await response.json()
-        setCollections(data.data)
-        setTotalPages(data.pagination.pages)
+        setCollections(data.data || [])
+        setTotalPages(data.pagination?.pages || 1)
       } else {
         console.error('Failed to fetch collections')
       }
@@ -100,344 +101,318 @@ export default function AdminCollectionsPage() {
     setCurrentPage(1)
   }
 
-  const handleDelete = async (collectionId: string) => {
+  const handleDeleteCollection = async (id: string) => {
     if (!confirm('Are you sure you want to delete this collection?')) return
-
+    
     try {
-      const response = await fetch(`/api/admin/collections/${collectionId}`, {
+      const response = await fetch(`/api/admin/collections/${id}`, {
         method: 'DELETE'
       })
-
+      
       if (response.ok) {
-        fetchCollections()
+        setCollections(prev => prev.filter(c => c.id !== id))
+        console.log('Collection deleted successfully')
       } else {
-        const data = await response.json()
-        alert(data.message || 'Failed to delete collection')
+        console.error('Failed to delete collection')
       }
     } catch (error) {
       console.error('Error deleting collection:', error)
-      alert('Failed to delete collection')
     }
   }
 
-  const handleSelectCollection = (collectionId: string) => {
-    setSelectedCollections(prev => 
-      prev.includes(collectionId) 
-        ? prev.filter(id => id !== collectionId)
-        : [...prev, collectionId]
-    )
-  }
-
-  const handleSelectAll = () => {
-    if (selectedCollections.length === collections.length) {
-      setSelectedCollections([])
-    } else {
-      setSelectedCollections(collections.map(c => c._id))
+  const toggleFeatured = async (id: string, featured: boolean) => {
+    try {
+      const response = await fetch(`/api/admin/collections/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ featured: !featured })
+      })
+      
+      if (response.ok) {
+        setCollections(prev => prev.map(c => 
+          c.id === id ? { ...c, featured: !featured } : c
+        ))
+      }
+    } catch (error) {
+      console.error('Error updating collection:', error)
     }
   }
 
-  if (status === 'loading' || loading) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    )
-  }
-
-  if (!session || session.user?.role !== 'ADMIN') {
-    return null
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="font-heading text-3xl font-bold text-primary flex items-center">
-                <FolderOpen className="mr-3 h-8 w-8" />
-                Collection Management
-              </h1>
-              <p className="text-secondary mt-1">Organize your products into collections</p>
-            </div>
-            <div className="flex gap-4">
-              <Button variant="outline">
-                <Download className="mr-2 h-4 w-4" />
-                Export
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={() => setShowBulkImport(!showBulkImport)}
-              >
-                <Upload className="mr-2 h-4 w-4" />
-                {showBulkImport ? 'Hide Import' : 'Bulk Import'}
-              </Button>
-              <Button>
-                <Link href="/admin/collections/new" className="flex items-center">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Collection
-                </Link>
-              </Button>
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
+            <div className="h-10 bg-gray-200 rounded w-full mb-4"></div>
+            <div className="space-y-3">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-16 bg-gray-200 rounded"></div>
+              ))}
             </div>
           </div>
         </div>
       </div>
+    )
+  }
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  return (
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Collections</h1>
+            <p className="text-gray-600">Manage your product collections and combo packages</p>
+          </div>
+          <div className="flex space-x-3">
+            <Button
+              onClick={() => setShowBulkImport(true)}
+              variant="outline"
+              className="flex items-center space-x-2"
+            >
+              <Upload className="h-4 w-4" />
+              <span>Bulk Import</span>
+            </Button>
+            <Link href="/admin/collections/new">
+              <Button className="flex items-center space-x-2">
+                <Plus className="h-4 w-4" />
+                <span>New Collection</span>
+              </Button>
+            </Link>
+          </div>
+        </div>
+
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-lg shadow p-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Search
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Search collections..."
-                  className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   value={filters.search}
                   onChange={(e) => handleFilterChange('search', e.target.value)}
+                  className="pl-10 w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
-            
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Status
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
               <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                 value={filters.status}
                 onChange={(e) => handleFilterChange('status', e.target.value)}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">All Status</option>
+                <option value="">All Statuses</option>
                 <option value="draft">Draft</option>
-                <option value="active">Active</option>
+                <option value="published">Published</option>
                 <option value="archived">Archived</option>
               </select>
             </div>
-
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Featured
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Featured</label>
               <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                 value={filters.featured}
                 onChange={(e) => handleFilterChange('featured', e.target.value)}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All</option>
-                <option value="true">Featured</option>
+                <option value="true">Featured Only</option>
                 <option value="false">Not Featured</option>
               </select>
+            </div>
+            <div className="flex items-end">
+              <Button
+                onClick={fetchCollections}
+                className="w-full"
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Apply Filters
+              </Button>
             </div>
           </div>
         </div>
 
-        {/* Bulk Import */}
-        {showBulkImport && (
-          <div className="mb-6">
-            <BulkCollectionImport onImportComplete={fetchCollections} />
-          </div>
-        )}
-
         {/* Collections Table */}
-        <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <input
-                      type="checkbox"
-                      checked={selectedCollections.length === collections.length && collections.length > 0}
-                      onChange={handleSelectAll}
-                      className="rounded border-gray-300 text-primary focus:ring-primary"
-                    />
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Collection
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Type & Price
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Created
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {collections.map((collection) => (
-                  <tr key={collection._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <input
-                        type="checkbox"
-                        checked={selectedCollections.includes(collection._id)}
-                        onChange={() => handleSelectCollection(collection._id)}
-                        className="rounded border-gray-300 text-primary focus:ring-primary"
-                      />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-12 w-12">
-                          <img
-                            className="h-12 w-12 rounded-lg object-cover bg-gray-200"
-                            src={collection.image || '/placeholder-collection.jpg'}
-                            alt={collection.name}
-                          />
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900 flex items-center">
-                            {collection.name}
-                            {collection.featured && (
-                              <Star className="ml-2 h-4 w-4 text-yellow-500 fill-current" />
-                            )}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {collection.description ? 
-                              (collection.description.length > 60 ? 
-                                collection.description.substring(0, 60) + '...' : 
-                                collection.description
-                              ) : 
-                              'No description'
-                            }
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm">
-                        <div className="font-medium text-gray-900 capitalize">
-                          {collection.collectionType || 'singular'}
-                        </div>
-                        <div className="text-gray-500">
-                          R{collection.basePrice?.toLocaleString() || '0'}
-                        </div>
-                        {collection.allowCustomSelection && (
-                          <div className="text-xs text-blue-600">
-                            Customizable
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                        collection.status === 'active' 
-                          ? 'bg-green-100 text-green-800'
-                          : collection.status === 'draft'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {collection.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {new Date(collection.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center gap-2">
-                        <Link 
-                          href={`/admin/collections/${collection._id}`}
-                          className="text-primary hover:text-primary/80"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Link>
-                        <Link 
-                          href={`/admin/collections/${collection._id}/edit`}
-                          className="text-blue-600 hover:text-blue-500"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Link>
-                        <button 
-                          onClick={() => handleDelete(collection._id)}
-                          className="text-red-600 hover:text-red-500"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-medium text-gray-900">
+                Collections ({collections.length})
+              </h2>
+              {selectedCollections.length > 0 && (
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedCollections([])}
+                  className="text-red-600 border-red-600 hover:bg-red-50"
+                >
+                  Clear Selection
+                </Button>
+              )}
+            </div>
           </div>
-
-          {collections.length === 0 && !loading && (
+          
+          {collections.length === 0 ? (
             <div className="text-center py-12">
               <FolderOpen className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">No collections</h3>
-              <p className="mt-1 text-sm text-gray-500">Get started by creating a new collection.</p>
+              <p className="mt-1 text-sm text-gray-500">
+                Get started by creating a new collection.
+              </p>
               <div className="mt-6">
                 <Link href="/admin/collections/new">
                   <Button>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Collection
+                    <Plus className="h-4 w-4 mr-2" />
+                    New Collection
                   </Button>
                 </Link>
               </div>
             </div>
-          )}
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-              <div className="flex-1 flex justify-between sm:hidden">
-                <Button 
-                  variant="outline" 
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                >
-                  Previous
-                </Button>
-                <Button 
-                  variant="outline"
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                >
-                  Next
-                </Button>
-              </div>
-              <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm text-gray-700">
-                    Showing page <span className="font-medium">{currentPage}</span> of{' '}
-                    <span className="font-medium">{totalPages}</span>
-                  </p>
-                </div>
-                <div>
-                  <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={currentPage === 1}
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    >
-                      Previous
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={currentPage === totalPages}
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    >
-                      Next
-                    </Button>
-                  </nav>
-                </div>
-              </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Collection
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Price
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {collections.map((collection) => (
+                    <tr key={collection.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10">
+                            {collection.image ? (
+                              <img
+                                className="h-10 w-10 rounded-lg object-cover"
+                                src={collection.image}
+                                alt={collection.name}
+                              />
+                            ) : (
+                              <div className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center">
+                                <FolderOpen className="h-5 w-5 text-gray-400" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">
+                              {collection.name}
+                              {collection.featured && (
+                                <Star className="inline h-4 w-4 text-yellow-400 ml-2" />
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {collection.description || 'No description'}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {collection.collectionType}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          collection.status === 'published' 
+                            ? 'bg-green-100 text-green-800'
+                            : collection.status === 'draft'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {collection.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        R{collection.basePrice}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => toggleFeatured(collection.id, collection.featured)}
+                          >
+                            {collection.featured ? 'Unfeature' : 'Feature'}
+                          </Button>
+                          <Link href={`/admin/collections/${collection.id}/edit`}>
+                            <Button size="sm" variant="outline">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDeleteCollection(collection.id)}
+                            className="text-red-600 border-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="mt-6 flex justify-center">
+            <nav className="flex space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </Button>
+              <span className="px-4 py-2 text-sm text-gray-700">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </Button>
+            </nav>
+          </div>
+        )}
       </div>
+
+      {/* Bulk Import Modal */}
+      {showBulkImport && (
+        <BulkCollectionImport
+          onClose={() => setShowBulkImport(false)}
+          onSuccess={() => {
+            setShowBulkImport(false)
+            fetchCollections()
+          }}
+        />
+      )}
     </div>
   )
 }
