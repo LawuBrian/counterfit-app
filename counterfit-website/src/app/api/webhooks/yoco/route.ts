@@ -1,24 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server'
-import crypto from 'crypto'
+import { 
+  verifyWebhookSignature, 
+  validateWebhookTimestamp 
+} from '@/lib/yoco'
 
-const YOCO_WEBHOOK_SECRET = process.env.YOCO_WEBHOOK_SECRET || ''
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://counterfit-backend.onrender.com'
+const BACKEND_API_KEY = process.env.BACKEND_API_KEY || ''
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔔 Yoco webhook received')
+    console.log('🔔 YOCO webhook received')
     
+    // Get raw body for signature verification
     const body = await request.text()
-    const signature = request.headers.get('x-yoco-signature')
     
-    console.log('🔔 Webhook body:', body)
-    console.log('🔔 Signature:', signature)
+    // Extract webhook headers
+    const webhookId = request.headers.get('webhook-id')
+    const webhookTimestamp = request.headers.get('webhook-timestamp')
+    const webhookSignature = request.headers.get('webhook-signature')
     
-    // Verify webhook signature
-    if (!verifyWebhookSignature(body, signature)) {
-      console.error('❌ Invalid webhook signature')
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+    console.log('🔔 Webhook ID:', webhookId)
+    console.log('🔔 Webhook Timestamp:', webhookTimestamp)
+    console.log('🔔 Webhook Signature:', webhookSignature)
+    console.log('🔔 Webhook Body:', body)
+    
+    // Validate required headers
+    if (!webhookId || !webhookTimestamp || !webhookSignature) {
+      console.error('❌ Missing required webhook headers')
+      return NextResponse.json(
+        { error: 'Missing required webhook headers' },
+        { status: 400 }
+      )
     }
     
+    // Validate timestamp to prevent replay attacks
+    if (!validateWebhookTimestamp(webhookTimestamp)) {
+      console.error('❌ Webhook timestamp validation failed')
+      return NextResponse.json(
+        { error: 'Webhook timestamp validation failed' },
+        { status: 400 }
+      )
+    }
+    
+    // Verify webhook signature
+    if (!verifyWebhookSignature(webhookId, webhookTimestamp, body, webhookSignature)) {
+      console.error('❌ Invalid webhook signature')
+      return NextResponse.json(
+        { error: 'Invalid signature' },
+        { status: 401 }
+      )
+    }
+    
+    // Parse webhook event
     const event = JSON.parse(body)
     console.log('🔔 Webhook event:', event)
     
@@ -32,6 +65,12 @@ export async function POST(request: NextRequest) {
         break
       case 'checkout.completed':
         await handleCheckoutCompleted(event)
+        break
+      case 'refund.succeeded':
+        await handleRefundSucceeded(event)
+        break
+      case 'refund.failed':
+        await handleRefundFailed(event)
         break
       default:
         console.log('🔔 Unhandled event type:', event.type)
@@ -48,32 +87,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function verifyWebhookSignature(payload: string, signature: string | null): boolean {
-  if (!signature || !YOCO_WEBHOOK_SECRET) {
-    console.warn('⚠️ Missing signature or webhook secret')
-    return false
-  }
-  
-  try {
-    const expectedSignature = crypto
-      .createHmac('sha256', YOCO_WEBHOOK_SECRET)
-      .update(payload)
-      .digest('hex')
-    
-    const isValid = crypto.timingSafeEqual(
-      Buffer.from(signature),
-      Buffer.from(expectedSignature)
-    )
-    
-    console.log('🔐 Signature verification:', isValid ? '✅ Valid' : '❌ Invalid')
-    return isValid
-    
-  } catch (error) {
-    console.error('❌ Signature verification error:', error)
-    return false
-  }
-}
-
 async function handlePaymentSucceeded(event: any) {
   console.log('✅ Payment succeeded:', event.data.id)
   
@@ -82,17 +95,18 @@ async function handlePaymentSucceeded(event: any) {
   // Update order status in your database
   if (metadata?.orderId) {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/orders/${metadata.orderId}/confirm-payment`, {
+      const response = await fetch(`${BACKEND_URL}/api/orders/${metadata.orderId}/confirm-payment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.BACKEND_API_KEY}`
+          'Authorization': `Bearer ${BACKEND_API_KEY}`
         },
         body: JSON.stringify({
           paymentId: id,
           amount,
           currency,
-          status: 'paid'
+          status: 'paid',
+          paymentMethod: 'yoco'
         })
       })
       
@@ -115,11 +129,11 @@ async function handlePaymentFailed(event: any) {
   // Update order status to failed
   if (metadata?.orderId) {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/orders/${metadata.orderId}/update-status`, {
+      const response = await fetch(`${BACKEND_URL}/api/orders/${metadata.orderId}/update-status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.BACKEND_API_KEY}`
+          'Authorization': `Bearer ${BACKEND_API_KEY}`
         },
         body: JSON.stringify({
           status: 'payment_failed',
@@ -147,11 +161,11 @@ async function handleCheckoutCompleted(event: any) {
   // You can use this to update order status to 'pending_payment'
   if (metadata?.orderId) {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/orders/${metadata.orderId}/update-status`, {
+      const response = await fetch(`${BACKEND_URL}/api/orders/${metadata.orderId}/update-status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.BACKEND_API_KEY}`
+          'Authorization': `Bearer ${BACKEND_API_KEY}`
         },
         body: JSON.stringify({
           status: 'pending_payment',
@@ -166,6 +180,70 @@ async function handleCheckoutCompleted(event: any) {
       }
     } catch (error) {
       console.error('❌ Error updating order status:', error)
+    }
+  }
+}
+
+async function handleRefundSucceeded(event: any) {
+  console.log('✅ Refund succeeded:', event.data.id)
+  
+  const { id, amount, currency, metadata } = event.data
+  
+  // Update order status to refunded
+  if (metadata?.orderId) {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/orders/${metadata.orderId}/update-status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${BACKEND_API_KEY}`
+        },
+        body: JSON.stringify({
+          status: 'refunded',
+          refundId: id,
+          refundAmount: amount,
+          refundCurrency: currency
+        })
+      })
+      
+      if (response.ok) {
+        console.log('✅ Order status updated to refunded')
+      } else {
+        console.error('❌ Failed to update order status to refunded')
+      }
+    } catch (error) {
+      console.error('❌ Error updating order status to refunded:', error)
+    }
+  }
+}
+
+async function handleRefundFailed(event: any) {
+  console.log('❌ Refund failed:', event.data.id)
+  
+  const { id, metadata } = event.data
+  
+  // Update order status to refund_failed
+  if (metadata?.orderId) {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/orders/${metadata.orderId}/update-status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${BACKEND_API_KEY}`
+        },
+        body: JSON.stringify({
+          status: 'refund_failed',
+          refundId: id
+        })
+      })
+      
+      if (response.ok) {
+        console.log('✅ Order status updated to refund failed')
+      } else {
+        console.error('❌ Failed to update order status to refund failed')
+      }
+    } catch (error) {
+      console.error('❌ Error updating order status to refund failed:', error)
     }
   }
 }

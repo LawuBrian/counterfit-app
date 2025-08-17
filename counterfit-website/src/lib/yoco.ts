@@ -2,6 +2,7 @@
 export const YOCO_CONFIG = {
   publicKey: process.env.NEXT_PUBLIC_YOCO_PUBLIC_KEY || '',
   secretKey: process.env.YOCO_SECRET_KEY || '',
+  webhookSecret: process.env.YOCO_WEBHOOK_SECRET || '',
   currency: 'ZAR',
   name: 'Counterfit',
   description: 'Luxury Streetwear'
@@ -24,7 +25,7 @@ export const generateTrackingNumber = () => {
   return `${prefix}${random}${suffix}`
 }
 
-// Create server-side checkout (for webhook-based flow)
+// Create YOCO checkout using the Checkout API
 export async function createYocoCheckout(checkoutData: {
   amount: number
   currency: string
@@ -32,7 +33,10 @@ export async function createYocoCheckout(checkoutData: {
     orderId: string
     orderNumber: string
     customerEmail: string
+    customerName?: string
   }
+  successUrl?: string
+  cancelUrl?: string
 }) {
   try {
     console.log('💳 Creating Yoco checkout:', checkoutData)
@@ -41,12 +45,15 @@ export async function createYocoCheckout(checkoutData: {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${YOCO_CONFIG.secretKey}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Idempotency-Key': `${checkoutData.metadata.orderId}-${Date.now()}`
       },
       body: JSON.stringify({
         amount: checkoutData.amount,
         currency: checkoutData.currency,
-        metadata: checkoutData.metadata
+        metadata: checkoutData.metadata,
+        successUrl: checkoutData.successUrl,
+        cancelUrl: checkoutData.cancelUrl
       })
     })
     
@@ -66,6 +73,101 @@ export async function createYocoCheckout(checkoutData: {
   }
 }
 
+// Register webhook endpoint with YOCO
+export async function registerYocoWebhook(webhookUrl: string) {
+  try {
+    console.log('🔔 Registering Yoco webhook:', webhookUrl)
+    
+    const response = await fetch('https://payments.yoco.com/api/webhooks', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${YOCO_CONFIG.secretKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        url: webhookUrl
+      })
+    })
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(`Webhook registration failed: ${errorData.message || response.statusText}`)
+    }
+    
+    const webhook = await response.json()
+    console.log('✅ Yoco webhook registered:', webhook)
+    
+    return webhook
+    
+  } catch (error) {
+    console.error('❌ Failed to register Yoco webhook:', error)
+    throw error
+  }
+}
+
+// Verify webhook signature using the new YOCO webhook security standard
+export function verifyWebhookSignature(
+  webhookId: string,
+  webhookTimestamp: string,
+  requestBody: string,
+  webhookSignature: string
+): boolean {
+  try {
+    if (!YOCO_CONFIG.webhookSecret) {
+      console.warn('⚠️ Missing webhook secret')
+      return false
+    }
+
+    // Construct the signed content: id.timestamp.body
+    const signedContent = `${webhookId}.${webhookTimestamp}.${requestBody}`
+    
+    // Remove the 'whsec_' prefix from the secret
+    const secretBytes = Buffer.from(YOCO_CONFIG.webhookSecret.split('_')[1], 'base64')
+    
+    // Generate expected signature using HMAC SHA256
+    const expectedSignature = crypto
+      .createHmac('sha256', secretBytes)
+      .update(signedContent)
+      .digest('base64')
+    
+    // Extract the signature from the webhook-signature header
+    // Format: "v1,signature" or "v1,signature v2,another-signature"
+    const signatures = webhookSignature.split(' ')
+    const primarySignature = signatures[0].split(',')[1]
+    
+    // Use constant-time comparison to prevent timing attacks
+    const isValid = crypto.timingSafeEqual(
+      Buffer.from(expectedSignature),
+      Buffer.from(primarySignature)
+    )
+    
+    console.log('🔐 Webhook signature verification:', isValid ? '✅ Valid' : '❌ Invalid')
+    return isValid
+    
+  } catch (error) {
+    console.error('❌ Webhook signature verification error:', error)
+    return false
+  }
+}
+
+// Validate webhook timestamp to prevent replay attacks
+export function validateWebhookTimestamp(timestamp: string, thresholdMinutes: number = 3): boolean {
+  try {
+    const webhookTime = parseInt(timestamp) * 1000 // Convert to milliseconds
+    const currentTime = Date.now()
+    const thresholdMs = thresholdMinutes * 60 * 1000
+    
+    const isValid = Math.abs(currentTime - webhookTime) <= thresholdMs
+    
+    console.log('⏰ Webhook timestamp validation:', isValid ? '✅ Valid' : '❌ Invalid')
+    return isValid
+    
+  } catch (error) {
+    console.error('❌ Webhook timestamp validation error:', error)
+    return false
+  }
+}
+
 // Yoco payment interface
 export interface YocoPaymentData {
   id: string
@@ -76,6 +178,16 @@ export interface YocoPaymentData {
     orderNumber: string
     customerEmail: string
   }
+}
+
+// Yoco checkout interface
+export interface YocoCheckoutData {
+  id: string
+  redirectUrl: string
+  amount: number
+  currency: string
+  metadata: any
+  status: string
 }
 
 // Initialize Yoco popup (will be loaded from CDN)

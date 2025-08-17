@@ -12,7 +12,11 @@ router.post('/', protect, async (req, res) => {
     console.log('📦 Request body:', JSON.stringify(req.body, null, 2))
     console.log('👤 User ID from token:', req.user.id)
     
+    // Generate UUID for order ID
+    const orderId = require('crypto').randomUUID();
+    
     const orderData = {
+      id: orderId, // Add the generated UUID
       ...req.body,
       userId: req.user.id,
       createdAt: new Date().toISOString(),

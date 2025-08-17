@@ -4,7 +4,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Plus, Trash2, Save } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, Save, Upload, X } from 'lucide-react'
 import Link from 'next/link'
 
 interface Product {
@@ -13,6 +13,8 @@ interface Product {
   category: string
   price: number
   images: Array<{ url: string; alt: string; isPrimary: boolean }>
+  colors?: string[]
+  sizes?: string[]
 }
 
 interface ProductCategory {
@@ -22,12 +24,19 @@ interface ProductCategory {
   selectedProducts: string[]
 }
 
+interface CollectionImage {
+  url: string
+  alt: string
+  isPrimary: boolean
+}
+
 export default function NewCollectionPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<ProductCategory[]>([])
+  const [coverImage, setCoverImage] = useState<CollectionImage | null>(null)
   
   // Form state
   const [formData, setFormData] = useState({
@@ -114,6 +123,39 @@ export default function NewCollectionPage() {
     }))
   }
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const formData = new FormData()
+    formData.append('image', file)
+
+    try {
+      const response = await fetch('/api/upload/product-image', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setCoverImage({
+          url: data.data.url,
+          alt: `Cover image for ${formData.name || 'collection'}`,
+          isPrimary: true
+        })
+      } else {
+        alert('Failed to upload image')
+      }
+    } catch (error) {
+      console.error('Upload error:', error)
+      alert('Failed to upload image')
+    }
+  }
+
+  const removeCoverImage = () => {
+    setCoverImage(null)
+  }
+
   const calculateTotalPrice = () => {
     let total = 0
     categories.forEach(category => {
@@ -136,6 +178,7 @@ export default function NewCollectionPage() {
       const collectionData = {
         ...formData,
         basePrice: calculateTotalPrice(),
+        image: coverImage?.url || '',
         productCategories: categories.map(cat => ({
           name: cat.name,
           maxSelections: cat.maxSelections,
@@ -205,7 +248,7 @@ export default function NewCollectionPage() {
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g., Premium Jacket Combo"
+                  placeholder="e.g., Premium Jacket + Skully Combo"
                 />
               </div>
               
@@ -272,6 +315,51 @@ export default function NewCollectionPage() {
             </div>
           </div>
 
+          {/* Cover Image */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Collection Cover Image</h2>
+            
+            {coverImage ? (
+              <div className="relative">
+                <img
+                  src={coverImage.url}
+                  alt={coverImage.alt}
+                  className="w-full h-48 object-cover rounded-lg"
+                />
+                <button
+                  type="button"
+                  onClick={removeCoverImage}
+                  className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                <div className="text-center">
+                  <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                  <div className="mt-4">
+                    <label htmlFor="cover-image-upload" className="cursor-pointer">
+                      <span className="mt-2 block text-sm font-medium text-gray-900">
+                        Upload collection cover image
+                      </span>
+                      <span className="mt-1 block text-sm text-gray-500">
+                        PNG, JPG, GIF up to 5MB
+                      </span>
+                    </label>
+                    <input
+                      id="cover-image-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Product Selection */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-medium text-gray-900 mb-4">Product Selection</h2>
@@ -333,6 +421,11 @@ export default function NewCollectionPage() {
                                 <p className="text-sm text-gray-500">
                                   R{product.price}
                                 </p>
+                                {product.colors && product.colors.length > 0 && (
+                                  <p className="text-xs text-gray-400">
+                                    Colors: {product.colors.join(', ')}
+                                  </p>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -403,6 +496,9 @@ export default function NewCollectionPage() {
                     categories.filter(cat => cat.selectedProducts.length > 0).length
                   }
                 </p>
+                <p className="text-blue-700">
+                  <span className="font-medium">Cover Image:</span> {coverImage ? '✅ Set' : '❌ Not set'}
+                </p>
               </div>
               <div>
                 <p className="text-blue-700">
@@ -410,6 +506,9 @@ export default function NewCollectionPage() {
                 </p>
                 <p className="text-blue-700">
                   <span className="font-medium">Type:</span> {formData.collectionType}
+                </p>
+                <p className="text-blue-700">
+                  <span className="font-medium">Status:</span> {formData.status}
                 </p>
               </div>
             </div>
@@ -424,7 +523,7 @@ export default function NewCollectionPage() {
             </Link>
             <Button 
               type="submit" 
-              disabled={loading || !formData.name}
+              disabled={loading || !formData.name || !coverImage}
               className="flex items-center space-x-2"
             >
               <Save className="h-4 w-4" />
