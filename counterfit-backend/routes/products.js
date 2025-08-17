@@ -107,7 +107,7 @@ router.get('/', [
 router.get('/:id', optionalAuth, async (req, res) => {
   try {
     const { data: product, error } = await supabase
-      .from('products')
+      .from('Product')
       .select('*')
       .eq('id', req.params.id)
       .single();
@@ -141,7 +141,7 @@ router.get('/:id', optionalAuth, async (req, res) => {
 router.get('/slug/:slug', optionalAuth, async (req, res) => {
   try {
     const { data: product, error } = await supabase
-      .from('products')
+      .from('Product')
       .select('*')
       .eq('slug', req.params.slug)
       .eq('status', 'active')
@@ -195,7 +195,7 @@ router.post('/', protect, adminOnly, [
     }
 
     const { data: product, error } = await supabase
-      .from('products')
+      .from('Product')
       .insert(req.body)
       .select()
       .single();
@@ -248,7 +248,7 @@ router.put('/:id', protect, adminOnly, [
     }
 
     const { data: product, error } = await supabase
-      .from('products')
+      .from('Product')
       .update(req.body)
       .eq('id', req.params.id)
       .select()
@@ -284,7 +284,7 @@ router.put('/:id', protect, adminOnly, [
 router.delete('/:id', protect, adminOnly, async (req, res) => {
   try {
     const { error } = await supabase
-      .from('products')
+      .from('Product')
       .delete()
       .eq('id', req.params.id);
 
@@ -317,7 +317,7 @@ router.delete('/:id', protect, adminOnly, async (req, res) => {
 router.get('/:id/related', async (req, res) => {
   try {
     const { data: product, error } = await supabase
-      .from('products')
+      .from('Product')
       .select('*')
       .eq('id', req.params.id)
       .single();
@@ -334,7 +334,7 @@ router.get('/:id/related', async (req, res) => {
 
     // Find related products in same category
     const { data: related, error: relatedError } = await supabase
-      .from('products')
+      .from('Product')
       .select('*')
       .eq('status', 'active')
       .eq('category', product.category)

@@ -193,11 +193,11 @@ app.get('/test-image/:filename', (req, res) => {
 
 // API Routes
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/admin', require('./routes/admin'));
 app.use('/api/products', require('./routes/products'));
 app.use('/api/collections', require('./routes/collections'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/users', require('./routes/users'));
-app.use('/api/admin', require('./routes/admin'));
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api', require('./routes/health'));
 app.use('/api/test', require('./routes/test'));
