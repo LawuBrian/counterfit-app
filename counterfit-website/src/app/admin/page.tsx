@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { getImageUrl } from '@/lib/utils'
+import AuthDebug from '@/components/debug/AuthDebug'
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession()
@@ -246,6 +247,9 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
+      
+      {/* Debug component - only shows in development */}
+      <AuthDebug />
     </div>
   )
 }

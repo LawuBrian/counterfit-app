@@ -15,11 +15,32 @@ export async function POST(request: NextRequest) {
     
     // Check if user is authenticated and is admin
     if (!session || session.user?.role !== 'ADMIN') {
+      console.log('❌ Authentication failed:', {
+        hasSession: !!session,
+        userRole: session?.user?.role,
+        userId: session?.user?.id
+      })
       return NextResponse.json(
         { error: 'Unauthorized - Admin access required' },
         { status: 401 }
       )
     }
+    
+    // Check if accessToken exists
+    if (!session.user.accessToken) {
+      console.log('❌ No access token found in session')
+      return NextResponse.json(
+        { error: 'No access token found' },
+        { status: 401 }
+      )
+    }
+    
+    console.log('✅ Authentication successful:', {
+      userId: session.user.id,
+      userRole: session.user.role,
+      hasToken: !!session.user.accessToken,
+      tokenPreview: session.user.accessToken.substring(0, 20) + '...'
+    })
     
     const productData = await request.json()
     console.log('📦 Product data received:', JSON.stringify(productData, null, 2))
@@ -37,7 +58,7 @@ export async function POST(request: NextRequest) {
     console.log('🌐 Calling backend API:', `${BACKEND_URL}/api/admin/products`)
     console.log('📤 Request headers:', {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session.user.accessToken ? 'TOKEN_PRESENT' : 'NO_TOKEN'}`
+      'Authorization': `Bearer ${session.user.accessToken.substring(0, 20)}...`
     })
     
     // Call the backend API to create the product
@@ -95,7 +116,7 @@ export async function GET(request: NextRequest) {
     const queryString = searchParams.toString()
     
     // Call the backend API to get products
-    const response = await fetch(`${BACKEND_URL}/api/products${queryString ? `?${queryString}` : ''}`, {
+    const response = await fetch(`${BACKEND_URL}/api/admin/products${queryString ? `?${queryString}` : ''}`, {
       headers: {
         'Authorization': `Bearer ${session.user.accessToken}`
       }
