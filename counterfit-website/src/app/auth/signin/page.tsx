@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { signIn, getSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -15,29 +15,53 @@ export default function SignInPage() {
   const [error, setError] = useState('')
   const router = useRouter()
 
+  useEffect(() => {
+    console.log('🔄 SignInPage component mounted')
+    console.log('🔍 signIn function available:', typeof signIn)
+    console.log('🔍 getSession function available:', typeof getSession)
+    console.log('🔍 router available:', typeof router)
+    
+    // Check environment variables
+    console.log('🌐 NEXT_PUBLIC_BACKEND_URL:', process.env.NEXT_PUBLIC_BACKEND_URL)
+    console.log('🔐 NEXTAUTH_SECRET exists:', !!process.env.NEXTAUTH_SECRET)
+  }, [])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('🚀 Form submitted!')
     setIsLoading(true)
     setError('')
 
     try {
+      console.log('🔍 NextAuth signIn function:', typeof signIn)
+      console.log('🔍 NextAuth getSession function:', typeof getSession)
+      console.log('🔐 Calling signIn with:', { email, password })
+      
       const result = await signIn('credentials', {
         email,
         password,
         redirect: false,
       })
+      
+      console.log('📥 signIn result:', result)
 
       if (result?.error) {
+        console.error('❌ signIn error:', result.error)
         setError('Invalid email or password')
       } else {
+        console.log('✅ signIn successful')
         const session = await getSession()
+        console.log('🔑 Session:', session)
         if (session?.user?.role === 'ADMIN') {
+          console.log('👑 Admin user detected, redirecting to admin panel')
           router.push('/admin')
         } else {
+          console.log('👤 Regular user, redirecting to home')
           router.push('/')
         }
       }
     } catch (error) {
+      console.error('💥 signIn exception:', error)
       setError('Something went wrong. Please try again.')
     } finally {
       setIsLoading(false)
