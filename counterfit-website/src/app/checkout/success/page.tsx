@@ -14,28 +14,22 @@ function CheckoutSuccessContent() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (sessionId && orderId) {
-      // Verify payment and get order details
-      fetch(`/api/orders/${orderId}/verify`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ sessionId }),
-      })
+    if (orderId) {
+      // Get order details (payment verification happens via webhook)
+      fetch(`/api/orders/${orderId}`)
         .then(res => res.json())
         .then(data => {
           setOrder(data.order)
           setLoading(false)
         })
         .catch(error => {
-          console.error('Error verifying payment:', error)
+          console.error('Error fetching order:', error)
           setLoading(false)
         })
     } else {
       setLoading(false)
     }
-  }, [sessionId, orderId])
+  }, [orderId])
 
   if (loading) {
     return (

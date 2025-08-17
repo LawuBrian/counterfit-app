@@ -1,6 +1,7 @@
-// Yoco configuration using CDN approach
+// Yoco configuration
 export const YOCO_CONFIG = {
   publicKey: process.env.NEXT_PUBLIC_YOCO_PUBLIC_KEY || '',
+  secretKey: process.env.YOCO_SECRET_KEY || '',
   currency: 'ZAR',
   name: 'Counterfit',
   description: 'Luxury Streetwear'
@@ -21,6 +22,48 @@ export const generateTrackingNumber = () => {
   const random = Math.floor(Math.random() * 1000000).toString().padStart(6, '0')
   const suffix = 'SA'
   return `${prefix}${random}${suffix}`
+}
+
+// Create server-side checkout (for webhook-based flow)
+export async function createYocoCheckout(checkoutData: {
+  amount: number
+  currency: string
+  metadata: {
+    orderId: string
+    orderNumber: string
+    customerEmail: string
+  }
+}) {
+  try {
+    console.log('💳 Creating Yoco checkout:', checkoutData)
+    
+    const response = await fetch('https://payments.yoco.com/api/checkouts', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${YOCO_CONFIG.secretKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        amount: checkoutData.amount,
+        currency: checkoutData.currency,
+        metadata: checkoutData.metadata
+      })
+    })
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(`Yoco checkout creation failed: ${errorData.message || response.statusText}`)
+    }
+    
+    const checkout = await response.json()
+    console.log('✅ Yoco checkout created:', checkout)
+    
+    return checkout
+    
+  } catch (error) {
+    console.error('❌ Failed to create Yoco checkout:', error)
+    throw error
+  }
 }
 
 // Yoco payment interface
