@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://counterfit-backend.onrender.com'
+const BACKEND_URL = 'https://counterfit-backend.onrender.com'
 
 export async function GET(
   request: NextRequest,
