@@ -254,6 +254,11 @@ app.use('*', (req, res) => {
 });
 
 // Database connection with Prisma
+console.log('🔍 Environment check:')
+console.log('NODE_ENV:', process.env.NODE_ENV)
+console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL)
+console.log('DATABASE_URL preview:', process.env.DATABASE_URL ? process.env.DATABASE_URL.substring(0, 50) + '...' : 'Not set')
+
 prisma.$connect()
   .then(() => {
     console.log('✅ Connected to Supabase database');
@@ -265,5 +270,10 @@ prisma.$connect()
   })
   .catch(err => {
     console.error('❌ Database connection error:', err);
+    console.error('💡 Error details:', {
+      code: err.code,
+      message: err.message,
+      meta: err.meta
+    });
     process.exit(1);
   });

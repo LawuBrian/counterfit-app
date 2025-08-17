@@ -1,59 +1,85 @@
 const { PrismaClient } = require('@prisma/client')
 
-// Create Prisma client with connection pooling
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL
-    }
-  },
-  log: ['query', 'info', 'warn', 'error'],
-})
+// Create a global Prisma instance
+let prisma
 
-// Connection retry logic
-let retryCount = 0
-const maxRetries = 3
+if (process.env.NODE_ENV === 'production') {
+  // In production, create a single instance with connection pooling
+  if (!global.prisma) {
+    global.prisma = new PrismaClient({
+      log: ['error', 'warn'],
+      errorFormat: 'minimal',
+      datasources: {
+        db: {
+          url: process.env.DATABASE_URL
+        }
+      },
+      // Connection pooling settings for Supabase
+      __internal: {
+        engine: {
+          connectionLimit: 5,
+          pool: {
+            min: 2,
+            max: 10
+          }
+        }
+      }
+    })
+  }
+  prisma = global.prisma
+} else {
+  // In development, create a new instance for each request
+  prisma = new PrismaClient({
+    log: ['query', 'error', 'warn'],
+    errorFormat: 'pretty',
+  })
+}
 
-async function connectWithRetry() {
-  try {
-    await prisma.$connect()
-    console.log('✅ Database connected successfully')
-    retryCount = 0
-  } catch (error) {
-    console.error(`❌ Database connection failed (attempt ${retryCount + 1}/${maxRetries}):`, error.message)
-    
-    if (retryCount < maxRetries) {
-      retryCount++
-      console.log(`🔄 Retrying connection in 5 seconds...`)
-      setTimeout(connectWithRetry, 5000)
-    } else {
-      console.error('❌ Max retries reached. Database connection failed.')
-      process.exit(1)
+// Test database connection with retry logic
+async function testConnection(retries = 3, delay = 5000) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      console.log(`🔄 Attempting database connection (${attempt}/${retries})...`)
+      
+      await prisma.$connect()
+      console.log('✅ Prisma connected to database successfully')
+      
+      // Test a simple query
+      const result = await prisma.$queryRaw`SELECT 1 as test`
+      console.log('✅ Database query test successful:', result)
+      
+      return true // Connection successful
+      
+    } catch (error) {
+      console.error(`❌ Prisma database connection failed (attempt ${attempt}/${retries}):`, error.message)
+      
+      if (error.code === 'P1001') {
+        console.error('💡 Database connection error details:')
+        console.error('   - Check if DATABASE_URL is set correctly')
+        console.error('   - Verify database server is running')
+        console.error('   - Check firewall/network settings')
+        console.error('   - Ensure database credentials are correct')
+        console.error('   - Current DATABASE_URL:', process.env.DATABASE_URL ? 'Set' : 'Not set')
+      }
+      
+      if (attempt < retries) {
+        console.log(`🔄 Retrying in ${delay/1000} seconds...`)
+        await new Promise(resolve => setTimeout(resolve, delay))
+      } else {
+        console.error('❌ All connection attempts failed')
+        
+        // In production, exit the process if database connection fails
+        if (process.env.NODE_ENV === 'production') {
+          console.error('🚨 Exiting due to database connection failure in production')
+          process.exit(1)
+        }
+        return false
+      }
     }
   }
 }
 
-// Initialize connection
-connectWithRetry()
-
-// Handle connection errors gracefully
-prisma.$on('query', (e) => {
-  console.log('Query: ' + e.query)
-  console.log('Params: ' + e.params)
-  console.log('Duration: ' + e.duration + 'ms')
-})
-
-prisma.$on('error', (e) => {
-  console.error('Prisma error:', e)
-  
-  // Reconnect on connection errors
-  if (e.code === 'P1001' || e.code === 'P1008') {
-    console.log('🔄 Connection lost, attempting to reconnect...')
-    setTimeout(connectWithRetry, 5000)
-  }
-})
-
-// Graceful shutdown
+// Handle graceful shutdown
 process.on('beforeExit', async () => {
   await prisma.$disconnect()
 })
@@ -62,5 +88,13 @@ process.on('SIGINT', async () => {
   await prisma.$disconnect()
   process.exit(0)
 })
+
+process.on('SIGTERM', async () => {
+  await prisma.$disconnect()
+  process.exit(0)
+})
+
+// Test connection on startup
+testConnection()
 
 module.exports = prisma
