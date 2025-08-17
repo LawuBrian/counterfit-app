@@ -18,6 +18,7 @@ import {
   Star
 } from 'lucide-react'
 import Link from 'next/link'
+import BulkCollectionImport from '@/components/admin/BulkCollectionImport'
 
 interface Collection {
   _id: string
@@ -50,6 +51,7 @@ export default function AdminCollectionsPage() {
   const [selectedCollections, setSelectedCollections] = useState<string[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [showBulkImport, setShowBulkImport] = useState(false)
   const [filters, setFilters] = useState<Filters>({
     search: '',
     status: '',
@@ -164,6 +166,13 @@ export default function AdminCollectionsPage() {
                 <Download className="mr-2 h-4 w-4" />
                 Export
               </Button>
+              <Button 
+                variant="outline"
+                onClick={() => setShowBulkImport(!showBulkImport)}
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                {showBulkImport ? 'Hide Import' : 'Bulk Import'}
+              </Button>
               <Button>
                 <Link href="/admin/collections/new" className="flex items-center">
                   <Plus className="mr-2 h-4 w-4" />
@@ -227,6 +236,13 @@ export default function AdminCollectionsPage() {
             </div>
           </div>
         </div>
+
+        {/* Bulk Import */}
+        {showBulkImport && (
+          <div className="mb-6">
+            <BulkCollectionImport onImportComplete={fetchCollections} />
+          </div>
+        )}
 
         {/* Collections Table */}
         <div className="bg-white rounded-lg shadow-sm border overflow-hidden">

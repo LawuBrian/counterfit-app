@@ -15,9 +15,30 @@
 
 ---
 
+## 🔢 PRODUCT NUMBERING SYSTEM
+
+### **Format**: `CF-[Category][Number]`
+
+- **CF-J001 to CF-J005**: Jackets (J = Jackets)
+- **CF-P001**: Pants (P = Pants)  
+- **CF-A001**: Accessories (A = Accessories)
+- **CF-C001 to CF-C002**: Combos (C = Combos)
+- **CF-D001 to CF-D002**: Duo Collections (D = Duo)
+- **CF-T001**: Trio Collections (T = Trio)
+- **CF-M001**: Mixed Collections (M = Mixed)
+
+### **Benefits**:
+- Easy inventory tracking
+- Quick product identification
+- Professional catalog organization
+- Simplified admin management
+
+---
+
 ## 🧥 SINGULAR JACKETS (R1,000 each)
 
 ### 1. Midnight Shadow Premium Jacket
+- **Product #**: CF-J001
 - **Image**: `BLACKJACKET.jpeg`
 - **Name**: "Midnight Shadow" Premium Jacket
 - **Category**: jackets
@@ -27,6 +48,7 @@
 - **Featured**: Yes
 
 ### 2. Arctic Frost Premium Jacket
+- **Product #**: CF-J002
 - **Image**: `WHITEJACKET.jpeg`
 - **Name**: "Arctic Frost" Premium Jacket
 - **Category**: jackets
@@ -36,6 +58,7 @@
 - **Featured**: Yes
 
 ### 3. Forest Camo Premium Jacket
+- **Product #**: CF-J003
 - **Image**: `NATUREJACKET.jpeg`
 - **Name**: "Forest Camo" Premium Jacket
 - **Category**: jackets
@@ -45,6 +68,7 @@
 - **Featured**: Yes
 
 ### 4. Storm Cloud Furry Premium Jacket
+- **Product #**: CF-J004
 - **Image**: `FURRYGREYJACKET.jpeg`
 - **Name**: "Storm Cloud" Furry Premium Jacket
 - **Category**: jackets
@@ -54,6 +78,7 @@
 - **Featured**: Yes
 
 ### 5. Royal Crown Luxury Jacket
+- **Product #**: CF-J005
 - **Image**: `LUXURYJACKET.jpeg`
 - **Name**: "Royal Crown" Luxury Jacket
 - **Category**: jackets
@@ -67,6 +92,7 @@
 ## 👖 PANTS (R500 each)
 
 ### 6. Urban Elite Premium Pants
+- **Product #**: CF-P001
 - **Image**: `COUNTERFITPANTS.jpeg`
 - **Name**: "Urban Elite" Premium Pants
 - **Category**: pants
@@ -80,6 +106,7 @@
 ## 🧢 ACCESSORIES (R200 each)
 
 ### 7. Skull King Premium Cap
+- **Product #**: CF-A001
 - **Image**: `SKULLCAP.jpg`
 - **Name**: "Skull King" Premium Cap
 - **Category**: accessories
@@ -93,6 +120,7 @@
 ## 🎯 COMBO PACKAGES
 
 ### 8. Urban Elite Jacket + Pants Combo
+- **Product #**: CF-C001
 - **Image**: `COMBOPANTSJACKET.jpeg`
 - **Name**: "Urban Elite" Jacket + Pants Combo
 - **Category**: collections
@@ -106,6 +134,7 @@
 - **Featured**: Yes
 
 ### 9. Skull King Jacket + Cap Combo
+- **Product #**: CF-C002
 - **Image**: `COMBOSKULLYJACKET.jpeg`
 - **Name**: "Skull King" Jacket + Cap Combo
 - **Category**: collections
@@ -123,6 +152,7 @@
 ## 🌟 COLLECTION PACKAGES
 
 ### 10. Dynamic Duo Collection
+- **Product #**: CF-D001
 - **Image**: `JACKETDUOCOLLECTION.jpg`
 - **Name**: "Dynamic Duo" Collection
 - **Category**: collections
@@ -136,6 +166,7 @@
 - **Featured**: Yes
 
 ### 11. Polar Twins Collection
+- **Product #**: CF-D002
 - **Image**: `WHITEDUOCOLLECTION.jpg`
 - **Name**: "Polar Twins" Collection
 - **Category**: collections
@@ -149,6 +180,7 @@
 - **Featured**: Yes
 
 ### 12. Trinity Elite Collection
+- **Product #**: CF-T001
 - **Image**: `TRIOCOLLECTION.jpg`
 - **Name**: "Trinity Elite" Collection
 - **Category**: collections
@@ -162,6 +194,7 @@
 - **Featured**: Yes
 
 ### 13. Wilderness Elite Collection
+- **Product #**: CF-M001
 - **Image**: `DUONATURECAMOORBLACKWHITE MIX.jpeg`
 - **Name**: "Wilderness Elite" Collection
 - **Category**: collections

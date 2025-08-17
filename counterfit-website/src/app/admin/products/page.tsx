@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { getImageUrl } from '@/lib/utils'
+import BulkProductImport from '@/components/admin/BulkProductImport'
 
 interface Product {
   id: string
@@ -76,6 +77,7 @@ export default function AdminProductsPage() {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [showBulkImport, setShowBulkImport] = useState(false)
   const [filters, setFilters] = useState<Filters>({
     search: '',
     category: '',
@@ -229,9 +231,12 @@ export default function AdminProductsPage() {
                 <Download className="mr-2 h-4 w-4" />
                 Export
               </Button>
-              <Button variant="outline">
+              <Button 
+                variant="outline"
+                onClick={() => setShowBulkImport(!showBulkImport)}
+              >
                 <Upload className="mr-2 h-4 w-4" />
-                Import
+                {showBulkImport ? 'Hide Import' : 'Bulk Import'}
               </Button>
               <Button>
                 <Link href="/admin/products/new" className="flex items-center">
@@ -345,6 +350,13 @@ export default function AdminProductsPage() {
             </div>
           </div>
         </div>
+
+        {/* Bulk Import */}
+        {showBulkImport && (
+          <div className="mb-6">
+            <BulkProductImport onImportComplete={fetchProducts} />
+          </div>
+        )}
 
         {/* Bulk Actions */}
         {selectedProducts.length > 0 && (

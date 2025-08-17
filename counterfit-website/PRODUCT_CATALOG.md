@@ -7,23 +7,23 @@
 *Individual premium jackets - R1,000 each*
 
 ### Core Collection
-- **BLACKJACKET.jpeg** → **"Midnight Shadow" Premium Jacket**
-- **WHITEJACKET.jpeg** → **"Arctic Frost" Premium Jacket**
-- **NATUREJACKET.jpeg** → **"Forest Camo" Premium Jacket**
-- **FURRYGREYJACKET.jpeg** → **"Storm Cloud" Furry Premium Jacket**
+- **BLACKJACKET.jpeg** → **"Midnight Shadow" Premium Jacket** *(CF-J001)*
+- **WHITEJACKET.jpeg** → **"Arctic Frost" Premium Jacket** *(CF-J002)*
+- **NATUREJACKET.jpeg** → **"Forest Camo" Premium Jacket** *(CF-J003)*
+- **FURRYGREYJACKET.jpeg** → **"Storm Cloud" Furry Premium Jacket** *(CF-J004)*
 
 ### Luxury Tier
-- **LUXURYJACKET.jpeg** → **"Royal Crown" Luxury Jacket** *(R1,200)*
+- **LUXURYJACKET.jpeg** → **"Royal Crown" Luxury Jacket** *(CF-J005, R1,200)*
 
 ---
 
 ## 👖 PANTS
-- **COUNTERFITPANTS.jpeg** → **"Urban Elite" Premium Pants**
+- **COUNTERFITPANTS.jpeg** → **"Urban Elite" Premium Pants** *(CF-P001)*
 
 ---
 
 ## 🧢 ACCESSORIES
-- **SKULLCAP.jpg** → **"Skull King" Premium Cap**
+- **SKULLCAP.jpg** → **"Skull King" Premium Cap** *(CF-A001)*
 
 ---
 
@@ -31,12 +31,12 @@
 *Customizable combinations - R1,500 each*
 
 ### Jacket + Pants Combos
-- **COMBOPANTSJACKET.jpeg** → **"Urban Elite" Jacket + Pants Combo**
+- **COMBOPANTSJACKET.jpeg** → **"Urban Elite" Jacket + Pants Combo** *(CF-C001)*
   - Customer selects any singular jacket + pants
   - Price: R1,500
 
 ### Jacket + Skull Cap Combos
-- **COMBOSKULLYJACKET.jpeg** → **"Skull King" Jacket + Cap Combo**
+- **COMBOSKULLYJACKET.jpeg** → **"Skull King" Jacket + Cap Combo** *(CF-C002)*
   - Customer selects any singular jacket + skull cap
   - Price: R1,100
 
@@ -46,21 +46,21 @@
 *Pre-curated premium sets*
 
 ### Duo Collections
-- **JACKETDUOCOLLECTION.jpg** → **"Dynamic Duo" Collection**
+- **JACKETDUOCOLLECTION.jpg** → **"Dynamic Duo" Collection** *(CF-D001)*
   - Any 2 jackets of customer's choice
   - Price: R1,900
 
-- **WHITEDUOCOLLECTION.jpg** → **"Polar Twins" Collection**
+- **WHITEDUOCOLLECTION.jpg** → **"Polar Twins" Collection** *(CF-D002)*
   - Any 2 jackets of customer's choice
   - Price: R1,900
 
 ### Trio Collections
-- **TRIOCOLLECTION.jpg** → **"Trinity Elite" Collection**
+- **TRIOCOLLECTION.jpg** → **"Trinity Elite" Collection** *(CF-T001)*
   - Any 3 jackets of customer's choice
   - Price: R2,700
 
 ### Mixed Collections
-- **DUONATURECAMOORBLACKWHITE MIX.jpeg** → **"Wilderness Elite" Collection**
+- **DUONATURECAMOORBLACKWHITE MIX.jpeg** → **"Wilderness Elite" Collection** *(CF-M001)*
   - Nature/Camo + Black/White jacket combination
   - Price: R1,900
 
@@ -97,19 +97,19 @@
 ## 📸 IMAGE NAMING CONVENTION
 
 ### Current Files → Professional Names
-- `BLACKJACKET.jpeg` → "Midnight Shadow"
-- `WHITEJACKET.jpeg` → "Arctic Frost"
-- `NATUREJACKET.jpeg` → "Forest Camo"
-- `FURRYGREYJACKET.jpeg` → "Storm Cloud"
-- `LUXURYJACKET.jpeg` → "Royal Crown"
-- `COUNTERFITPANTS.jpeg` → "Urban Elite"
-- `SKULLCAP.jpg` → "Skull King"
+- `BLACKJACKET.jpeg` → "Midnight Shadow" (CF-J001)
+- `WHITEJACKET.jpeg` → "Arctic Frost" (CF-J002)
+- `NATUREJACKET.jpeg` → "Forest Camo" (CF-J003)
+- `FURRYGREYJACKET.jpeg` → "Storm Cloud" (CF-J004)
+- `LUXURYJACKET.jpeg` → "Royal Crown" (CF-J005)
+- `COUNTERFITPANTS.jpeg` → "Urban Elite" (CF-P001)
+- `SKULLCAP.jpg` → "Skull King" (CF-A001)
 
 ### Collection Files
-- `JACKETDUOCOLLECTION.jpg` → "Dynamic Duo"
-- `WHITEDUOCOLLECTION.jpg` → "Polar Twins"
-- `TRIOCOLLECTION.jpg` → "Trinity Elite"
-- `DUONATURECAMOORBLACKWHITE MIX.jpeg` → "Wilderness Elite"
+- `JACKETDUOCOLLECTION.jpg` → "Dynamic Duo" (CF-D001)
+- `WHITEDUOCOLLECTION.jpg` → "Polar Twins" (CF-D002)
+- `TRIOCOLLECTION.jpg` → "Trinity Elite" (CF-T001)
+- `DUONATURECAMOORBLACKWHITE MIX.jpeg` → "Wilderness Elite" (CF-M001)
 
 ---
 
