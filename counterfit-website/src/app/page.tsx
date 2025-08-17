@@ -6,16 +6,37 @@ import { Button } from '@/components/ui/button'
 import { ArrowRight, Star, Zap, Tag } from 'lucide-react'
 import NewsletterSignup from '@/components/NewsletterSignup'
 import { getFeaturedProducts, getImageUrl, formatPrice, getProductUrl, type Product } from '@/lib/api'
+import { useState, useEffect } from 'react'
 
 // Force dynamic rendering and prevent caching
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-async function HomePage() {
-  // Fetch featured products from the backend with cache busting
-  const timestamp = Date.now()
-  const featuredProductsResponse = await getFeaturedProducts(5, timestamp)
-  const featuredProducts = featuredProductsResponse.success ? featuredProductsResponse.data : []
+export default function HomePage() {
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const timestamp = Date.now()
+        const response = await getFeaturedProducts(5, timestamp)
+        if (response.success) {
+          setFeaturedProducts(response.data)
+        } else {
+          setFeaturedProducts([])
+        }
+      } catch (error) {
+        console.error('Error fetching featured products:', error)
+        setFeaturedProducts([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProducts()
+  }, [])
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -87,7 +108,12 @@ async function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
-            {featuredProducts.length > 0 ? (
+            {loading ? (
+              // Fallback when products are loading
+              <div className="col-span-full text-center py-12">
+                <p className="text-secondary text-lg">Loading featured products...</p>
+              </div>
+            ) : featuredProducts.length > 0 ? (
               featuredProducts.map((product) => (
                 <Link key={product.id || product._id} href={getProductUrl(product)} className="group overflow-hidden rounded-xl bg-background shadow-md hover:shadow-lg transition-all duration-300 block">
                   <div className="relative aspect-[4/5] overflow-hidden">
@@ -337,5 +363,3 @@ async function HomePage() {
     </div>
   )
 }
-
-export default HomePage
