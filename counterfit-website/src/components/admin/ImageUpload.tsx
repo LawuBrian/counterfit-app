@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Upload, X, Image as ImageIcon } from 'lucide-react'
+import { getImageUrl } from '@/lib/utils'
 
 interface ImageUploadProps {
   images: Array<{
@@ -196,7 +197,7 @@ export default function ImageUpload({ images, onChange, maxImages = 10 }: ImageU
               </button>
             </p>
             <p className="text-xs text-gray-500 mt-1">
-              PNG, JPG, GIF up to 10MB each. Maximum {maxImages} images.
+              PNG, JPG, GIF up to 100MB each. Maximum {maxImages} images.
             </p>
           </div>
           
@@ -231,7 +232,7 @@ export default function ImageUpload({ images, onChange, maxImages = 10 }: ImageU
                 {/* Image Preview */}
                 <div className="flex-shrink-0">
                   <img
-                    src={image.url}
+                    src={getImageUrl(image.url)}
                     alt={image.alt || `Product image ${index + 1}`}
                     className="h-16 w-16 object-cover rounded-lg border"
                   />

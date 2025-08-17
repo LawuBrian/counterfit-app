@@ -47,7 +47,7 @@ const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB limit
+    fileSize: 100 * 1024 * 1024, // 100MB limit to handle large images
     files: 10 // Maximum 10 files
   }
 });
@@ -94,8 +94,9 @@ router.post('/product-image', upload.single('image'), (req, res) => {
       path: req.file.path
     })
 
-    // Return the file URL immediately
-    const fileUrl = `/uploads/products/${req.file.filename}`;
+    // Return the file URL immediately - use full backend URL
+    const backendUrl = process.env.BACKEND_URL || `https://${req.get('host')}`;
+    const fileUrl = `${backendUrl}/uploads/products/${req.file.filename}`;
     console.log('🔗 Generated file URL:', fileUrl)
     
     const response = {
@@ -149,9 +150,10 @@ router.post('/product-images', upload.array('images', 10), (req, res) => {
       });
     }
 
-    // Return array of file URLs
+    // Return array of file URLs - use full backend URL
+    const backendUrl = process.env.BACKEND_URL || `https://${req.get('host')}`;
     const uploadedFiles = req.files.map(file => ({
-      url: `/uploads/products/${file.filename}`,
+      url: `${backendUrl}/uploads/products/${file.filename}`,
       filename: file.filename,
       originalName: file.originalname,
       size: file.size
@@ -209,7 +211,7 @@ router.use((error, req, res, next) => {
     if (error.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({
         success: false,
-        message: 'File too large. Maximum size is 10MB.'
+        message: 'File too large. Maximum size is 100MB.'
       });
     }
     if (error.code === 'LIMIT_FILE_COUNT') {

@@ -107,7 +107,7 @@ const initialFormData: ProductFormData = {
   }
 }
 
-const availableSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL']
+const availableSizes = ['One Size Fits All', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL']
 
 export default function NewProductPage() {
   const { data: session, status } = useSession()
@@ -387,6 +387,9 @@ export default function NewProductPage() {
               {/* Sizes */}
               <div className="mb-8">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Available Sizes</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Select sizes for your product. Use "One Size Fits All" for accessories like caps, scarves, or items that don't require specific sizing.
+                </p>
                 <div className="flex flex-wrap gap-2 mb-4">
                   {availableSizes.map(size => (
                     <Button

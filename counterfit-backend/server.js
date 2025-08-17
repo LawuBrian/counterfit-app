@@ -64,13 +64,66 @@ if (!fs.existsSync(productsUploadsDir)) {
   console.log('📁 Created products uploads directory:', productsUploadsDir);
 }
 
+// Specific route for serving product images with proper CORS
+app.get('/uploads/products/:filename', (req, res) => {
+  const { filename } = req.params;
+  const filePath = path.join(productsUploadsDir, filename);
+  
+  // Set CORS headers for images
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Range');
+  
+  // Check if file exists
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ 
+      success: false, 
+      message: 'Image not found',
+      filename,
+      path: filePath
+    });
+  }
+  
+  // Set proper content type based on file extension
+  const ext = path.extname(filename).toLowerCase();
+  if (ext === '.jpg' || ext === '.jpeg') {
+    res.setHeader('Content-Type', 'image/jpeg');
+  } else if (ext === '.png') {
+    res.setHeader('Content-Type', 'image/png');
+  } else if (ext === '.gif') {
+    res.setHeader('Content-Type', 'image/gif');
+  } else if (ext === '.webp') {
+    res.setHeader('Content-Type', 'image/webp');
+  }
+  
+  // Set cache headers
+  res.setHeader('Cache-Control', 'public, max-age=31536000');
+  
+  // Stream the file
+  const stream = fs.createReadStream(filePath);
+  stream.pipe(res);
+  
+  stream.on('error', (error) => {
+    console.error('Error streaming image:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ 
+        success: false, 
+        message: 'Error serving image' 
+      });
+    }
+  });
+});
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
   setHeaders: (res, filePath) => {
-    // Allow cross-origin requests for images
+    // Allow cross-origin requests for images from any domain
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Range');
     res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
     
     // Set proper content type for images
@@ -173,7 +226,7 @@ app.use((err, req, res, next) => {
   if (err.code === 'LIMIT_FILE_SIZE') {
     return res.status(413).json({
       success: false,
-      message: 'File too large. Maximum size is 10MB.'
+      message: 'File too large. Maximum size is 100MB.'
     });
   }
   

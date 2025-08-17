@@ -293,6 +293,53 @@ const sampleProducts = [
     },
     tags: ["accessories", "cap", "retro", "snapback"],
     rating: { average: 4.4, count: 67 }
+  },
+  {
+    name: "Classic Black Cap",
+    slug: "classic-black-cap",
+    description: "Premium black cap with embroidered Counterfit logo. One size fits all with adjustable strap for perfect fit.",
+    shortDescription: "Premium black cap with embroidered logo - one size fits all",
+    price: 199,
+    comparePrice: 249,
+    costPrice: 80,
+    stockCode: "CF-CAP-001",
+    sku: "CF-CAP-BLK-OS",
+    category: "accessories",
+    status: "active",
+    featured: true,
+    isNew: false,
+    isAvailable: true,
+    images: [
+      {
+        url: "/images/1d66cc_6b9d669bf50e49e1848f958b11a16367_mv2.png",
+        alt: "Classic Black Cap - Front View",
+        isPrimary: true
+      }
+    ],
+    sizes: [
+      { size: "One Size Fits All", stock: 50, isAvailable: true }
+    ],
+    colors: [
+      { name: "Black", hexCode: "#000000", stock: 50, isAvailable: true }
+    ],
+    inventory: {
+      trackQuantity: true,
+      quantity: 50,
+      lowStockThreshold: 10,
+      allowBackorder: false
+    },
+    shipping: {
+      weight: 0.1,
+      dimensions: { length: 20, width: 20, height: 8 },
+      shippingClass: "standard"
+    },
+    seo: {
+      title: "Classic Black Cap - One Size Fits All | Counterfit",
+      description: "Shop the Classic Black Cap from Counterfit. Premium cap with embroidered logo - one size fits all.",
+      keywords: ["cap", "hat", "black", "one size", "accessories", "streetwear"]
+    },
+    tags: ["accessories", "cap", "one size", "black", "logo"],
+    rating: { average: 4.7, count: 32 }
   }
 ];
 

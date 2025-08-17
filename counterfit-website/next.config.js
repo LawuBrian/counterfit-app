@@ -14,11 +14,11 @@ const nextConfig = {
   },
   images: {
     unoptimized: true,
-    domains: ['localhost', 'your-backend-domain.onrender.com', 'your-backend-domain.railway.app'],
+    domains: ['localhost', 'counterfit-backend.onrender.com'],
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**',
+        hostname: 'counterfit-backend.onrender.com',
         pathname: '/uploads/**',
       },
       {
@@ -31,7 +31,7 @@ const nextConfig = {
   },
   experimental: {
     serverActions: {
-      bodySizeLimit: '10mb'
+      bodySizeLimit: '100mb'
     }
   },
   // Production optimizations
