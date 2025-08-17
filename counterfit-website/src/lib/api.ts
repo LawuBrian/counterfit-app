@@ -120,8 +120,12 @@ export async function getProducts(params?: {
   return apiFetch<Product[]>(endpoint)
 }
 
-export async function getFeaturedProducts(limit = 5): Promise<ApiResponse<Product[]>> {
-  return getProducts({ featured: true, status: 'active', limit })
+export async function getFeaturedProducts(limit = 5, cacheBuster?: number): Promise<ApiResponse<Product[]>> {
+  const params = { featured: true, status: 'active', limit }
+  if (cacheBuster) {
+    params._t = cacheBuster
+  }
+  return getProducts(params)
 }
 
 export async function getNewProducts(limit = 10): Promise<ApiResponse<Product[]>> {

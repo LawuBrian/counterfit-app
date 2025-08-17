@@ -89,10 +89,16 @@ export const initializeYoco = (callback: (result: any) => void) => {
       }, 100)
     }
     
-    script.onerror = () => {
-      console.error('❌ Failed to load Yoco script')
+    script.onerror = (error) => {
+      console.error('❌ Failed to load Yoco script:', error)
       ;(window as any).yocoScriptLoading = false
-      reject(new Error('Failed to load Yoco script'))
+      
+      // Check if it's a network error or missing environment variable
+      if (!YOCO_CONFIG.publicKey) {
+        reject(new Error('Yoco public key not configured. Please check NEXT_PUBLIC_YOCO_PUBLIC_KEY environment variable.'))
+      } else {
+        reject(new Error('Failed to load Yoco script. Please check your internet connection and try again.'))
+      }
     }
     
     document.head.appendChild(script)

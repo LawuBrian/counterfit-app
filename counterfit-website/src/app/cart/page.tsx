@@ -14,17 +14,17 @@ export default function CartPage() {
   const { data: session } = useSession()
   const router = useRouter()
 
-  const incrementQuantity = (id: number, size: string, color: string, currentQuantity: number) => {
+  const incrementQuantity = (id: string, size: string, color: string, currentQuantity: number) => {
     updateQuantity(id, size, color, currentQuantity + 1)
   }
 
-  const decrementQuantity = (id: number, size: string, color: string, currentQuantity: number) => {
+  const decrementQuantity = (id: string, size: string, color: string, currentQuantity: number) => {
     if (currentQuantity > 1) {
       updateQuantity(id, size, color, currentQuantity - 1)
     }
   }
 
-  const handleRemoveItem = (id: number, size: string, color: string) => {
+  const handleRemoveItem = (id: string, size: string, color: string) => {
     removeFromCart(id, size, color)
   }
 

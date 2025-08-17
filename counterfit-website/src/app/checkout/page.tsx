@@ -134,31 +134,45 @@ export default function CheckoutPage() {
 
       // Initialize Yoco payment
       console.log('💳 Initializing Yoco payment...')
-      const yoco = await initializeYoco((result: any) => {
-        if (result.error) {
-          console.error('Payment failed:', result.error)
-          alert('Payment failed. Please try again.')
-        } else {
-          // Payment successful - redirect to success page
-          console.log('✅ Payment successful, redirecting to success page')
-          router.push(`/checkout/success?orderId=${orderData.order.id}`)
-        }
-      })
-
-      console.log('💳 Yoco initialized, opening checkout...')
       
-      // Open Yoco checkout
-      yoco.open({
-        amount: Math.round(calculateTotal() * 100), // Convert to cents
-        currency: 'ZAR',
-        name: 'Counterfit',
-        description: `Order ${orderData.order.orderNumber}`,
-        metadata: {
-          orderId: orderData.order.id,
-          orderNumber: orderData.order.orderNumber,
-          customerEmail: formData.email
+      try {
+        const yoco = await initializeYoco((result: any) => {
+          if (result.error) {
+            console.error('Payment failed:', result.error)
+            alert('Payment failed. Please try again.')
+          } else {
+            // Payment successful - redirect to success page
+            console.log('✅ Payment successful, redirecting to success page')
+            router.push(`/checkout/success?orderId=${orderData.order.id}`)
+          }
+        })
+
+        console.log('💳 Yoco initialized, opening checkout...')
+        
+        // Open Yoco checkout
+        yoco.open({
+          amount: Math.round(calculateTotal() * 100), // Convert to cents
+          currency: 'ZAR',
+          name: 'Counterfit',
+          description: `Order ${orderData.order.orderNumber}`,
+          metadata: {
+            orderId: orderData.order.id,
+            orderNumber: orderData.order.orderNumber,
+            customerEmail: formData.email
+          }
+        })
+      } catch (yocoError) {
+        console.error('💳 Yoco initialization failed:', yocoError)
+        
+        // Check if it's a configuration error
+        if (yocoError instanceof Error && yocoError.message.includes('public key not configured')) {
+          alert('Payment system not configured. Please contact support.')
+        } else {
+          alert('Payment system temporarily unavailable. Please try again later.')
         }
-      })
+        
+        throw yocoError
+      }
 
     } catch (error) {
       console.error('Checkout error:', error)
