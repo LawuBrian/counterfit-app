@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react'
 import { useCart } from '@/contexts/CartContext'
 import { useParams } from 'next/navigation'
 import { getImageUrl } from '@/lib/utils'
+import { formatPrice } from '@/lib/api'
 
 // Define proper types for the product data
 interface ProductData {
@@ -71,6 +72,9 @@ export default function ProductPage() {
         const data = await response.json()
         console.log('🛒 Raw API response:', data)
         console.log('🛒 Product data:', data.data)
+        console.log('🛒 Product price:', data.data?.price, 'Type:', typeof data.data?.price)
+        console.log('🛒 Product comparePrice:', data.data?.comparePrice, 'Type:', typeof data.data?.comparePrice)
+        console.log('🛒 Full product object:', JSON.stringify(data.data, null, 2))
         setProduct(data.data)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load product')
@@ -231,11 +235,11 @@ export default function ProductPage() {
                 {/* Price */}
                 <div className="flex items-center gap-4 mb-6">
                   <span className="font-heading text-3xl font-bold text-primary">
-                    R{product.price.toLocaleString()}
+                    {formatPrice(product.price)}
                   </span>
-                  {originalPrice !== null && (
+                  {originalPrice !== null && originalPrice > 0 && originalPrice > product.price && (
                     <span className="text-xl text-secondary/60 line-through">
-                      R{originalPrice.toLocaleString()}
+                      {formatPrice(originalPrice)}
                     </span>
                   )}
                 </div>
@@ -405,24 +409,7 @@ export default function ProductPage() {
         </div>
       </section>
 
-      {/* Related Products */}
-      <section className="py-16">
-        <div className="max-w-screen-2xl mx-auto px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-12">
-            <h2 className="font-heading text-3xl font-bold text-primary">You Might Also Like</h2>
-            <Button variant="outline">
-              <Link href="/shop" className="flex items-center">
-                View All
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {/* Related products data not available in the new product structure, so this will be empty */}
-          </div>
-        </div>
-      </section>
+
     </div>
   )
 }

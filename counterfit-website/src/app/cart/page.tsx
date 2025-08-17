@@ -270,70 +270,7 @@ export default function CartPage() {
         </div>
       </section>
 
-      {/* Recommended Products */}
-      <section className="py-16 bg-primary/5">
-        <div className="max-w-screen-2xl mx-auto px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="font-heading text-3xl font-bold text-primary mb-4">You Might Also Like</h2>
-            <p className="font-paragraph text-secondary">Complete your streetwear collection with these premium pieces</p>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              {
-                id: 3,
-                name: "Premium Camo Hoodie",
-                price: "R1,000",
-                image: "/images/1d66cc_dae82150175d4010871e43fef851f81a_mv2.jpg"
-              },
-              {
-                id: 4,
-                name: "Black Skull Cap",
-                price: "R200",
-                image: "/images/1d66cc_770f254da8114e36a8c99b2ae2d76e57_mv2.jpg"
-              },
-              {
-                id: 5,
-                name: "Luxury Cream Jacket",
-                price: "R1,100",
-                image: "/images/1d66cc_b4b6f42d5bec4d1296ef5f4525844fb8_mv2.png"
-              },
-              {
-                id: 6,
-                name: "Platform Series Tee",
-                price: "R450",
-                image: "/images/1d66cc_118bf0bf6588467e8c966076d949e1b3_mv2.png"
-              }
-            ].map((product) => (
-              <Link key={product.id} href={`/product/${product.id}`} className="group">
-                <div className="bg-background rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300">
-                  <div className="relative aspect-[4/5] overflow-hidden rounded-t-xl">
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  </div>
-                  <div className="p-4">
-                    <h3 className="font-heading text-lg font-semibold text-primary mb-2 group-hover:text-secondary transition-colors">
-                      {product.name}
-                    </h3>
-                    <div className="flex items-center justify-between">
-                      <span className="font-heading text-xl font-bold text-primary">
-                        {product.price}
-                      </span>
-                      <Button size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                        View Details
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Recommended Products - Removed hardcoded products to prevent showing deleted items */}
     </div>
   )
 }

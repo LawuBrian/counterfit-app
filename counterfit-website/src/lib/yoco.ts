@@ -38,6 +38,11 @@ export interface YocoPaymentData {
 // Initialize Yoco popup (will be loaded from CDN)
 export const initializeYoco = (callback: (result: any) => void) => {
   return new Promise((resolve, reject) => {
+    // Debug logging
+    console.log('🔍 Yoco Config:', YOCO_CONFIG)
+    console.log('🔍 Public Key:', process.env.NEXT_PUBLIC_YOCO_PUBLIC_KEY)
+    console.log('🔍 Window object:', typeof window)
+    
     // Check if Yoco is already loaded
     if (typeof window !== 'undefined' && (window as any).Yoco) {
       console.log('✅ Yoco already loaded, using existing instance')
@@ -91,6 +96,8 @@ export const initializeYoco = (callback: (result: any) => void) => {
     
     script.onerror = (error) => {
       console.error('❌ Failed to load Yoco script:', error)
+      console.error('❌ Script URL attempted:', 'https://js.yoco.com/sdk/v1/checkout.js')
+      console.error('❌ Network error details:', error)
       ;(window as any).yocoScriptLoading = false
       
       // Check if it's a network error or missing environment variable

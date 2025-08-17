@@ -91,11 +91,11 @@ export default function OrderHistoryPage() {
           items: [
             {
               id: '1',
-              name: 'Premium Camo Hoodie',
+              name: 'Premium Streetwear Item',
               price: 1500,
               quantity: 1,
               size: 'L',
-              color: 'Camo Green',
+              color: 'Green',
               image: '/images/hoodie-1.jpg'
             },
             {

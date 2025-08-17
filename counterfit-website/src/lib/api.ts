@@ -188,6 +188,10 @@ export function getImageUrl(imagePath: string): string {
 }
 
 export function formatPrice(price: number): string {
+  // Handle invalid prices
+  if (typeof price !== 'number' || isNaN(price) || price < 0) {
+    return 'R0.00'
+  }
   return `R${price.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}`
 }
 
