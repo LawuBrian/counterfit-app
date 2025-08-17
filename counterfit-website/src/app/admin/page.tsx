@@ -103,6 +103,12 @@ export default function AdminDashboard() {
                   View Site
                 </Link>
               </Button>
+              <Button variant="outline">
+                <Link href="/admin/collections/new" className="flex items-center">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Collection
+                </Link>
+              </Button>
               <Button>
                 <Link href="/admin/products/new" className="flex items-center">
                   <Plus className="mr-2 h-4 w-4" />
@@ -166,7 +172,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Recent Orders */}
           <div className="bg-white rounded-xl shadow-sm">
             <div className="p-6 border-b border-gray-200">
@@ -196,6 +202,34 @@ export default function AdminDashboard() {
               ) : (
                 <p className="text-secondary text-center py-8">No recent orders</p>
               )}
+            </div>
+          </div>
+
+          {/* Collections Management */}
+          <div className="bg-white rounded-xl shadow-sm">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="font-heading text-xl font-semibold text-primary">Collections</h2>
+                <Button variant="outline" size="sm">
+                  <Link href="/admin/collections">Manage All</Link>
+                </Button>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="text-center py-8">
+                <div className="mx-auto h-12 w-12 text-gray-400 mb-4">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-full h-full">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                </div>
+                <p className="text-secondary mb-4">No collections yet</p>
+                <Button size="sm">
+                  <Link href="/admin/collections/new">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create First Collection
+                  </Link>
+                </Button>
+              </div>
             </div>
           </div>
 
