@@ -73,7 +73,7 @@ async function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
             {featuredProducts.length > 0 ? (
               featuredProducts.map((product) => (
-                <Link key={product.id} href={getProductUrl(product)} className="group overflow-hidden rounded-xl bg-background shadow-md hover:shadow-lg transition-all duration-300 block">
+                <Link key={product.id || product._id} href={getProductUrl(product)} className="group overflow-hidden rounded-xl bg-background shadow-md hover:shadow-lg transition-all duration-300 block">
                   <div className="relative aspect-[4/5] overflow-hidden">
                     <Image
                       src={getImageUrl(product.images[0]?.url || '/placeholder-product.jpg')}

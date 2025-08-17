@@ -212,7 +212,7 @@ export default function AdminDashboard() {
               {products.length > 0 ? (
                 <div className="space-y-4">
                   {products.slice(0, 5).map((product: any) => (
-                    <div key={product._id || product.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                    <div key={product.id || product._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                       <div className="flex items-center gap-3">
                         {product.images && product.images.length > 0 && product.images[0] && (
                           <img 
@@ -228,7 +228,7 @@ export default function AdminDashboard() {
                       </div>
                       <div className="flex gap-2">
                         <Button size="sm" variant="outline">
-                          <Link href={`/admin/products/${product._id || product.id}/edit`}>
+                          <Link href={`/admin/products/${product.id || product._id}/edit`}>
                             <Edit className="h-4 w-4" />
                           </Link>
                         </Button>

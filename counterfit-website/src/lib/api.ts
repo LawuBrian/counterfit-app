@@ -6,6 +6,7 @@ const API_BASE_URL = config.apiUrl
 
 export interface Product {
   id: string
+  _id?: string // Fallback for compatibility
   name: string
   slug: string
   description: string
@@ -187,7 +188,7 @@ export function formatPrice(price: number): string {
 }
 
 export function getProductUrl(product: Product): string {
-  return `/product/${product.id}`
+  return `/product/${product.id || product._id}`
 }
 
 export function getCollectionUrl(collection: Collection): string {
