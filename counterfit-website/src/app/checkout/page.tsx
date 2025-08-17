@@ -133,16 +133,20 @@ export default function CheckoutPage() {
       console.log('✅ Order created:', orderData)
 
       // Initialize Yoco payment
+      console.log('💳 Initializing Yoco payment...')
       const yoco = await initializeYoco((result: any) => {
         if (result.error) {
           console.error('Payment failed:', result.error)
           alert('Payment failed. Please try again.')
         } else {
           // Payment successful - redirect to success page
+          console.log('✅ Payment successful, redirecting to success page')
           router.push(`/checkout/success?orderId=${orderData.order.id}`)
         }
       })
 
+      console.log('💳 Yoco initialized, opening checkout...')
+      
       // Open Yoco checkout
       yoco.open({
         amount: Math.round(calculateTotal() * 100), // Convert to cents
@@ -295,11 +299,17 @@ export default function CheckoutPage() {
             {/* Payment Method */}
             <div className="bg-card rounded-lg p-6">
               <h2 className="text-xl font-semibold mb-4">Payment Method</h2>
-              <div className="flex items-center p-4 border rounded-lg bg-primary/5">
-                <CreditCard className="h-6 w-6 text-primary mr-3" />
-                <div>
-                  <p className="font-medium">Secure Payment with Yoco</p>
-                  <p className="text-sm text-secondary">Your payment information is encrypted and secure</p>
+              <div className="space-y-3">
+                <div className="flex items-center p-4 border rounded-lg bg-primary/5">
+                  <CreditCard className="h-6 w-6 text-primary mr-3" />
+                  <div>
+                    <p className="font-medium">Secure Payment with Yoco</p>
+                    <p className="text-sm text-secondary">Your payment information is encrypted and secure</p>
+                  </div>
+                </div>
+                <div className="text-sm text-secondary bg-yellow-50 p-3 rounded-lg">
+                  <p><strong>Note:</strong> If payment fails, your order will still be created and you can pay via bank transfer.</p>
+                  <p className="mt-1"><strong>Test Mode:</strong> Use test card: 4111 1111 1111 1111</p>
                 </div>
               </div>
             </div>

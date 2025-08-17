@@ -37,28 +37,64 @@ export interface YocoPaymentData {
 
 // Initialize Yoco popup (will be loaded from CDN)
 export const initializeYoco = (callback: (result: any) => void) => {
-  // Check if Yoco is already loaded
-  if (typeof window !== 'undefined' && (window as any).Yoco) {
-    return new (window as any).Yoco({
-      publicKey: YOCO_CONFIG.publicKey
-    })
-  }
-  
-  // Load Yoco script if not already loaded
   return new Promise((resolve, reject) => {
+    // Check if Yoco is already loaded
+    if (typeof window !== 'undefined' && (window as any).Yoco) {
+      console.log('✅ Yoco already loaded, using existing instance')
+      const yoco = new (window as any).Yoco({
+        publicKey: YOCO_CONFIG.publicKey
+      })
+      resolve(yoco)
+      return
+    }
+    
+    // Check if script is already being loaded
+    if ((window as any).yocoScriptLoading) {
+      console.log('⏳ Yoco script already loading, waiting...')
+      const checkInterval = setInterval(() => {
+        if ((window as any).Yoco) {
+          clearInterval(checkInterval)
+          console.log('✅ Yoco loaded after waiting')
+          const yoco = new (window as any).Yoco({
+            publicKey: YOCO_CONFIG.publicKey
+          })
+          resolve(yoco)
+        }
+      }, 100)
+      return
+    }
+    
+    // Load Yoco script
+    console.log('📥 Loading Yoco script...')
+    ;(window as any).yocoScriptLoading = true
+    
     const script = document.createElement('script')
     script.src = 'https://js.yoco.com/sdk/v1/checkout.js'
+    script.async = true
+    
     script.onload = () => {
-      if ((window as any).Yoco) {
-        const yoco = new (window as any).Yoco({
-          publicKey: YOCO_CONFIG.publicKey
-        })
-        resolve(yoco)
-      } else {
-        reject(new Error('Yoco failed to load'))
-      }
+      console.log('✅ Yoco script loaded successfully')
+      ;(window as any).yocoScriptLoading = false
+      
+      // Wait a bit for Yoco to initialize
+      setTimeout(() => {
+        if ((window as any).Yoco) {
+          const yoco = new (window as any).Yoco({
+            publicKey: YOCO_CONFIG.publicKey
+          })
+          resolve(yoco)
+        } else {
+          reject(new Error('Yoco object not found after script load'))
+        }
+      }, 100)
     }
-    script.onerror = () => reject(new Error('Failed to load Yoco script'))
+    
+    script.onerror = () => {
+      console.error('❌ Failed to load Yoco script')
+      ;(window as any).yocoScriptLoading = false
+      reject(new Error('Failed to load Yoco script'))
+    }
+    
     document.head.appendChild(script)
   })
 }
