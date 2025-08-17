@@ -7,6 +7,7 @@ import { Plus, Minus, Trash2, ShoppingBag, ArrowLeft, Lock, Truck, Shield } from
 import { useCart } from '@/contexts/CartContext'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { getImageUrl } from '@/lib/utils'
 
 export default function CartPage() {
   const { items, updateQuantity, removeFromCart, getTotalItems, getTotalPrice, clearCart } = useCart()
@@ -117,7 +118,7 @@ export default function CartPage() {
                       {/* Product Image */}
                       <div className="relative w-full sm:w-32 h-40 sm:h-32 rounded-lg overflow-hidden flex-shrink-0">
                         <Image
-                          src={item.image}
+                          src={getImageUrl(item.image)}
                           alt={item.name}
                           fill
                           className="object-cover"

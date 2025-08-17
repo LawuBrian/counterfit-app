@@ -15,6 +15,7 @@ import {
   Trash2
 } from 'lucide-react'
 import Link from 'next/link'
+import { getImageUrl } from '@/lib/utils'
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession()
@@ -215,7 +216,7 @@ export default function AdminDashboard() {
                       <div className="flex items-center gap-3">
                         {product.images && product.images.length > 0 && product.images[0] && (
                           <img 
-                            src={product.images[0].url || product.images[0]} 
+                            src={getImageUrl(product.images[0].url || product.images[0])} 
                             alt={product.name}
                             className="w-12 h-12 object-cover rounded-lg"
                           />

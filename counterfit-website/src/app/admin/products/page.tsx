@@ -18,6 +18,7 @@ import {
   AlertTriangle
 } from 'lucide-react'
 import Link from 'next/link'
+import { getImageUrl } from '@/lib/utils'
 
 interface Product {
   _id: string
@@ -421,7 +422,7 @@ export default function AdminProductsPage() {
                         <div className="flex-shrink-0 h-12 w-12">
                           <img
                             className="h-12 w-12 rounded-lg object-cover"
-                            src={product.images[0]?.url || '/placeholder-product.jpg'}
+                            src={getImageUrl(product.images[0]?.url || '/placeholder-product.jpg')}
                             alt={product.name}
                           />
                         </div>

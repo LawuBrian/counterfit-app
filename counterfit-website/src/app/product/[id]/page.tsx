@@ -7,6 +7,7 @@ import { ArrowRight, Star, Heart, Share2, Plus, Minus, ShoppingBag, Truck, Shiel
 import { useState, useEffect } from 'react'
 import { useCart } from '@/contexts/CartContext'
 import { useParams } from 'next/navigation'
+import { getImageUrl } from '@/lib/utils'
 
 // Define proper types for the product data
 interface ProductData {
@@ -151,7 +152,7 @@ export default function ProductPage() {
               {/* Main Image */}
               <div className="relative aspect-[4/5] overflow-hidden rounded-2xl">
                 <Image
-                  src={product.images[currentImageIndex]?.url || ''}
+                  src={getImageUrl(product.images[currentImageIndex]?.url || '')}
                   alt={product.name}
                   fill
                   className="object-cover"
@@ -178,7 +179,7 @@ export default function ProductPage() {
                     }`}
                   >
                     <Image
-                      src={image.url}
+                      src={getImageUrl(image.url)}
                       alt={`${product.name} ${index + 1}`}
                       fill
                       className="object-cover"
