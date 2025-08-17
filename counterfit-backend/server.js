@@ -39,9 +39,7 @@ app.use(cors({
   origin: [
     'http://localhost:3000',
     'https://counterfit.co.za',
-    'https://www.counterfit.co.za',
-    'https://counterfit-app.vercel.app',
-    'https://counterfit-8vem5mnzh-counterfits-projects.vercel.app'
+    'https://www.counterfit.co.za'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

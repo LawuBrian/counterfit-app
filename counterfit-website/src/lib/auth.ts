@@ -4,8 +4,11 @@ import CredentialsProvider from "next-auth/providers/credentials"
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://counterfit-backend.onrender.com'
 
 export const authOptions: NextAuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === 'development',
   providers: [
     CredentialsProvider({
+      id: "credentials",
       name: "credentials",
       credentials: {
         email: { label: "Email", type: "email" },
@@ -13,10 +16,13 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
+          console.log('❌ Missing credentials')
           return null
         }
 
         try {
+          console.log('🔐 Attempting login with backend:', BACKEND_URL)
+          
           // Call your backend API
           const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
             method: 'POST',
@@ -29,25 +35,34 @@ export const authOptions: NextAuthOptions = {
             })
           })
 
-          const data = await response.json()
+          console.log('📥 Backend response status:', response.status)
 
-          if (response.ok && data.success) {
-            return {
+          const data = await response.json()
+          console.log('📄 Backend response data:', data)
+
+          if (response.ok && data.success && data.user) {
+            console.log('✅ Login successful for user:', data.user.email)
+            
+            // Return the user object in the format NextAuth expects
+            const user = {
               id: data.user.id,
               email: data.user.email,
               name: `${data.user.firstName} ${data.user.lastName}`,
               role: data.user.role,
               firstName: data.user.firstName,
               lastName: data.user.lastName,
-              avatar: data.user.avatar,
-              accessToken: data.token // Include the JWT token
+              avatar: data.user.avatar || null,
+              accessToken: data.token
             }
+            
+            console.log('👤 Returning user object:', user)
+            return user
           } else {
-            console.error('Login failed:', data.message)
+            console.error('❌ Login failed:', data.message || 'Unknown error')
             return null
           }
         } catch (error) {
-          console.error('Auth error:', error)
+          console.error('❌ Auth error:', error)
           return null
         }
       }
@@ -82,5 +97,6 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/auth/signin",
     signUp: "/auth/signup",
+    error: "/auth/error",
   },
 }
