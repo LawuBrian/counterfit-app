@@ -1,12 +1,19 @@
 const express = require('express')
 const router = express.Router()
-const prisma = require('../lib/prisma')
+const { supabase } = require('../lib/supabase')
 
 // Health check endpoint
 router.get('/health', async (req, res) => {
   try {
     // Test database connection
-    await prisma.$queryRaw`SELECT 1`
+    const { error } = await supabase
+      .from('User')
+      .select('id')
+      .limit(1)
+    
+    if (error) {
+      throw error;
+    }
     
     res.json({
       status: 'healthy',
@@ -31,7 +38,15 @@ router.get('/health', async (req, res) => {
 router.get('/health/db', async (req, res) => {
   try {
     const startTime = Date.now()
-    await prisma.$queryRaw`SELECT 1`
+    const { error } = await supabase
+      .from('User')
+      .select('id')
+      .limit(1)
+    
+    if (error) {
+      throw error;
+    }
+    
     const responseTime = Date.now() - startTime
     
     res.json({

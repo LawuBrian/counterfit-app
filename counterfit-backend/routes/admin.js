@@ -1,10 +1,10 @@
 const express = require('express');
-const prisma = require('../lib/prisma');
+const { supabase } = require('../lib/supabase');
 const { protect, adminOnly } = require('../middleware/auth');
 const router = express.Router();
 
 // Apply admin protection to all routes
-router.use(protect, adminOnly); // Re-enabled after fixing auth flow
+router.use(protect, adminOnly);
 
 // @desc    Get dashboard stats
 // @route   GET /api/admin/stats
@@ -19,41 +19,34 @@ router.get('/stats', async (req, res) => {
       recentOrders,
       topProducts
     ] = await Promise.all([
-      prisma.user.count(),
-      prisma.product.count({ where: { status: 'active' } }),
-      prisma.order.count(),
-      prisma.collection.count({ where: { status: 'active' } }),
-      prisma.order.findMany({
-        take: 5,
-        orderBy: { createdAt: 'desc' },
-        include: { user: { select: { firstName: true, lastName: true, email: true } } }
-      }),
-      prisma.product.findMany({
-        where: { status: 'active' },
-        take: 5,
-        orderBy: { salesCount: 'desc' }
-      })
+      supabase.from('User').select('id', { count: 'exact' }),
+      supabase.from('Product').select('id', { count: 'exact' }).eq('status', 'published'),
+      supabase.from('Order').select('id', { count: 'exact' }),
+      supabase.from('Collection').select('id', { count: 'exact' }).eq('status', 'published'),
+      supabase.from('Order').select('*, User(id, firstName, lastName, email)').order('createdAt', { ascending: false }).limit(5),
+      supabase.from('Product').select('*').eq('status', 'published').order('salesCount', { ascending: false }).limit(5)
     ]);
 
     // Calculate total revenue
-    const revenueResult = await prisma.order.aggregate({
-      where: { 'payment.status': 'paid' },
-      _sum: { total: true }
-    });
-    const totalRevenue = revenueResult._sum.total || 0;
+    const revenueResult = await supabase
+      .from('Order')
+      .select('totalAmount')
+      .eq('paymentStatus', 'paid');
+
+    const totalRevenue = revenueResult.data?.reduce((sum, order) => sum + parseFloat(order.totalAmount), 0) || 0;
 
     res.json({
       success: true,
       data: {
         overview: {
-          totalUsers,
-          totalProducts,
-          totalOrders,
-          totalCollections,
+          totalUsers: totalUsers.count || 0,
+          totalProducts: totalProducts.count || 0,
+          totalOrders: totalOrders.count || 0,
+          totalCollections: totalCollections.count || 0,
           totalRevenue
         },
-        recentOrders,
-        topProducts
+        recentOrders: recentOrders.data || [],
+        topProducts: topProducts.data || []
       }
     });
   } catch (error) {
@@ -72,29 +65,34 @@ router.get('/orders', async (req, res) => {
   try {
     const { page = 1, limit = 20, status } = req.query;
     
-    let where = {};
+    let query = supabase
+      .from('Order')
+      .select('*, User(id, firstName, lastName, email)')
+      .order('createdAt', { ascending: false });
+
     if (status) {
-      where.status = status;
+      query = query.eq('status', status);
     }
 
-    const orders = await prisma.order.findMany({
-      where,
-      include: { user: { select: { firstName: true, lastName: true, email: true } } },
-      orderBy: { createdAt: 'desc' },
-      take: parseInt(limit),
-      skip: (parseInt(page) - 1) * parseInt(limit)
-    });
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const { data: orders, error, count } = await query.range(offset, offset + parseInt(limit) - 1);
 
-    const total = await prisma.order.count({ where });
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch orders'
+      });
+    }
 
     res.json({
       success: true,
-      data: orders,
+      data: orders || [],
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / parseInt(limit))
+        total: count || 0,
+        pages: Math.ceil((count || 0) / parseInt(limit))
       }
     });
   } catch (error) {
@@ -113,16 +111,27 @@ router.put('/orders/:id/status', async (req, res) => {
   try {
     const { status } = req.body;
     
-    const order = await prisma.order.update({
-      where: { id: req.params.id },
-      data: { status },
-      include: { user: true }
-    });
+    const { data: order, error } = await supabase
+      .from('Order')
+      .update({ 
+        status,
+        updatedAt: new Date().toISOString()
+      })
+      .eq('id', req.params.id)
+      .select('*, User(*)')
+      .single();
 
-    if (!order) {
-      return res.status(404).json({
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({
+          success: false,
+          message: 'Order not found'
+        });
+      }
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
         success: false,
-        message: 'Order not found'
+        message: 'Failed to update order'
       });
     }
 
@@ -147,29 +156,29 @@ router.get('/users', async (req, res) => {
   try {
     const { page = 1, limit = 20 } = req.query;
 
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-        createdAt: true,
-      },
-      orderBy: { createdAt: 'desc' },
-      take: parseInt(limit),
-      skip: (parseInt(page) - 1) * parseInt(limit)
-    });
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const { data: users, error, count } = await supabase
+      .from('User')
+      .select('id, firstName, lastName, email, createdAt')
+      .order('createdAt', { ascending: false })
+      .range(offset, offset + parseInt(limit) - 1);
 
-    const total = await prisma.user.count();
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch users'
+      });
+    }
 
     res.json({
       success: true,
-      data: users,
+      data: users || [],
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / parseInt(limit))
+        total: count || 0,
+        pages: Math.ceil((count || 0) / parseInt(limit))
       }
     });
   } catch (error) {
@@ -186,14 +195,22 @@ router.get('/users', async (req, res) => {
 // @access  Private/Admin
 router.delete('/products/:id', async (req, res) => {
   try {
-    const product = await prisma.product.delete({
-      where: { id: req.params.id }
-    });
+    const { error } = await supabase
+      .from('Product')
+      .delete()
+      .eq('id', req.params.id);
 
-    if (!product) {
-      return res.status(404).json({
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({
+          success: false,
+          message: 'Product not found'
+        });
+      }
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
         success: false,
-        message: 'Product not found'
+        message: 'Failed to delete product'
       });
     }
 
@@ -203,12 +220,6 @@ router.delete('/products/:id', async (req, res) => {
     });
   } catch (error) {
     console.error('Delete product error:', error);
-    if (error.code === 'P2025') { // Prisma's not found error code
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found'
-      });
-    }
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -221,16 +232,29 @@ router.delete('/products/:id', async (req, res) => {
 // @access  Private/Admin
 router.put('/products/:id', async (req, res) => {
   try {
-    const product = await prisma.product.update({
-      where: { id: req.params.id },
-      data: req.body,
-      include: { collections: true }
-    });
+    const updateData = {
+      ...req.body,
+      updatedAt: new Date().toISOString()
+    };
 
-    if (!product) {
-      return res.status(404).json({
+    const { data: product, error } = await supabase
+      .from('Product')
+      .update(updateData)
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({
+          success: false,
+          message: 'Product not found'
+        });
+      }
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
         success: false,
-        message: 'Product not found'
+        message: 'Failed to update product'
       });
     }
 
@@ -241,23 +265,6 @@ router.put('/products/:id', async (req, res) => {
     });
   } catch (error) {
     console.error('Update product error:', error);
-    if (error.code === 'P2025') { // Prisma's not found error code
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found'
-      });
-    }
-    if (error.code === 'P2002') { // Prisma's unique constraint error code
-      let message = 'Duplicate field error';
-      if (error.meta?.target?.includes('sku')) message = 'Product with this SKU already exists';
-      else if (error.meta?.target?.includes('barcode')) message = 'Product with this barcode already exists';
-      else if (error.meta?.target?.includes('stockCode')) message = 'Product with this stock code already exists';
-      
-      return res.status(400).json({
-        success: false,
-        message
-      });
-    }
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -267,16 +274,33 @@ router.put('/products/:id', async (req, res) => {
 
 // @desc    Create new product
 // @route   POST /api/admin/products
-// @access  Public (for now - TODO: Add proper auth)
+// @access  Private/Admin
 router.post('/products', async (req, res) => {
   console.log('🚀 POST /api/admin/products - Backend route hit!')
   console.log('📦 Request body:', JSON.stringify(req.body, null, 2))
   console.log('🖼️ Images in request:', req.body.images)
   
   try {
-    const product = await prisma.product.create({
-      data: req.body
-    });
+    const productData = {
+      ...req.body,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    const { data: product, error } = await supabase
+      .from('Product')
+      .insert(productData)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to create product',
+        error: error.message
+      });
+    }
 
     console.log('✅ Product created in database:', {
       id: product.id,
@@ -291,17 +315,6 @@ router.post('/products', async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Create product error:', error);
-    if (error.code === 'P2002') { // Prisma's unique constraint error code
-      let message = 'Duplicate field error';
-      if (error.meta?.target?.includes('sku')) message = 'Product with this SKU already exists';
-      else if (error.meta?.target?.includes('barcode')) message = 'Product with this barcode already exists';
-      else if (error.meta?.target?.includes('stockCode')) message = 'Product with this stock code already exists';
-      
-      return res.status(400).json({
-        success: false,
-        message
-      });
-    }
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -311,7 +324,7 @@ router.post('/products', async (req, res) => {
 
 // @desc    Get all products for admin with enhanced filtering
 // @route   GET /api/admin/products
-// @access  Public (for now - TODO: Add proper auth)
+// @access  Private/Admin
 router.get('/products', async (req, res) => {
   try {
     const { 
@@ -327,43 +340,47 @@ router.get('/products', async (req, res) => {
       sort = 'createdAt'
     } = req.query;
     
-    let where = {};
+    let query = supabase.from('Product').select('*');
     
     // Apply filters
-    if (category) where.category = category;
-    if (status) where.status = status;
-    if (featured !== undefined) where.featured = featured === 'true';
-    if (isNew !== undefined) where.isNew = isNew === 'true';
-    if (isAvailable !== undefined) where.isAvailable = isAvailable === 'true';
-    if (stockCode) where.stockCode = { contains: stockCode, mode: 'insensitive' };
+    if (category) query = query.eq('category', category);
+    if (status) query = query.eq('status', status);
+    if (featured !== undefined) query = query.eq('featured', featured === 'true');
+    if (isNew !== undefined) query = query.eq('isNew', isNew === 'true');
+    if (isAvailable !== undefined) query = query.eq('isAvailable', isAvailable === 'true');
+    if (stockCode) query = query.ilike('stockCode', `%${stockCode}%`);
     
     // Text search across name and description
     if (search) {
-      where.$or = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { stockCode: { contains: search, mode: 'insensitive' } }
-      ];
+      query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%,stockCode.ilike.%${search}%`);
     }
 
-    const products = await prisma.product.findMany({
-      where,
-      include: { collections: true },
-      orderBy: sort === 'salesCount' ? { salesCount: 'desc' } : { [sort]: 'desc' },
-      take: parseInt(limit),
-      skip: (parseInt(page) - 1) * parseInt(limit)
-    });
+    // Apply sorting
+    if (sort === 'salesCount') {
+      query = query.order('salesCount', { ascending: false });
+    } else {
+      query = query.order(sort, { ascending: false });
+    }
 
-    const total = await prisma.product.count({ where });
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const { data: products, error, count } = await query.range(offset, offset + parseInt(limit) - 1);
+
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch products'
+      });
+    }
 
     res.json({
       success: true,
-      data: products,
+      data: products || [],
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / parseInt(limit))
+        total: count || 0,
+        pages: Math.ceil((count || 0) / parseInt(limit))
       }
     });
   } catch (error) {
@@ -380,15 +397,23 @@ router.get('/products', async (req, res) => {
 // @access  Private/Admin
 router.get('/products/:id', async (req, res) => {
   try {
-    const product = await prisma.product.findUnique({
-      where: { id: req.params.id },
-      include: { collections: true }
-    });
+    const { data: product, error } = await supabase
+      .from('Product')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
 
-    if (!product) {
-      return res.status(404).json({
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({
+          success: false,
+          message: 'Product not found'
+        });
+      }
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
         success: false,
-        message: 'Product not found'
+        message: 'Failed to fetch product'
       });
     }
 
@@ -398,12 +423,6 @@ router.get('/products/:id', async (req, res) => {
     });
   } catch (error) {
     console.error('Get admin product error:', error);
-    if (error.code === 'P2025') { // Prisma's not found error code
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found'
-      });
-    }
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -416,42 +435,60 @@ router.get('/products/:id', async (req, res) => {
 // @access  Private/Admin
 router.put('/products/:id/stock', async (req, res) => {
   try {
-    const { type, identifier, stock } = req.body; // type: 'size'|'color', identifier: size name or color name
+    const { type, identifier, stock } = req.body;
     
-    const product = await prisma.product.findUnique({ where: { id: req.params.id } });
-    if (!product) {
+    const { data: product, error: fetchError } = await supabase
+      .from('Product')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+
+    if (fetchError) {
       return res.status(404).json({
         success: false,
         message: 'Product not found'
       });
     }
 
+    let updatedProduct = { ...product };
+
     if (type === 'size') {
-      const sizeIndex = product.sizes.findIndex(s => s.size === identifier);
+      const sizeIndex = updatedProduct.sizes.findIndex(s => s.size === identifier);
       if (sizeIndex !== -1) {
-        product.sizes[sizeIndex].stock = stock;
-        product.sizes[sizeIndex].isAvailable = stock > 0;
+        updatedProduct.sizes[sizeIndex].stock = stock;
+        updatedProduct.sizes[sizeIndex].isAvailable = stock > 0;
       }
     } else if (type === 'color') {
-      const colorIndex = product.colors.findIndex(c => c.name === identifier);
+      const colorIndex = updatedProduct.colors.findIndex(c => c.name === identifier);
       if (colorIndex !== -1) {
-        product.colors[colorIndex].stock = stock;
-        product.colors[colorIndex].isAvailable = stock > 0;
+        updatedProduct.colors[colorIndex].stock = stock;
+        updatedProduct.colors[colorIndex].isAvailable = stock > 0;
       }
     }
 
-    await prisma.product.update({
-      where: { id: req.params.id },
-      data: {
-        sizes: product.sizes,
-        colors: product.colors
-      }
-    });
+    const { data: updated, error: updateError } = await supabase
+      .from('Product')
+      .update({
+        sizes: updatedProduct.sizes,
+        colors: updatedProduct.colors,
+        updatedAt: new Date().toISOString()
+      })
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('❌ Supabase error:', updateError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to update stock'
+      });
+    }
 
     res.json({
       success: true,
       message: 'Stock updated successfully',
-      data: product
+      data: updated
     });
   } catch (error) {
     console.error('Update product stock error:', error);
@@ -469,15 +506,26 @@ router.put('/products/bulk/status', async (req, res) => {
   try {
     const { productIds, status } = req.body;
     
-    const result = await prisma.product.updateMany({
-      where: { id: { in: productIds } },
-      data: { status }
-    });
+    const { data, error } = await supabase
+      .from('Product')
+      .update({ 
+        status,
+        updatedAt: new Date().toISOString()
+      })
+      .in('id', productIds);
+
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to update products'
+      });
+    }
 
     res.json({
       success: true,
-      message: `Updated ${result.count} products`,
-      data: { modifiedCount: result.count }
+      message: `Updated ${data?.length || 0} products`,
+      data: { modifiedCount: data?.length || 0 }
     });
   } catch (error) {
     console.error('Bulk update products error:', error);
@@ -500,48 +548,29 @@ router.get('/products/analytics', async (req, res) => {
       featuredProducts,
       newProducts,
       lowStockProducts,
-      topSellingProducts,
-      categoryStats
+      topSellingProducts
     ] = await Promise.all([
-      prisma.product.count(),
-      prisma.product.count({ where: { status: 'active' } }),
-      prisma.product.count({ where: { status: 'draft' } }),
-      prisma.product.count({ where: { featured: true } }),
-      prisma.product.count({ where: { isNew: true } }),
-      prisma.product.count({ 
-        where: { 
-          OR: [
-            { 'inventory.quantity': { lte: 10 } },
-            { 'sizes.stock': { lte: 10 } },
-            { 'colors.stock': { lte: 10 } }
-          ]
-        }
-      }),
-      prisma.product.findMany({
-        where: { status: 'active' },
-        take: 10,
-        select: { name: true, salesCount: true, price: true, primaryImage: true }
-      }),
-      prisma.product.groupBy({
-        by: 'category',
-        _count: { _all: true },
-        orderBy: { _count: { _all: 'desc' } }
-      })
+      supabase.from('Product').select('id', { count: 'exact' }),
+      supabase.from('Product').select('id', { count: 'exact' }).eq('status', 'published'),
+      supabase.from('Product').select('id', { count: 'exact' }).eq('status', 'draft'),
+      supabase.from('Product').select('id', { count: 'exact' }).eq('featured', true),
+      supabase.from('Product').select('id', { count: 'exact' }).eq('isNew', true),
+      supabase.from('Product').select('id', { count: 'exact' }).lt('totalStock', 10),
+      supabase.from('Product').select('name, salesCount, price, images').eq('status', 'published').order('salesCount', { ascending: false }).limit(10)
     ]);
 
     res.json({
       success: true,
       data: {
         overview: {
-          totalProducts,
-          activeProducts,
-          draftProducts,
-          featuredProducts,
-          newProducts,
-          lowStockProducts
+          totalProducts: totalProducts.count || 0,
+          activeProducts: activeProducts.count || 0,
+          draftProducts: draftProducts.count || 0,
+          featuredProducts: featuredProducts.count || 0,
+          newProducts: newProducts.count || 0,
+          lowStockProducts: lowStockProducts.count || 0
         },
-        topSellingProducts,
-        categoryStats
+        topSellingProducts: topSellingProducts.data || []
       }
     });
   } catch (error) {
@@ -567,37 +596,43 @@ router.get('/collections', async (req, res) => {
       sort = 'createdAt'
     } = req.query;
     
-    let where = {};
+    let query = supabase.from('Collection').select('*');
     
     // Apply filters
-    if (featured !== undefined) where.featured = featured === 'true';
-    if (status) where.status = status;
+    if (featured !== undefined) query = query.eq('featured', featured === 'true');
+    if (status) query = query.eq('status', status);
     
     // Text search across name and description
     if (search) {
-      where.$or = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } }
-      ];
+      query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
     }
 
-    const collections = await prisma.collection.findMany({
-      where,
-      orderBy: sort === 'createdAt' ? { createdAt: 'desc' } : { [sort]: 'desc' },
-      take: parseInt(limit),
-      skip: (parseInt(page) - 1) * parseInt(limit)
-    });
+    // Apply sorting
+    if (sort === 'createdAt') {
+      query = query.order('createdAt', { ascending: false });
+    } else {
+      query = query.order(sort, { ascending: false });
+    }
 
-    const total = await prisma.collection.count({ where });
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const { data: collections, error, count } = await query.range(offset, offset + parseInt(limit) - 1);
+
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch collections'
+      });
+    }
 
     res.json({
       success: true,
-      data: collections,
+      data: collections || [],
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / parseInt(limit))
+        total: count || 0,
+        pages: Math.ceil((count || 0) / parseInt(limit))
       }
     });
   } catch (error) {
@@ -614,14 +649,23 @@ router.get('/collections', async (req, res) => {
 // @access  Private/Admin
 router.get('/collections/:id', async (req, res) => {
   try {
-    const collection = await prisma.collection.findUnique({
-      where: { id: req.params.id }
-    });
+    const { data: collection, error } = await supabase
+      .from('Collection')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
 
-    if (!collection) {
-      return res.status(404).json({
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({
+          success: false,
+          message: 'Collection not found'
+        });
+      }
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
         success: false,
-        message: 'Collection not found'
+        message: 'Failed to fetch collection'
       });
     }
 
@@ -631,12 +675,6 @@ router.get('/collections/:id', async (req, res) => {
     });
   } catch (error) {
     console.error('Get admin collection error:', error);
-    if (error.code === 'P2025') { // Prisma's not found error code
-      return res.status(404).json({
-        success: false,
-        message: 'Collection not found'
-      });
-    }
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -649,9 +687,26 @@ router.get('/collections/:id', async (req, res) => {
 // @access  Private/Admin
 router.post('/collections', async (req, res) => {
   try {
-    const collection = await prisma.collection.create({
-      data: req.body
-    });
+    const collectionData = {
+      ...req.body,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    const { data: collection, error } = await supabase
+      .from('Collection')
+      .insert(collectionData)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to create collection',
+        error: error.message
+      });
+    }
 
     res.status(201).json({
       success: true,
@@ -660,12 +715,6 @@ router.post('/collections', async (req, res) => {
     });
   } catch (error) {
     console.error('Create collection error:', error);
-    if (error.code === 'P2002') { // Prisma's unique constraint error code
-      return res.status(400).json({
-        success: false,
-        message: 'Collection with this name already exists'
-      });
-    }
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -678,16 +727,29 @@ router.post('/collections', async (req, res) => {
 // @access  Private/Admin
 router.put('/collections/:id', async (req, res) => {
   try {
-    const collection = await prisma.collection.update({
-      where: { id: req.params.id },
-      data: req.body,
-      include: { products: true }
-    });
+    const updateData = {
+      ...req.body,
+      updatedAt: new Date().toISOString()
+    };
 
-    if (!collection) {
-      return res.status(404).json({
+    const { data: collection, error } = await supabase
+      .from('Collection')
+      .update(updateData)
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({
+          success: false,
+          message: 'Collection not found'
+        });
+      }
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
         success: false,
-        message: 'Collection not found'
+        message: 'Failed to update collection'
       });
     }
 
@@ -698,12 +760,6 @@ router.put('/collections/:id', async (req, res) => {
     });
   } catch (error) {
     console.error('Update collection error:', error);
-    if (error.code === 'P2025') { // Prisma's not found error code
-      return res.status(404).json({
-        success: false,
-        message: 'Collection not found'
-      });
-    }
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -716,14 +772,22 @@ router.put('/collections/:id', async (req, res) => {
 // @access  Private/Admin
 router.delete('/collections/:id', async (req, res) => {
   try {
-    const collection = await prisma.collection.delete({
-      where: { id: req.params.id }
-    });
+    const { error } = await supabase
+      .from('Collection')
+      .delete()
+      .eq('id', req.params.id);
 
-    if (!collection) {
-      return res.status(404).json({
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({
+          success: false,
+          message: 'Collection not found'
+        });
+      }
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
         success: false,
-        message: 'Collection not found'
+        message: 'Failed to delete collection'
       });
     }
 
@@ -733,12 +797,6 @@ router.delete('/collections/:id', async (req, res) => {
     });
   } catch (error) {
     console.error('Delete collection error:', error);
-    if (error.code === 'P2025') { // Prisma's not found error code
-      return res.status(404).json({
-        success: false,
-        message: 'Collection not found'
-      });
-    }
     res.status(500).json({
       success: false,
       message: 'Server error'

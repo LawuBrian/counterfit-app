@@ -9,8 +9,8 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Import Prisma client
-const prisma = require('./lib/prisma');
+// Import Supabase client instead of Prisma
+const { testSupabaseConnection } = require('./lib/supabase');
 
 // Trust proxy for rate limiting (important for Render)
 app.set('trust proxy', 1);
@@ -253,27 +253,30 @@ app.use('*', (req, res) => {
   });
 });
 
-// Database connection with Prisma
+// Database connection with Supabase
 console.log('🔍 Environment check:')
 console.log('NODE_ENV:', process.env.NODE_ENV)
-console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL)
-console.log('DATABASE_URL preview:', process.env.DATABASE_URL ? process.env.DATABASE_URL.substring(0, 50) + '...' : 'Not set')
+console.log('SUPABASE_URL exists:', !!process.env.SUPABASE_URL)
+console.log('SUPABASE_SERVICE_ROLE_KEY exists:', !!process.env.SUPABASE_SERVICE_ROLE_KEY)
 
-prisma.$connect()
-  .then(() => {
-    console.log('✅ Connected to Supabase database');
-    
-    app.listen(PORT, () => {
-      console.log(`🚀 Counterfit Backend Server running on port ${PORT}`);
-      console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
-    });
+testSupabaseConnection()
+  .then((success) => {
+    if (success) {
+      console.log('✅ Connected to Supabase database');
+      
+      app.listen(PORT, () => {
+        console.log(`🚀 Counterfit Backend Server running on port ${PORT}`);
+        console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
+      });
+    } else {
+      console.error('❌ Failed to connect to Supabase database');
+      process.exit(1);
+    }
   })
   .catch(err => {
     console.error('❌ Database connection error:', err);
     console.error('💡 Error details:', {
-      code: err.code,
-      message: err.message,
-      meta: err.meta
+      message: err.message
     });
     process.exit(1);
   });

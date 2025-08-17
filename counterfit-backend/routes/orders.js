@@ -1,5 +1,5 @@
 const express = require('express');
-const prisma = require('../lib/prisma');
+const { supabase } = require('../lib/supabase');
 const { protect, adminOnly } = require('../middleware/auth');
 const router = express.Router();
 
@@ -14,14 +14,27 @@ router.post('/', protect, async (req, res) => {
     
     const orderData = {
       ...req.body,
-      userId: req.user.id
+      userId: req.user.id,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     }
 
     console.log('📋 Final order data:', JSON.stringify(orderData, null, 2))
 
-    const order = await prisma.order.create({
-      data: orderData
-    });
+    const { data: order, error } = await supabase
+      .from('Order')
+      .insert(orderData)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to create order',
+        error: error.message
+      });
+    }
 
     console.log('✅ Order created successfully:', {
       id: order.id,
@@ -48,14 +61,24 @@ router.post('/', protect, async (req, res) => {
 // @access  Private
 router.get('/my', protect, async (req, res) => {
   try {
-    const orders = await prisma.order.findMany({
-      where: { userId: req.user.id },
-      orderBy: { createdAt: 'desc' }
-    });
+    const { data: orders, error } = await supabase
+      .from('Order')
+      .select('*')
+      .eq('userId', req.user.id)
+      .order('createdAt', { ascending: false });
+
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch orders',
+        error: error.message
+      });
+    }
 
     res.json({
       success: true,
-      data: orders
+      data: orders || []
     });
   } catch (error) {
     console.error('Get user orders error:', error);
@@ -71,21 +94,30 @@ router.get('/my', protect, async (req, res) => {
 // @access  Private
 router.get('/:id', protect, async (req, res) => {
   try {
-    let where = { id: req.params.id };
+    let query = supabase
+      .from('Order')
+      .select('*')
+      .eq('id', req.params.id);
     
     // Non-admin users can only see their own orders
     if (req.user.role !== 'ADMIN') {
-      where.userId = req.user.id;
+      query = query.eq('userId', req.user.id);
     }
 
-    const order = await prisma.order.findUnique({
-      where
-    });
+    const { data: order, error } = await query.single();
 
-    if (!order) {
-      return res.status(404).json({
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({
+          success: false,
+          message: 'Order not found'
+        });
+      }
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
         success: false,
-        message: 'Order not found'
+        message: 'Failed to fetch order',
+        error: error.message
       });
     }
 
@@ -109,16 +141,33 @@ router.put('/:id/status', protect, adminOnly, async (req, res) => {
   try {
     const { status, paymentStatus, trackingNumber, carrier, estimatedDelivery } = req.body;
 
-    const order = await prisma.order.update({
-      where: { id: req.params.id },
-      data: {
-        status,
-        paymentStatus,
-        trackingNumber,
-        carrier,
-        estimatedDelivery: estimatedDelivery ? new Date(estimatedDelivery) : undefined
-      }
-    });
+    const updateData = {
+      status,
+      paymentStatus,
+      trackingNumber,
+      carrier,
+      updatedAt: new Date().toISOString()
+    };
+
+    if (estimatedDelivery) {
+      updateData.estimatedDelivery = new Date(estimatedDelivery).toISOString();
+    }
+
+    const { data: order, error } = await supabase
+      .from('Order')
+      .update(updateData)
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to update order',
+        error: error.message
+      });
+    }
 
     res.json({
       success: true,
@@ -127,6 +176,56 @@ router.put('/:id/status', protect, adminOnly, async (req, res) => {
     });
   } catch (error) {
     console.error('Update order status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// @desc    Get all orders (Admin only)
+// @route   GET /api/orders
+// @access  Private/Admin
+router.get('/', protect, adminOnly, async (req, res) => {
+  try {
+    const { status, limit = 50, page = 1 } = req.query;
+    
+    let query = supabase
+      .from('Order')
+      .select('*, User(id, firstName, lastName, email)')
+      .order('createdAt', { ascending: false });
+
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    if (limit) {
+      const offset = (parseInt(page) - 1) * parseInt(limit);
+      query = query.range(offset, offset + parseInt(limit) - 1);
+    }
+
+    const { data: orders, error, count } = await query;
+
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch orders',
+        error: error.message
+      });
+    }
+
+    res.json({
+      success: true,
+      data: orders || [],
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: count || 0
+      }
+    });
+  } catch (error) {
+    console.error('Get all orders error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'

@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const prisma = require('../lib/prisma');
+const { supabase } = require('../lib/supabase');
 
 // Protect routes - require authentication
 exports.protect = async (req, res, next) => {
@@ -28,12 +28,13 @@ exports.protect = async (req, res, next) => {
       console.log('✅ Token decoded successfully:', decoded);
 
       // Get user from token
-      req.user = await prisma.user.findUnique({
-        where: { id: decoded.id },
-        select: { id: true, email: true, firstName: true, lastName: true, role: true, avatar: true }
-      });
+      const { data: user, error } = await supabase
+        .from('User')
+        .select('id, email, firstName, lastName, role, avatar')
+        .eq('id', decoded.id)
+        .single();
 
-      if (!req.user) {
+      if (error || !user) {
         console.log('❌ User not found for ID:', decoded.id);
         return res.status(401).json({
           success: false,
@@ -41,6 +42,7 @@ exports.protect = async (req, res, next) => {
         });
       }
 
+      req.user = user;
       console.log('✅ User authenticated:', req.user.email, 'Role:', req.user.role);
       next();
     } catch (err) {
@@ -83,10 +85,17 @@ exports.optionalAuth = async (req, res, next) => {
     if (token) {
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = await prisma.user.findUnique({
-          where: { id: decoded.id },
-          select: { id: true, email: true, firstName: true, lastName: true, role: true, avatar: true }
-        });
+        const { data: user, error } = await supabase
+          .from('User')
+          .select('id, email, firstName, lastName, role, avatar')
+          .eq('id', decoded.id)
+          .single();
+        
+        if (!error && user) {
+          req.user = user;
+        } else {
+          req.user = null;
+        }
       } catch (err) {
         // Invalid token, but continue without user
         req.user = null;

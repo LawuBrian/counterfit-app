@@ -1,5 +1,5 @@
 const express = require('express');
-const prisma = require('../lib/prisma');
+const { supabase } = require('../lib/supabase');
 const { protect, adminOnly } = require('../middleware/auth');
 const router = express.Router();
 
@@ -10,22 +10,34 @@ router.get('/', async (req, res) => {
   try {
     const { status, limit } = req.query;
     
-    let where = {};
+    let query = supabase
+      .from('Collection')
+      .select('*')
+      .order('createdAt', { ascending: false });
     
     // If status is specified, filter by it, otherwise show all
     if (status) {
-      where.status = status;
+      query = query.eq('status', status);
     }
     
-    const collections = await prisma.collection.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      take: limit ? parseInt(limit) : undefined
-    });
+    if (limit) {
+      query = query.limit(parseInt(limit));
+    }
+
+    const { data: collections, error } = await query;
+
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch collections',
+        error: error.message
+      });
+    }
 
     res.json({
       success: true,
-      data: collections
+      data: collections || []
     });
   } catch (error) {
     console.error('Get collections error:', error);
@@ -41,17 +53,24 @@ router.get('/', async (req, res) => {
 // @access  Public
 router.get('/:slug', async (req, res) => {
   try {
-    const collection = await prisma.collection.findFirst({
-      where: { 
-        slug: req.params.slug
-        // Removed status filter so draft collections can be viewed
-      }
-    });
+    const { data: collection, error } = await supabase
+      .from('Collection')
+      .select('*')
+      .eq('slug', req.params.slug)
+      .single();
 
-    if (!collection) {
-      return res.status(404).json({
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({
+          success: false,
+          message: 'Collection not found'
+        });
+      }
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
         success: false,
-        message: 'Collection not found'
+        message: 'Failed to fetch collection',
+        error: error.message
       });
     }
 
@@ -73,9 +92,26 @@ router.get('/:slug', async (req, res) => {
 // @access  Private/Admin
 router.post('/', protect, adminOnly, async (req, res) => {
   try {
-    const collection = await prisma.collection.create({
-      data: req.body
-    });
+    const collectionData = {
+      ...req.body,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    const { data: collection, error } = await supabase
+      .from('Collection')
+      .insert(collectionData)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to create collection',
+        error: error.message
+      });
+    }
 
     res.status(201).json({
       success: true,
@@ -84,6 +120,112 @@ router.post('/', protect, adminOnly, async (req, res) => {
     });
   } catch (error) {
     console.error('Create collection error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// @desc    Update collection
+// @route   PUT /api/collections/:id
+// @access  Private/Admin
+router.put('/:id', protect, adminOnly, async (req, res) => {
+  try {
+    const updateData = {
+      ...req.body,
+      updatedAt: new Date().toISOString()
+    };
+
+    const { data: collection, error } = await supabase
+      .from('Collection')
+      .update(updateData)
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to update collection',
+        error: error.message
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Collection updated successfully',
+      data: collection
+    });
+  } catch (error) {
+    console.error('Update collection error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// @desc    Delete collection
+// @route   DELETE /api/collections/:id
+// @access  Private/Admin
+router.delete('/:id', protect, adminOnly, async (req, res) => {
+  try {
+    const { error } = await supabase
+      .from('Collection')
+      .delete()
+      .eq('id', req.params.id);
+
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to delete collection',
+        error: error.message
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Collection deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete collection error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// @desc    Get featured collections
+// @route   GET /api/collections/featured
+// @access  Public
+router.get('/featured', async (req, res) => {
+  try {
+    const { data: collections, error } = await supabase
+      .from('Collection')
+      .select('*')
+      .eq('featured', true)
+      .eq('status', 'published')
+      .order('createdAt', { ascending: false });
+
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch featured collections',
+        error: error.message
+      });
+    }
+
+    res.json({
+      success: true,
+      data: collections || []
+    });
+  } catch (error) {
+    console.error('Get featured collections error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'

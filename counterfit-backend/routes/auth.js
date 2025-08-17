@@ -1,7 +1,8 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const prisma = require('../lib/prisma');
+const { supabase } = require('../lib/supabase');
 const { protect, generateToken } = require('../middleware/auth');
+const bcrypt = require('bcryptjs');
 const router = express.Router();
 
 // @desc    Register user
@@ -27,10 +28,20 @@ router.post('/register', [
     const { firstName, lastName, email, password } = req.body;
 
     // Check if user exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
-    });
+    const { data: existingUser, error: checkError } = await supabase
+      .from('User')
+      .select('id')
+      .eq('email', email)
+      .single();
     
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('❌ Supabase error:', checkError);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error during registration'
+      });
+    }
+
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -38,15 +49,30 @@ router.post('/register', [
       });
     }
 
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 12);
+
     // Create user
-    const user = await prisma.user.create({
-      data: {
+    const { data: user, error: createError } = await supabase
+      .from('User')
+      .insert({
         firstName,
         lastName,
         email,
-        password
-      }
-    });
+        password: hashedPassword,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      })
+      .select('id, firstName, lastName, email, role')
+      .single();
+
+    if (createError) {
+      console.error('❌ Supabase error:', createError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to create user'
+      });
+    }
 
     // Generate token
     const token = generateToken(user.id);
@@ -93,20 +119,29 @@ router.post('/login', [
     const { email, password } = req.body;
 
     // Find user
-    const user = await prisma.user.findUnique({
-      where: { email }
-    });
+    const { data: user, error } = await supabase
+      .from('User')
+      .select('*')
+      .eq('email', email)
+      .single();
     
-    if (!user) {
-      return res.status(401).json({
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid credentials'
+        });
+      }
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
         success: false,
-        message: 'Invalid credentials'
+        message: 'Server error during login'
       });
     }
 
-    // Check password (you'll need to implement password comparison)
-    // For now, let's assume password is stored as plain text (not recommended for production)
-    if (user.password !== password) {
+    // Check password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
@@ -142,10 +177,19 @@ router.post('/login', [
 // @access  Private
 router.get('/me', protect, async (req, res) => {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      include: { wishlist: true }
-    });
+    const { data: user, error } = await supabase
+      .from('User')
+      .select('id, firstName, lastName, email, role, avatar, wishlist, createdAt')
+      .eq('id', req.user.id)
+      .single();
+    
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch profile'
+      });
+    }
     
     res.json({
       success: true,
@@ -180,7 +224,9 @@ router.put('/profile', protect, [
     }
 
     const allowedUpdates = ['firstName', 'lastName', 'phone', 'address'];
-    const updates = {};
+    const updates = {
+      updatedAt: new Date().toISOString()
+    };
 
     // Only include allowed fields
     Object.keys(req.body).forEach(key => {
@@ -189,11 +235,20 @@ router.put('/profile', protect, [
       }
     });
 
-    const user = await prisma.user.update({
-      where: { id: req.user.id },
-      data: updates,
-      include: { wishlist: true }
-    });
+    const { data: user, error } = await supabase
+      .from('User')
+      .update(updates)
+      .eq('id', req.user.id)
+      .select('id, firstName, lastName, email, role, avatar, wishlist, createdAt')
+      .single();
+
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to update profile'
+      });
+    }
 
     res.json({
       success: true,
@@ -230,25 +285,50 @@ router.put('/change-password', protect, [
     const { currentPassword, newPassword } = req.body;
 
     // Get user with password
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      select: { password: true }
-    });
+    const { data: user, error: fetchError } = await supabase
+      .from('User')
+      .select('password')
+      .eq('id', req.user.id)
+      .single();
+
+    if (fetchError) {
+      console.error('❌ Supabase error:', fetchError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch user'
+      });
+    }
 
     // Check current password
-    if (user.password !== currentPassword) {
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isCurrentPasswordValid) {
       return res.status(400).json({
         success: false,
         message: 'Current password is incorrect'
       });
     }
 
+    // Hash new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 12);
+
     // Update password
-    const updatedUser = await prisma.user.update({
-      where: { id: req.user.id },
-      data: { password: newPassword },
-      select: { id: true, firstName: true, lastName: true, email: true, role: true }
-    });
+    const { data: updatedUser, error: updateError } = await supabase
+      .from('User')
+      .update({ 
+        password: hashedNewPassword,
+        updatedAt: new Date().toISOString()
+      })
+      .eq('id', req.user.id)
+      .select('id, firstName, lastName, email, role')
+      .single();
+
+    if (updateError) {
+      console.error('❌ Supabase error:', updateError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to update password'
+      });
+    }
 
     res.json({
       success: true,

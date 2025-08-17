@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, query, validationResult } = require('express-validator');
-const prisma = require('../lib/prisma');
+const { supabase } = require('../lib/supabase');
 const { protect, adminOnly, optionalAuth } = require('../middleware/auth');
 const router = express.Router();
 
@@ -39,57 +39,48 @@ router.get('/', [
       status = 'active'
     } = req.query;
 
-    // Build where clause for Prisma
-    let where = { status };
+    // Execute query with Supabase
+    let query = supabase
+      .from('Product')
+      .select('*', { count: 'exact' })
+      .eq('status', status);
 
-    // Category filter
+    // Apply filters
     if (category) {
-      where.category = category;
+      query = query.eq('category', category);
     }
-
-    // Price range filter
-    if (minPrice || maxPrice) {
-      where.price = {};
-      if (minPrice) where.price.gte = parseFloat(minPrice);
-      if (maxPrice) where.price.lte = parseFloat(maxPrice);
-    }
-
-    // Featured filter
+    
     if (featured === 'true') {
-      where.featured = true;
+      query = query.eq('featured', true);
     }
-
-    // Search functionality
+    
     if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } }
-      ];
+      query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
+    }
+    
+    if (minPrice || maxPrice) {
+      if (minPrice) query = query.gte('price', parseFloat(minPrice));
+      if (maxPrice) query = query.lte('price', parseFloat(maxPrice));
     }
 
-    // Calculate pagination
+    // Apply sorting
+    if (sort === '-createdAt') query = query.order('createdAt', { ascending: false });
+    else if (sort === 'createdAt') query = query.order('createdAt', { ascending: true });
+    else if (sort === '-price') query = query.order('price', { ascending: false });
+    else if (sort === 'price') query = query.order('price', { ascending: true });
+    else if (sort === '-name') query = query.order('name', { ascending: false });
+    else if (sort === 'name') query = query.order('name', { ascending: true });
+    else if (sort === 'featured') query = query.order('featured', { ascending: false });
+
+    // Apply pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
+    query = query.range(skip, skip + parseInt(limit) - 1);
 
-    // Parse sort order
-    let orderBy = {};
-    if (sort === '-createdAt') orderBy.createdAt = 'desc';
-    else if (sort === 'createdAt') orderBy.createdAt = 'asc';
-    else if (sort === '-price') orderBy.price = 'desc';
-    else if (sort === 'price') orderBy.price = 'asc';
-    else if (sort === '-name') orderBy.name = 'desc';
-    else if (sort === 'name') orderBy.name = 'asc';
-    else if (sort === 'featured') orderBy.featured = 'desc';
+    const { data: products, error, count } = await query;
 
-    // Execute query with Prisma
-    const [products, total] = await Promise.all([
-      prisma.product.findMany({
-        where,
-        orderBy,
-        skip,
-        take: parseInt(limit)
-      }),
-      prisma.product.count({ where })
-    ]);
+    if (error) {
+      throw error;
+    }
 
     res.json({
       success: true,
@@ -97,8 +88,8 @@ router.get('/', [
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / parseInt(limit))
+        total: count,
+        pages: Math.ceil(count / parseInt(limit))
       }
     });
   } catch (error) {
@@ -115,15 +106,20 @@ router.get('/', [
 // @access  Public
 router.get('/:id', optionalAuth, async (req, res) => {
   try {
-    const product = await prisma.product.findUnique({
-      where: { id: req.params.id }
-    });
+    const { data: product, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
 
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found'
-      });
+    if (error) {
+      if (error.code === 'PGRST116') { // Supabase error code for not found
+        return res.status(404).json({
+          success: false,
+          message: 'Product not found'
+        });
+      }
+      throw error;
     }
 
     res.json({
@@ -144,18 +140,21 @@ router.get('/:id', optionalAuth, async (req, res) => {
 // @access  Public
 router.get('/slug/:slug', optionalAuth, async (req, res) => {
   try {
-    const product = await prisma.product.findFirst({
-      where: { 
-        slug: req.params.slug, 
-        status: 'active' 
-      }
-    });
+    const { data: product, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('slug', req.params.slug)
+      .eq('status', 'active')
+      .single();
 
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found'
-      });
+    if (error) {
+      if (error.code === 'PGRST116') { // Supabase error code for not found
+        return res.status(404).json({
+          success: false,
+          message: 'Product not found'
+        });
+      }
+      throw error;
     }
 
     res.json({
@@ -195,9 +194,24 @@ router.post('/', protect, adminOnly, [
       });
     }
 
-    const product = await prisma.product.create({
-      data: req.body
-    });
+    const { data: product, error } = await supabase
+      .from('products')
+      .insert(req.body)
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === '23505') { // Supabase error code for unique constraint violation
+        let message = 'Duplicate field error';
+        if (error.message.includes('stockCode')) message = 'Product with this stock code already exists';
+        else if (error.message.includes('slug')) message = 'Product with this slug already exists';
+        return res.status(400).json({
+          success: false,
+          message
+        });
+      }
+      throw error;
+    }
 
     res.status(201).json({
       success: true,
@@ -206,16 +220,6 @@ router.post('/', protect, adminOnly, [
     });
   } catch (error) {
     console.error('Create product error:', error);
-    if (error.code === 'P2002') {
-      let message = 'Duplicate field error';
-      if (error.meta?.target?.includes('stockCode')) message = 'Product with this stock code already exists';
-      else if (error.meta?.target?.includes('slug')) message = 'Product with this slug already exists';
-      
-      return res.status(400).json({
-        success: false,
-        message
-      });
-    }
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -243,10 +247,22 @@ router.put('/:id', protect, adminOnly, [
       });
     }
 
-    const product = await prisma.product.update({
-      where: { id: req.params.id },
-      data: req.body
-    });
+    const { data: product, error } = await supabase
+      .from('products')
+      .update(req.body)
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') { // Supabase error code for not found
+        return res.status(404).json({
+          success: false,
+          message: 'Product not found'
+        });
+      }
+      throw error;
+    }
 
     res.json({
       success: true,
@@ -255,12 +271,6 @@ router.put('/:id', protect, adminOnly, [
     });
   } catch (error) {
     console.error('Update product error:', error);
-    if (error.code === 'P2025') {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found'
-      });
-    }
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -273,9 +283,20 @@ router.put('/:id', protect, adminOnly, [
 // @access  Private/Admin
 router.delete('/:id', protect, adminOnly, async (req, res) => {
   try {
-    await prisma.product.delete({
-      where: { id: req.params.id }
-    });
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', req.params.id);
+
+    if (error) {
+      if (error.code === 'PGRST116') { // Supabase error code for not found
+        return res.status(404).json({
+          success: false,
+          message: 'Product not found'
+        });
+      }
+      throw error;
+    }
 
     res.json({
       success: true,
@@ -283,12 +304,6 @@ router.delete('/:id', protect, adminOnly, async (req, res) => {
     });
   } catch (error) {
     console.error('Delete product error:', error);
-    if (error.code === 'P2025') {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found'
-      });
-    }
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -301,32 +316,36 @@ router.delete('/:id', protect, adminOnly, async (req, res) => {
 // @access  Public
 router.get('/:id/related', async (req, res) => {
   try {
-    const product = await prisma.product.findUnique({
-      where: { id: req.params.id }
-    });
+    const { data: product, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
     
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found'
-      });
+    if (error) {
+      if (error.code === 'PGRST116') { // Supabase error code for not found
+        return res.status(404).json({
+          success: false,
+          message: 'Product not found'
+        });
+      }
+      throw error;
     }
 
     // Find related products in same category
-    const related = await prisma.product.findMany({
-      where: {
-        AND: [
-          { id: { not: product.id } },
-          { status: 'active' },
-          { category: product.category }
-        ]
-      },
-      take: 4,
-      orderBy: [
-        { featured: 'desc' },
-        { createdAt: 'desc' }
-      ]
-    });
+    const { data: related, error: relatedError } = await supabase
+      .from('products')
+      .select('*')
+      .eq('status', 'active')
+      .eq('category', product.category)
+      .neq('id', product.id)
+      .limit(4)
+      .order('featured', { ascending: false })
+      .order('created_at', { ascending: false });
+
+    if (relatedError) {
+      throw relatedError;
+    }
 
     res.json({
       success: true,
