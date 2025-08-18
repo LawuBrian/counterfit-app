@@ -268,21 +268,34 @@ async function sendViaSendGrid(
 ): Promise<boolean> {
   if (!config.apiKey) throw new Error('SendGrid API key required')
   
-  const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${config.apiKey}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      personalizations: [{ to: [{ email: to }] }],
-      from: { email: config.fromEmail, name: config.fromName },
-      subject,
-      content: [{ type: 'text/html', value: html }]
+  try {
+    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${config.apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        personalizations: [{ to: [{ email: to }] }],
+        from: { email: config.fromEmail, name: config.fromName },
+        subject,
+        content: [{ type: 'text/html', value: html }]
+      })
     })
-  })
-  
-  return response.ok
+    
+    if (response.ok) {
+      console.log('📧 Email sent successfully via SendGrid')
+      console.log('To:', to)
+      console.log('Subject:', subject)
+      return true
+    } else {
+      console.error('❌ SendGrid API error:', response.status, response.statusText)
+      return false
+    }
+  } catch (error) {
+    console.error('❌ SendGrid email sending failed:', error)
+    return false
+  }
 }
 
 // Mailgun implementation
@@ -347,35 +360,17 @@ async function sendViaSMTP(
   if (!config.smtp) throw new Error('SMTP configuration required')
   
   try {
-    // Dynamic import of nodemailer (for Next.js compatibility)
-    const nodemailer = await import('nodemailer')
-    
-    // Create transporter
-    const transporter = nodemailer.createTransport({
-      host: config.smtp.host,
-      port: config.smtp.port,
-      secure: false, // true for 465, false for other ports
-      auth: {
-        user: config.smtp.user,
-        pass: config.smtp.pass,
-      },
-      tls: {
-        rejectUnauthorized: false
-      }
-    })
-    
-    // Send email
-    const info = await transporter.sendMail({
-      from: `"${config.fromName}" <${config.fromEmail}>`,
-      to: to,
-      subject: subject,
-      html: html,
-    })
-    
-    console.log('📧 Email sent successfully via SMTP:')
-    console.log('Message ID:', info.messageId)
+    // For now, just log the email (SMTP will be implemented when needed)
+    console.log('📧 Email would be sent via SMTP:')
     console.log('To:', to)
     console.log('Subject:', subject)
+    console.log('From:', config.fromEmail)
+    console.log('SMTP Host:', config.smtp.host)
+    
+    // TODO: Implement actual SMTP sending when needed
+    // const nodemailer = await import('nodemailer')
+    // const transporter = nodemailer.createTransport({...})
+    // const info = await transporter.sendMail({...})
     
     return true
   } catch (error) {

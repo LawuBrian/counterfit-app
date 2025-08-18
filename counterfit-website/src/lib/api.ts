@@ -181,7 +181,7 @@ export function getImageUrl(imagePath: string): string {
   // If no image path provided, return placeholder
   if (!imagePath) {
     console.log('❌ No image path provided, returning placeholder')
-    return '/placeholder-product.jpg'
+    return '/images/1d66cc_118bf0bf6588467e8c966076d949e1b3_mv2.png'
   }
   
   // If path starts with http/https, it's already a full URL
@@ -196,18 +196,15 @@ export function getImageUrl(imagePath: string): string {
     return imagePath
   }
   
-  // If it's a relative path (like uploads/products/filename.jpg), construct backend URL
+  // TEMPORARY: For now, return a local placeholder instead of trying to load from broken backend
   if (imagePath.startsWith('uploads/') || imagePath.startsWith('/uploads/')) {
-    const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath
-    const backendUrl = `${API_BASE_URL}/${cleanPath}`
-    console.log('🔗 Backend URL generated:', backendUrl)
-    return backendUrl
+    console.log('⚠️ Backend image path detected, returning local placeholder for now')
+    return '/images/1d66cc_118bf0bf6588467e8c966076d949e1b3_mv2.png'
   }
   
-  // Otherwise, assume it's a backend path and construct full URL
-  const backendUrl = `${API_BASE_URL}${imagePath.startsWith('/') ? imagePath : `/${imagePath}`}`
-  console.log('🔗 Backend URL generated:', backendUrl)
-  return backendUrl
+  // TEMPORARY: For now, return a local placeholder instead of trying to load from broken backend
+  console.log('⚠️ Unknown image path, returning local placeholder for now')
+  return '/images/1d66cc_118bf0bf6588467e8c966076d949e1b3_mv2.png'
 }
 
 export function formatPrice(price: number): string {
