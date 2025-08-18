@@ -160,6 +160,19 @@ app.get('/debug/uploads', (req, res) => {
   }
 });
 
+// Debug route to check specific image
+app.get('/debug/image/:filename', (req, res) => {
+  const { filename } = req.params;
+  const filePath = path.join(productsUploadsDir, filename);
+  
+  res.json({
+    filename,
+    filePath,
+    exists: fs.existsSync(filePath),
+    stats: fs.existsSync(filePath) ? fs.statSync(filePath) : null
+  });
+});
+
 // Test route to check if a specific image exists
 app.get('/test-image/:filename', (req, res) => {
   try {

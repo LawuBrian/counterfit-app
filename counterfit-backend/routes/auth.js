@@ -52,14 +52,19 @@ router.post('/register', [
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Create user
+    // Create user with explicit UUID generation
+    const crypto = require('crypto');
+    const userId = crypto.randomUUID();
+    
     const { data: user, error: createError } = await supabase
       .from('User')
       .insert({
+        id: userId,
         firstName,
         lastName,
         email,
         password: hashedPassword,
+        role: 'USER',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       })

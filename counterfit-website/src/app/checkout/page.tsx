@@ -131,28 +131,89 @@ export default function CheckoutPage() {
 
       const orderData = await orderResponse.json()
       console.log('✅ Order created:', orderData)
+      console.log('🔍 Order data structure:', JSON.stringify(orderData, null, 2))
+
+      // Safely extract order information
+      const order = orderData.data || orderData.order || orderData
+      console.log('🔍 Extracted order:', order)
+
+      if (!order || !order.id) {
+        console.error('❌ Invalid order data structure:', orderData)
+        throw new Error('Invalid order data received from server')
+      }
+
+      // Send order confirmation email to customer
+      console.log('📧 Sending order confirmation email...')
+      try {
+        const emailData = {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          customerName: `${formData.firstName} ${formData.lastName}`,
+          customerEmail: formData.email,
+          totalAmount: order.totalAmount,
+          items: order.items,
+          shippingAddress: order.shippingAddress,
+          trackingNumber: order.trackingNumber
+        }
+
+        await fetch('/api/email/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'orderConfirmation',
+            data: emailData
+          })
+        })
+
+        // Send admin notification
+        await fetch('/api/email/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'adminOrderNotification',
+            data: emailData,
+            adminEmail: 'admin@counterfit.co.za'
+          })
+        })
+
+        console.log('✅ Order confirmation emails sent')
+      } catch (emailError) {
+        console.warn('⚠️ Email sending failed, but order was created:', emailError)
+        // Don't fail the checkout if emails fail
+      }
 
       // Create Yoco checkout
       console.log('💳 Creating Yoco checkout...')
       
       try {
-        const checkout = await createYocoCheckout({
-          amount: Math.round(calculateTotal() * 100), // Convert to cents
-          currency: 'ZAR',
-          metadata: {
-            orderId: orderData.order.id,
-            orderNumber: orderData.order.orderNumber,
-            customerEmail: formData.email
-          }
+        const checkoutResponse = await fetch('/api/checkout/create-yoco', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            orderId: order.id,
+            amount: calculateTotal(),
+            customerEmail: formData.email,
+            customerName: `${formData.firstName} ${formData.lastName}`
+          })
         })
+
+        if (!checkoutResponse.ok) {
+          const errorData = await checkoutResponse.json()
+          throw new Error(errorData.error || 'Failed to create YOCO checkout')
+        }
+
+        const checkout = await checkoutResponse.json()
+        console.log('✅ Yoco checkout created:', checkout)
         
         console.log('✅ Yoco checkout created, redirecting customer...')
         
         // Redirect customer to Yoco checkout page
-        if (checkout.redirectUrl) {
-          window.location.href = checkout.redirectUrl
+        if (checkout.checkout?.redirectUrl) {
+          window.location.href = checkout.checkout.redirectUrl
         } else {
-          throw new Error('No redirect URL received from Yoco')
+          throw new Error('No redirect URL received from YOCO')
         }
         
       } catch (yocoError) {

@@ -1,0 +1,18 @@
+# Copy these lines to your .env.local file:
+
+# Email Configuration
+EMAIL_SERVICE=smtp
+EMAIL_FROM=helpcounterfit@gmail.com
+EMAIL_FROM_NAME=Counterfit
+EMAIL_SMTP_HOST=smtp.gmail.com
+EMAIL_SMTP_PORT=587
+EMAIL_SMTP_USER=helpcounterfit@gmail.com
+EMAIL_SMTP_PASS=your-app-password-here
+
+# Important: Replace 'your-app-password-here' with your actual Gmail App Password
+# To get an App Password:
+# 1. Go to your Google Account settings
+# 2. Enable 2-Factor Authentication if not already enabled
+# 3. Go to Security > App passwords
+# 4. Generate a new app password for "Mail"
+# 5. Use that password in EMAIL_SMTP_PASS

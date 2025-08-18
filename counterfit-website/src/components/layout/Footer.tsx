@@ -80,6 +80,28 @@ export default function Footer() {
             </ul>
           </div>
 
+          {/* Contact Info */}
+          <div>
+            <h3 className="font-heading text-lg font-semibold mb-4">Contact</h3>
+            <ul className="space-y-3">
+              <li>
+                <a href="mailto:helpcounterfit@gmail.com" className="font-paragraph text-sm text-primary-foreground/80 hover:text-primary-foreground transition-colors">
+                  helpcounterfit@gmail.com
+                </a>
+              </li>
+              <li>
+                <span className="font-paragraph text-sm text-primary-foreground/80">
+                  +27 61 948 1028
+                </span>
+              </li>
+              <li>
+                <span className="font-paragraph text-sm text-primary-foreground/80">
+                  Mon-Fri 9AM-6PM SAST
+                </span>
+              </li>
+            </ul>
+          </div>
+
           {/* Legal Links */}
           <div>
             <h3 className="font-heading text-lg font-semibold mb-4">Legal</h3>

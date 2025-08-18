@@ -2,45 +2,11 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Mail, Phone, MapPin, Clock, Send, MessageCircle } from 'lucide-react'
-import { useState } from 'react'
+
+import { Mail, Phone, MapPin, Clock, MessageCircle } from 'lucide-react'
+import ContactForm from '@/components/ContactForm'
 
 export default function ContactPage() {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    inquiryType: 'general',
-    subject: '',
-    message: ''
-  })
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-    
-    // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    
-    alert('Thank you for your message! We\'ll get back to you soon.')
-    setFormData({
-      name: '',
-      email: '',
-      inquiryType: 'general',
-      subject: '',
-      message: ''
-    })
-    setIsSubmitting(false)
-  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -73,99 +39,7 @@ export default function ContactPage() {
                   </h3>
                 </div>
                 <div className="p-8">
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="peer-disabled:cursor-not-allowed peer-disabled:opacity-70 font-paragraph text-sm font-medium text-primary mb-2 block" htmlFor="name">
-                          Full Name *
-                        </label>
-                        <input
-                          className="flex w-full rounded-md border border-primary/30 bg-transparent px-3 py-1 text-base text-foreground shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-primary-foreground placeholder:text-foreground/50 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-border focus-visible:border-primary disabled:cursor-not-allowed disabled:opacity-50 md:text-sm h-12"
-                          id="name"
-                          name="name"
-                          placeholder="Your full name"
-                          required
-                          value={formData.name}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                      <div>
-                        <label className="peer-disabled:cursor-not-allowed peer-disabled:opacity-70 font-paragraph text-sm font-medium text-primary mb-2 block" htmlFor="email">
-                          Email Address *
-                        </label>
-                        <input
-                          type="email"
-                          className="flex w-full rounded-md border border-primary/30 bg-transparent px-3 py-1 text-base text-foreground shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-primary-foreground placeholder:text-foreground/50 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-border focus-visible:border-primary disabled:cursor-not-allowed disabled:opacity-50 md:text-sm h-12"
-                          id="email"
-                          name="email"
-                          placeholder="your.email@example.com"
-                          required
-                          value={formData.email}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="peer-disabled:cursor-not-allowed peer-disabled:opacity-70 font-paragraph text-sm font-medium text-primary mb-2 block" htmlFor="inquiryType">
-                          Inquiry Type
-                        </label>
-                        <select
-                          className="flex w-full items-center justify-between whitespace-nowrap rounded-md border border-border bg-transparent px-3 py-2 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-border disabled:cursor-not-allowed disabled:opacity-50 h-12"
-                          name="inquiryType"
-                          value={formData.inquiryType}
-                          onChange={handleInputChange}
-                        >
-                          <option value="general">General Inquiry</option>
-                          <option value="order">Order Support</option>
-                          <option value="returns">Returns & Exchanges</option>
-                          <option value="wholesale">Wholesale</option>
-                          <option value="press">Press & Media</option>
-                          <option value="collaboration">Collaboration</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="peer-disabled:cursor-not-allowed peer-disabled:opacity-70 font-paragraph text-sm font-medium text-primary mb-2 block" htmlFor="subject">
-                          Subject *
-                        </label>
-                        <input
-                          className="flex w-full rounded-md border border-primary/30 bg-transparent px-3 py-1 text-base text-foreground shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-primary-foreground placeholder:text-foreground/50 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-border focus-visible:border-primary disabled:cursor-not-allowed disabled:opacity-50 md:text-sm h-12"
-                          id="subject"
-                          name="subject"
-                          placeholder="Brief subject line"
-                          required
-                          value={formData.subject}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="peer-disabled:cursor-not-allowed peer-disabled:opacity-70 font-paragraph text-sm font-medium text-primary mb-2 block" htmlFor="message">
-                        Message *
-                      </label>
-                      <textarea
-                        className="flex min-h-[60px] w-full rounded-md border border-border bg-transparent px-3 py-2 text-base text-foreground shadow-sm placeholder:text-foreground/50 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-border focus-visible:border-primary disabled:cursor-not-allowed disabled:opacity-50 md:text-sm resize-none"
-                        id="message"
-                        name="message"
-                        placeholder="Tell us how we can help you..."
-                        required
-                        rows={6}
-                        value={formData.message}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                    
-                    <Button 
-                      type="submit" 
-                      className="w-full md:w-auto"
-                      disabled={isSubmitting}
-                    >
-                      <Send className="w-5 h-5 mr-2" />
-                      {isSubmitting ? 'Sending...' : 'Send Message'}
-                    </Button>
-                  </form>
+                  <ContactForm />
                 </div>
               </div>
             </div>
@@ -181,7 +55,7 @@ export default function ContactPage() {
                     </div>
                     <div>
                       <h3 className="font-heading text-lg font-semibold text-primary mb-1">Email Us</h3>
-                      <p className="font-paragraph text-primary font-medium mb-1">pakilawu0@gmail.com</p>
+                      <p className="font-paragraph text-primary font-medium mb-1">helpcounterfit@gmail.com</p>
                       <p className="font-paragraph text-sm text-secondary">Send us an email and we'll respond within 24 hours</p>
                     </div>
                   </div>

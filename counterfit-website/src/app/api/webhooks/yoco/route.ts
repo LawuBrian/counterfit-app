@@ -112,6 +112,39 @@ async function handlePaymentSucceeded(event: any) {
       
       if (response.ok) {
         console.log('✅ Order payment confirmed in database')
+        
+        // Send payment success email
+        try {
+          const orderResponse = await fetch(`${BACKEND_URL}/api/orders/${metadata.orderId}`, {
+            headers: { 'Authorization': `Bearer ${BACKEND_API_KEY}` }
+          })
+          
+          if (orderResponse.ok) {
+            const order = await orderResponse.json()
+            
+            await fetch('/api/email/send', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'paymentSuccess',
+                data: {
+                  orderId: order.data.id,
+                  orderNumber: order.data.orderNumber,
+                  customerName: `${order.data.shippingAddress.firstName} ${order.data.shippingAddress.lastName}`,
+                  customerEmail: order.data.shippingAddress.email,
+                  amount: order.data.totalAmount,
+                  paymentId: id,
+                  paymentMethod: 'yoco',
+                  status: 'success'
+                }
+              })
+            })
+            
+            console.log('✅ Payment success email sent')
+          }
+        } catch (emailError) {
+          console.warn('⚠️ Payment success email failed:', emailError)
+        }
       } else {
         console.error('❌ Failed to confirm order payment')
       }

@@ -22,7 +22,11 @@ if (!fs.existsSync(productsUploadsDir)) {
 // Configure multer for file uploads - simplified version
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    console.log('📁 Multer destination:', productsUploadsDir);
+    console.log('📁 Multer destination called with:', {
+      file: file.originalname,
+      destination: productsUploadsDir,
+      exists: fs.existsSync(productsUploadsDir)
+    });
     cb(null, productsUploadsDir);
   },
   filename: (req, file, cb) => {
@@ -30,6 +34,7 @@ const storage = multer.diskStorage({
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const filename = 'product-' + uniqueSuffix + path.extname(file.originalname);
     console.log('📝 Generated filename:', filename);
+    console.log('📁 Full path will be:', path.join(productsUploadsDir, filename));
     cb(null, filename);
   }
 });
@@ -93,6 +98,23 @@ router.post('/product-image', upload.single('image'), (req, res) => {
       size: req.file.size,
       path: req.file.path
     })
+
+    // Verify file was actually saved
+    const savedFilePath = path.join(productsUploadsDir, req.file.filename);
+    const fileExists = fs.existsSync(savedFilePath);
+    console.log('🔍 File existence check:', {
+      savedFilePath,
+      exists: fileExists,
+      size: fileExists ? fs.statSync(savedFilePath).size : 'N/A'
+    });
+
+    if (!fileExists) {
+      console.error('❌ File was not saved to disk!');
+      return res.status(500).json({
+        success: false,
+        message: 'File upload failed - file not saved to disk'
+      });
+    }
 
     // Return the file URL immediately - use Render backend URL
     const backendUrl = process.env.BACKEND_URL || 'https://counterfit-backend.onrender.com';
