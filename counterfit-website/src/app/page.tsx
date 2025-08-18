@@ -39,7 +39,16 @@ export default function HomePage() {
     fetchProducts()
   }, [])
 
-  // Determine which products to show
+  // Debug: Log when displayedProducts changes
+  useEffect(() => {
+    console.log('🔄 displayedProducts changed:', {
+      total: featuredProducts.length,
+      displayed: displayedProducts.length,
+      showAll: showAllFeatured,
+      products: displayedProducts.map(p => ({ name: p.name, hasImage: !!p.images[0]?.url }))
+    })
+  }, [displayedProducts, featuredProducts.length, showAllFeatured])
+
   const displayedProducts = showAllFeatured ? featuredProducts : featuredProducts.slice(0, 5)
   const hasMoreProducts = featuredProducts.length > 5
 
@@ -97,6 +106,13 @@ export default function HomePage() {
               </p>
             </div>
             <div className="flex gap-3 mt-6 md:mt-0">
+              <Button 
+                variant="outline" 
+                onClick={() => window.location.reload()}
+                className="border-primary text-primary bg-transparent shadow-sm hover:bg-primary/90 hover:text-primary-foreground h-9 px-4 py-2 rounded-md text-sm font-medium"
+              >
+                🔄 Refresh
+              </Button>
               <Link href="/shop">
                 <Button variant="outline" className="border-primary text-primary bg-transparent shadow-sm hover:bg-primary/90 hover:text-primary-foreground h-9 px-4 py-2 rounded-md text-sm font-medium">
                   View All Products
@@ -113,9 +129,9 @@ export default function HomePage() {
                 <p className="text-secondary text-lg">Loading featured products...</p>
               </div>
             ) : displayedProducts.length > 0 ? (
-              displayedProducts.map((product) => {
+              displayedProducts.map((product, index) => {
                 const imageUrl = getImageUrl(product.images[0]?.url || '/placeholder-product.jpg')
-                console.log('🖼️ Product:', product.name, 'Image URL:', imageUrl, 'Original:', product.images[0]?.url)
+                console.log(`🖼️ Product ${index + 1}:`, product.name, 'Image URL:', imageUrl, 'Original:', product.images[0]?.url)
                 return (
                 <Link key={product.id || product._id} href={getProductUrl(product)} className="group overflow-hidden rounded-xl bg-background shadow-md hover:shadow-lg transition-all duration-300 block">
                   <div className="relative aspect-[4/5] overflow-hidden">
@@ -125,17 +141,18 @@ export default function HomePage() {
                       fill
                       className="object-cover object-center group-hover:scale-105 transition-transform duration-500"
                       onError={(e) => {
-                        console.error('❌ Image failed to load:', imageUrl, e)
-                        // Show fallback when image fails
+                        console.error(`❌ Image failed to load for ${product.name}:`, imageUrl, e)
+                        // Show fallback when image fails to load
                         const fallback = document.getElementById(`fallback-${product.id || product._id}`)
                         if (fallback) fallback.classList.remove('opacity-0')
                       }}
                       onLoad={() => {
-                        console.log('✅ Image loaded successfully:', imageUrl)
+                        console.log(`✅ Image loaded successfully for ${product.name}:`, imageUrl)
                         // Hide fallback when image loads successfully
                         const fallback = document.getElementById(`fallback-${product.id || product._id}`)
                         if (fallback) fallback.classList.add('opacity-0')
                       }}
+                      priority={index < 5} // Prioritize first 5 images
                     />
                     {/* Fallback background - only shows if image fails to load */}
                     <div className="absolute inset-0 bg-gray-200 flex items-center justify-center opacity-0 transition-opacity duration-300" id={`fallback-${product.id || product._id}`}>
@@ -144,6 +161,7 @@ export default function HomePage() {
                           <span className="text-2xl">🖼️</span>
                         </div>
                         <p>Product Image</p>
+                        <p className="text-xs mt-1">{product.name}</p>
                       </div>
                     </div>
                     <div className="absolute top-4 left-4">
@@ -213,7 +231,10 @@ export default function HomePage() {
             <div className="text-center mt-12">
               <Button
                 variant="outline"
-                onClick={() => setShowAllFeatured(!showAllFeatured)}
+                onClick={() => {
+                  console.log('🔄 Toggling featured products display. Current state:', showAllFeatured)
+                  setShowAllFeatured(!showAllFeatured)
+                }}
                 className="border-primary text-primary bg-transparent shadow-sm hover:bg-primary/90 hover:text-primary-foreground h-10 px-6 py-2 rounded-md text-sm font-medium"
               >
                 {showAllFeatured ? 'Show Less' : `Show More (${featuredProducts.length - 5} more)`}
@@ -221,6 +242,74 @@ export default function HomePage() {
               </Button>
             </div>
           )}
+        </div>
+      </section>
+
+      {/* Signature Collections Section */}
+      <section className="py-20 lg:py-32 bg-primary/5">
+        <div className="max-w-screen-2xl mx-auto px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="font-heading text-4xl lg:text-5xl font-bold text-primary mb-6">
+              Signature Collections
+            </h2>
+            <p className="font-paragraph text-lg text-secondary max-w-2xl mx-auto">
+              Discover Paki and Jareed's vision through collections that embody luxury, innovation, and timeless design
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {[
+              {
+                name: "Platform Series",
+                badge: "New Drop",
+                image: "/images/1d66cc_118bf0bf6588467e8c966076d949e1b3_mv2.png",
+                description: "Elevated streetwear that puts you on another level. Clean lines, premium materials, and statement silhouettes.",
+                scale: ""
+              },
+              {
+                name: "Dynamic Motion", 
+                badge: "Limited Edition",
+                image: "/images/1d66cc_19a0f6de460743f18fef591c43ae2592_mv2.png",
+                description: "For those who move with purpose. Athletic-inspired pieces that blur the line between performance and style.",
+                scale: "lg:scale-105"
+              },
+              {
+                name: "Spotlight Series",
+                badge: "Exclusive", 
+                image: "/images/1d66cc_aec60f7b500c482397c35ad1f0ff735e_mv2.png",
+                description: "For those who command attention. Premium pieces designed for moments that matter.",
+                scale: ""
+              }
+            ].map((collection, index) => (
+              <div key={index} className={`group overflow-hidden rounded-xl bg-background shadow-lg hover:shadow-xl transition-all duration-300 ${collection.scale}`}>
+                <div className="relative aspect-[4/5] overflow-hidden">
+                  <Image
+                    src={collection.image}
+                    alt={collection.name}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                  <div className="absolute bottom-6 left-6 right-6">
+                    <div className="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold mb-3 bg-white/20 text-white border-white/30">
+                      {collection.badge}
+                    </div>
+                    <h3 className="font-heading text-2xl font-bold text-white mb-2">
+                      {collection.name}
+                    </h3>
+                    <p className="font-paragraph text-white/90 text-sm mb-4 line-clamp-2">
+                      {collection.description}
+                    </p>
+                    <Link href="/collections">
+                      <Button className="bg-white text-black hover:bg-white/90 shadow h-9 px-4 py-2 rounded-md text-sm font-medium">
+                        Explore Collection
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 

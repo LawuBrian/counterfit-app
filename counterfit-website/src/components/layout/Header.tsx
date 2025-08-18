@@ -49,15 +49,15 @@ export default function Header() {
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Mobile Menu Button */}
           <button 
-            className="lg:hidden p-2 -ml-2"
+            className="lg:hidden p-2 -ml-1"
             onClick={toggleMobileMenu}
           >
             <Menu className="h-6 w-6 text-primary" />
           </button>
 
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-3">
-            <div className="w-8 h-8 lg:w-10 lg:h-10">
+          <Link href="/" className="flex items-center space-x-2 lg:space-x-3">
+            <div className="w-7 h-7 lg:w-10 lg:h-10">
               <Image
                 src="/images/1d66cc_02957a89db7f40e2a786b097e46c6c79_mv2.png"
                 alt="Counterfit Logo"
@@ -66,13 +66,13 @@ export default function Header() {
                 className="w-full h-full object-contain"
               />
             </div>
-            <span className="font-heading text-xl lg:text-2xl font-bold text-primary tracking-wider">
+            <span className="font-heading text-lg lg:text-2xl font-bold text-primary tracking-wider">
               COUNTERFIT
             </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center space-x-8">
+          <nav className="hidden lg:flex items-center space-x-6 xl:space-x-8">
             <Link href="/" className={getLinkClasses('/')}>
               Home
             </Link>
@@ -91,18 +91,19 @@ export default function Header() {
           </nav>
 
           {/* Right Side Actions */}
-          <div className="flex items-center space-x-2 sm:space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4">
             <button 
-              className="p-2 text-secondary hover:text-primary transition-colors"
+              className="p-1.5 lg:p-2 text-secondary hover:text-primary transition-colors"
               onClick={toggleSearch}
             >
-              <Search className="h-5 w-5" />
+              <Search className="h-4 w-4 lg:h-5 lg:w-5" />
             </button>
             {session ? (
               <div className="relative group">
-                <Button variant="ghost" size="sm" className="text-secondary hover:text-primary">
-                  <User className="h-5 w-5 mr-2" />
-                  {session.user?.name || 'Account'}
+                <Button variant="ghost" size="sm" className="text-secondary hover:text-primary h-8 lg:h-9 px-2 lg:px-3">
+                  <User className="h-4 w-4 lg:h-5 lg:w-5 mr-1 lg:mr-2" />
+                  <span className="hidden sm:inline">{session.user?.name || 'Account'}</span>
+                  <span className="sm:hidden">Account</span>
                 </Button>
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
                   <div className="py-2">
@@ -128,15 +129,16 @@ export default function Header() {
                 </div>
               </div>
             ) : (
-              <Button variant="ghost" size="sm" className="text-secondary hover:text-primary">
+              <Button variant="ghost" size="sm" className="text-secondary hover:text-primary h-8 lg:h-9 px-2 lg:px-3">
                 <Link href="/auth/signin" className="flex items-center">
-                  <User className="h-5 w-5 mr-2" />
-                  Sign In
+                  <User className="h-4 w-4 lg:h-5 lg:w-5 mr-1 lg:mr-2" />
+                  <span className="hidden sm:inline">Sign In</span>
+                  <span className="sm:hidden">Sign In</span>
                 </Link>
               </Button>
             )}
-            <Link href="/cart" className="p-2 text-secondary hover:text-primary transition-colors relative">
-              <ShoppingBag className="h-5 w-5" />
+            <Link href="/cart" className="p-1.5 lg:p-2 text-secondary hover:text-primary transition-colors relative">
+              <ShoppingBag className="h-4 w-4 lg:h-5 lg:w-5" />
               <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
                 {getTotalItems()}
               </span>
@@ -178,7 +180,7 @@ export default function Header() {
           />
           
           {/* Mobile Menu */}
-          <div className="fixed top-0 left-0 h-full w-80 bg-white shadow-xl z-50 lg:hidden transform transition-transform duration-300">
+          <div className="fixed top-0 left-0 h-full w-80 bg-background shadow-xl z-50 lg:hidden transform transition-transform duration-300">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <Link href="/" className="flex items-center space-x-3" onClick={toggleMobileMenu}>
                 <div className="w-8 h-8">
@@ -239,42 +241,10 @@ export default function Header() {
               </div>
               
               <div className="mt-8 pt-8 border-t border-gray-200">
-                {session ? (
-                  <div className="space-y-4">
-                    <div className="text-center mb-4">
-                      <p className="text-sm text-secondary">Welcome back,</p>
-                      <p className="font-semibold text-primary">{session.user?.name || 'User'}</p>
-                    </div>
-                    <Link href="/account" className="block w-full">
-                      <Button className="w-full mb-3" onClick={toggleMobileMenu}>
-                        <User className="h-5 w-5 mr-2" />
-                        My Account
-                      </Button>
-                    </Link>
-                    {session.user?.role === 'ADMIN' && (
-                      <Link href="/admin" className="block w-full">
-                        <Button variant="outline" className="w-full mb-3" onClick={toggleMobileMenu}>
-                          Admin Dashboard
-                        </Button>
-                      </Link>
-                    )}
-                    <Button 
-                      variant="outline" 
-                      className="w-full mb-4" 
-                      onClick={() => {
-                        signOut()
-                        toggleMobileMenu()
-                      }}
-                    >
-                      Sign Out
-                    </Button>
-                  </div>
-                ) : (
-                  <Button className="w-full mb-4" onClick={toggleMobileMenu}>
-                    <User className="h-5 w-5 mr-2" />
-                    Sign In
-                  </Button>
-                )}
+                <Button className="w-full mb-4" onClick={toggleMobileMenu}>
+                  <User className="h-5 w-5 mr-2" />
+                  Sign In
+                </Button>
                 <div className="flex items-center justify-center">
                   <Link href="/cart" className="flex items-center gap-2 text-primary" onClick={toggleMobileMenu}>
                     <ShoppingBag className="h-5 w-5" />

@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
 
     // Get email configuration from environment variables
     const emailConfig: EmailConfig = {
-      service: (process.env.EMAIL_SERVICE as any) || 'smtp',
+      service: (process.env.EMAIL_SERVICE as any) || 'sendgrid',
       apiKey: process.env.EMAIL_API_KEY,
       fromEmail: process.env.EMAIL_FROM || 'helpcounterfit@gmail.com',
       fromName: process.env.EMAIL_FROM_NAME || 'Counterfit',
