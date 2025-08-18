@@ -337,7 +337,7 @@ async function sendViaResend(
   return response.ok
 }
 
-// SMTP implementation (for development/testing)
+// SMTP implementation using nodemailer
 async function sendViaSMTP(
   to: string,
   subject: string,
@@ -346,15 +346,42 @@ async function sendViaSMTP(
 ): Promise<boolean> {
   if (!config.smtp) throw new Error('SMTP configuration required')
   
-  // For now, just log the email (you can implement actual SMTP sending later)
-  console.log('📧 Email would be sent via SMTP:')
-  console.log('To:', to)
-  console.log('Subject:', subject)
-  console.log('From:', config.fromEmail)
-  console.log('SMTP Host:', config.smtp.host)
-  
-  // In production, you'd use a library like nodemailer here
-  return true
+  try {
+    // Dynamic import of nodemailer (for Next.js compatibility)
+    const nodemailer = await import('nodemailer')
+    
+    // Create transporter
+    const transporter = nodemailer.createTransport({
+      host: config.smtp.host,
+      port: config.smtp.port,
+      secure: false, // true for 465, false for other ports
+      auth: {
+        user: config.smtp.user,
+        pass: config.smtp.pass,
+      },
+      tls: {
+        rejectUnauthorized: false
+      }
+    })
+    
+    // Send email
+    const info = await transporter.sendMail({
+      from: `"${config.fromName}" <${config.fromEmail}>`,
+      to: to,
+      subject: subject,
+      html: html,
+    })
+    
+    console.log('📧 Email sent successfully via SMTP:')
+    console.log('Message ID:', info.messageId)
+    console.log('To:', to)
+    console.log('Subject:', subject)
+    
+    return true
+  } catch (error) {
+    console.error('❌ SMTP email sending failed:', error)
+    return false
+  }
 }
 
 // Convenience functions for common emails
