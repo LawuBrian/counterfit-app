@@ -26,8 +26,10 @@ export const generateTrackingNumber = () => {
 }
 
 // Create YOCO checkout using the Checkout API
+// Note: amount should be in cents (smallest currency unit)
+// e.g., R23.50 should be sent as 2350
 export async function createYocoCheckout(checkoutData: {
-  amount: number
+  amount: number // Amount in cents (e.g., 2350 for R23.50)
   currency: string
   metadata: {
     orderId: string

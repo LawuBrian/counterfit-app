@@ -106,14 +106,50 @@ router.get('/uploads/images/:category/:filename', (req, res) => {
     return res.status(404).json({ error: 'Image not found' });
   }
   
-  // Set proper headers for image serving
-  res.setHeader('Content-Type', 'image/jpeg'); // Adjust based on file extension
-  res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // Set proper headers for image serving with optimization
+  const ext = path.extname(filename).toLowerCase();
+  let contentType = 'image/jpeg'; // Default
   
-  // Stream the image file
+  // Set correct content type based on file extension
+  if (ext === '.jpg' || ext === '.jpeg') {
+    contentType = 'image/jpeg';
+  } else if (ext === '.png') {
+    contentType = 'image/png';
+  } else if (ext === '.gif') {
+    contentType = 'image/gif';
+  } else if (ext === '.webp') {
+    contentType = 'image/webp';
+  }
+  
+  // Set aggressive caching headers for better performance
+  res.setHeader('Content-Type', contentType);
+  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable'); // Cache for 1 year, immutable
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Range');
+  
+  // Add ETag for better caching
+  const stats = fs.statSync(imagePath);
+  const etag = `"${stats.size}-${stats.mtime.getTime()}"`;
+  res.setHeader('ETag', etag);
+  
+  // Check if client has cached version
+  if (req.headers['if-none-match'] === etag) {
+    return res.status(304).end(); // Not Modified
+  }
+  
+  // Stream the image file with error handling
   const stream = fs.createReadStream(imagePath);
   stream.pipe(res);
+  
+  stream.on('error', (error) => {
+    console.error('Error streaming image:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Error serving image' });
+    }
+  });
 });
 
 // @desc    Handle preflight CORS request

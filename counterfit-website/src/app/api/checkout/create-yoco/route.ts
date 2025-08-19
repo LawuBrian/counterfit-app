@@ -98,8 +98,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Create YOCO checkout
+    // Convert amount from Rands to cents (Yoco expects smallest currency unit)
+    const amountInCents = Math.round(parseFloat(amount) * 100)
+    
     const checkoutData = {
-      amount: parseFloat(amount),
+      amount: amountInCents,
       currency,
       metadata: {
         orderId: orderId,

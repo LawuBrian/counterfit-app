@@ -214,8 +214,34 @@ app.use('/api/upload', require('./routes/upload'));
 app.use('/api', require('./routes/health'));
 app.use('/api/test', require('./routes/test'));
 
-// Serve uploaded images from the uploads directory
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Serve uploaded images from the uploads directory with optimization
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+  maxAge: '1y', // Cache for 1 year
+  immutable: true, // Immutable cache
+  setHeaders: (res, filePath) => {
+    // Set proper content type for images
+    const ext = path.extname(filePath).toLowerCase();
+    if (ext === '.jpg' || ext === '.jpeg') {
+      res.setHeader('Content-Type', 'image/jpeg');
+    } else if (ext === '.png') {
+      res.setHeader('Content-Type', 'image/png');
+    } else if (ext === '.gif') {
+      res.setHeader('Content-Type', 'image/gif');
+    } else if (ext === '.webp') {
+      res.setHeader('Content-Type', 'image/webp');
+    }
+    
+    // Set CORS headers for cross-origin requests
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Range');
+    
+    // Set aggressive caching
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  }
+}));
 
 // Root route for health checks
 app.get('/', (req, res) => {

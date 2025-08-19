@@ -43,7 +43,6 @@ interface ProductData {
     allowBackorder: boolean
   }
   inStock: boolean
-  stockCount: number
 }
 
 export default function ProductPage() {
@@ -63,7 +62,17 @@ export default function ProductPage() {
     const fetchProduct = async () => {
       try {
         setLoading(true)
-        const response = await fetch(`/api/products/${productId}`)
+        
+        // Try to fetch by ID first
+        let response = await fetch(`/api/products/${productId}`)
+        console.log('🔄 Trying ID-based fetch for:', productId)
+        
+        // If ID-based fetch fails, try slug-based fetch
+        if (!response.ok) {
+          console.log('🔄 ID-based fetch failed, trying slug-based fetch...')
+          response = await fetch(`/api/products/slug/${productId}`)
+          console.log('🔄 Slug-based fetch response status:', response.status)
+        }
         
         if (!response.ok) {
           throw new Error('Product not found')
@@ -130,9 +139,9 @@ export default function ProductPage() {
     
     const cartItem = {
       id: product.id || product._id,
-      name: product.name,
-      price: product.price,
-      image: product.images[0]?.url || '',
+      name: product.name || 'Unknown Product',
+      price: product.price || 0,
+      image: product.images?.[0]?.url || '',
       size: selectedSize,
       color: selectedColor || undefined,
       quantity
@@ -146,7 +155,7 @@ export default function ProductPage() {
     alert(`Added ${quantity} ${product.name} (${selectedSize}) to cart!`)
   }
 
-  const originalPrice = product.comparePrice && product.comparePrice > 0 && product.comparePrice > product.price ? product.comparePrice : null
+  const originalPrice = product.comparePrice && product.comparePrice > 0 && product.comparePrice > (product.price || 0) ? product.comparePrice : null
 
   return (
     <div className="min-h-screen bg-background">
@@ -229,15 +238,15 @@ export default function ProductPage() {
                       <Star key={i} className={`w-4 h-4 ${i < Math.floor(5) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} />
                     ))}
                   </div>
-                  <span className="text-sm text-secondary/60 ml-2">({product.stockCount} in stock)</span>
+                  <span className="text-sm text-secondary/60 ml-2">({product.inventory?.quantity || 0} in stock)</span>
                 </div>
 
                 {/* Price */}
                 <div className="flex items-center gap-4 mb-6">
                   <span className="font-heading text-3xl font-bold text-primary">
-                    {formatPrice(product.price)}
+                    {formatPrice(product.price || 0)}
                   </span>
-                  {originalPrice !== null && originalPrice > 0 && originalPrice > product.price && (
+                  {originalPrice !== null && originalPrice > 0 && originalPrice > (product.price || 0) && (
                     <span className="text-xl text-secondary/60 line-through">
                       {formatPrice(originalPrice)}
                     </span>
@@ -305,15 +314,15 @@ export default function ProductPage() {
                     </button>
                     <span className="px-4 py-2 font-medium">{quantity}</span>
                     <button
-                      onClick={() => setQuantity(Math.min(product.stockCount, quantity + 1))}
-                      disabled={quantity >= product.stockCount}
+                      onClick={() => setQuantity(Math.min(product.inventory?.quantity || 999, quantity + 1))}
+                      disabled={quantity >= (product.inventory?.quantity || 999)}
                       className="p-2 text-primary hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Plus className="w-4 h-4" />
                     </button>
                   </div>
                   <span className="text-sm text-secondary/60">
-                    {product.stockCount} in stock
+                    {product.inventory?.quantity || 0} in stock
                   </span>
                 </div>
               </div>
