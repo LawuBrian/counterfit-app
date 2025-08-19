@@ -12,7 +12,8 @@ import {
   Plus,
   Edit,
   Eye,
-  Trash2
+  Trash2,
+  Truck
 } from 'lucide-react'
 import Link from 'next/link'
 import { getImageUrl } from '@/lib/utils'
@@ -227,6 +228,30 @@ export default function AdminDashboard() {
                   <Link href="/admin/collections/new">
                     <Plus className="mr-2 h-4 w-4" />
                     Create First Collection
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Shipments Management */}
+          <div className="bg-white rounded-xl shadow-sm">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="font-heading text-xl font-semibold text-primary">Shipments</h2>
+                <Button variant="outline" size="sm">
+                  <Link href="/admin/shipments">Manage All</Link>
+                </Button>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="text-center py-8">
+                <Truck className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <p className="text-secondary mb-4">Manage your Fastway shipments</p>
+                <Button size="sm">
+                  <Link href="/admin/shipments">
+                    <Truck className="mr-2 h-4 w-4" />
+                    View Shipments
                   </Link>
                 </Button>
               </div>

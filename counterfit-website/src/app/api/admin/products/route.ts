@@ -123,15 +123,30 @@ export async function GET(request: NextRequest) {
     })
     
     if (!response.ok) {
-      const errorData = await response.json()
+      let errorData
+      try {
+        errorData = await response.json()
+      } catch (jsonError) {
+        console.warn('⚠️ Failed to parse backend error response:', jsonError)
+        errorData = { message: `Backend error: ${response.status} ${response.statusText}` }
+      }
       console.error('Backend error:', errorData)
       return NextResponse.json(
         { error: errorData.message || 'Failed to fetch products' },
         { status: response.status }
       )
     }
-    
-    const result = await response.json()
+
+    let result
+    try {
+      result = await response.json()
+    } catch (jsonError) {
+      console.error('❌ Failed to parse backend response:', jsonError)
+      return NextResponse.json(
+        { error: 'Invalid response from backend' },
+        { status: 500 }
+      )
+    }
     return NextResponse.json(result)
 
   } catch (error) {

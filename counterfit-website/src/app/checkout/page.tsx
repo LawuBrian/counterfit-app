@@ -14,6 +14,7 @@ import {
 import Link from 'next/link'
 import { createYocoCheckout, generateOrderNumber, generateTrackingNumber } from '@/lib/yoco'
 import { useCart } from '@/contexts/CartContext'
+import { ShippingRate } from '@/lib/fastway'
 
 interface CheckoutForm {
   firstName: string
@@ -32,17 +33,22 @@ export default function CheckoutPage() {
   const router = useRouter()
   const { items: cartItems, getTotalPrice } = useCart()
   const [loading, setLoading] = useState(false)
-  const [formData, setFormData] = useState<CheckoutForm>({
+  const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
     phone: '',
-    address: '',
+    street: '',
     city: '',
     state: '',
     postalCode: '',
-    country: 'South Africa'
+    country: 'ZA'
   })
+
+  const [shippingRates, setShippingRates] = useState<ShippingRate[]>([])
+  const [selectedShippingRate, setSelectedShippingRate] = useState<ShippingRate | null>(null)
+  const [shippingLoading, setShippingLoading] = useState(false)
+  const [shippingError, setShippingError] = useState('')
 
   useEffect(() => {
     if (status === 'loading') return
@@ -59,11 +65,68 @@ export default function CheckoutPage() {
     }
   }, [session, status, router, cartItems])
 
+  // Calculate shipping rates when postal code changes
+  const calculateShippingRates = async (postalCode: string) => {
+    if (!postalCode || postalCode.length !== 4) return
+
+    setShippingLoading(true)
+    setShippingError('')
+
+    try {
+      const response = await fetch('/api/shipping/rates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          postalCode,
+          items: cartItems,
+          packageWeight: 0.5 * cartItems.length, // 0.5kg per item
+          packageDimensions: {
+            length: 30,
+            width: 20,
+            height: 10
+          }
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setShippingRates(data.rates)
+        
+        // Auto-select the first (cheapest) rate
+        if (data.rates.length > 0) {
+          setSelectedShippingRate(data.rates[0])
+        }
+      } else {
+        const errorData = await response.json()
+        setShippingError(errorData.error || 'Failed to calculate shipping rates')
+      }
+    } catch (error) {
+      console.error('Shipping rate calculation failed:', error)
+      setShippingError('Failed to calculate shipping rates. Please try again.')
+    } finally {
+      setShippingLoading(false)
+    }
+  }
+
+  // Handle postal code change
+  const handlePostalCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const postalCode = e.target.value
+    setFormData(prev => ({ ...prev, postalCode }))
+    
+    // Calculate shipping rates when postal code is complete
+    if (postalCode.length === 4) {
+      calculateShippingRates(postalCode)
+    } else {
+      setShippingRates([])
+      setSelectedShippingRate(null)
+    }
+  }
+
+  // Calculate total with shipping
   const calculateTotal = () => {
-    const subtotal = getTotalPrice()
-    const shipping = 50 // Fixed shipping cost
-    const tax = subtotal * 0.15 // 15% VAT
-    return subtotal + shipping + tax
+    const subtotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0)
+    const shippingCost = selectedShippingRate ? selectedShippingRate.price : 0
+    return subtotal + shippingCost
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -85,7 +148,7 @@ export default function CheckoutPage() {
         lastName: formData.lastName,
         email: formData.email,
         phone: formData.phone,
-        address: formData.address,
+        address: formData.street, // Use street from formData
         city: formData.city,
         state: formData.state,
         postalCode: formData.postalCode,
@@ -156,7 +219,7 @@ export default function CheckoutPage() {
           trackingNumber: order.trackingNumber
         }
 
-        await fetch('/api/email/send', {
+        const emailResponse = await fetch('/api/email/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -165,18 +228,34 @@ export default function CheckoutPage() {
           })
         })
 
-        // Send admin notification
-        await fetch('/api/email/send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'adminOrderNotification',
-            data: emailData,
-            adminEmail: 'admin@counterfit.co.za'
-          })
-        })
+        if (emailResponse.ok) {
+          console.log('✅ Customer order confirmation email sent')
+        } else {
+          console.warn('⚠️ Customer email failed, but continuing with checkout')
+        }
 
-        console.log('✅ Order confirmation emails sent')
+        // Send admin notification
+        try {
+          const adminEmailResponse = await fetch('/api/email/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'adminOrderNotification',
+              data: emailData,
+              adminEmail: 'admin@counterfit.co.za'
+            })
+          })
+
+          if (adminEmailResponse.ok) {
+            console.log('✅ Admin notification email sent')
+          } else {
+            console.warn('⚠️ Admin email failed, but continuing with checkout')
+          }
+        } catch (adminEmailError) {
+          console.warn('⚠️ Admin email failed, but continuing with checkout:', adminEmailError)
+        }
+
+        console.log('✅ Order confirmation emails processed')
       } catch (emailError) {
         console.warn('⚠️ Email sending failed, but order was created:', emailError)
         // Don't fail the checkout if emails fail
@@ -201,7 +280,17 @@ export default function CheckoutPage() {
 
         if (!checkoutResponse.ok) {
           const errorData = await checkoutResponse.json()
-          throw new Error(errorData.error || 'Failed to create YOCO checkout')
+          
+          // Check if it's a configuration error
+          if (errorData.error && (
+            errorData.error.includes('secret key') || 
+            errorData.error.includes('API key') ||
+            errorData.error.includes('configuration')
+          )) {
+            throw new Error('Payment system not configured. Please contact support.')
+          } else {
+            throw new Error(errorData.error || 'Failed to create YOCO checkout')
+          }
         }
 
         const checkout = await checkoutResponse.json()
@@ -220,7 +309,11 @@ export default function CheckoutPage() {
         console.error('💳 Yoco checkout creation failed:', yocoError)
         
         // Check if it's a configuration error
-        if (yocoError instanceof Error && yocoError.message.includes('secret key')) {
+        if (yocoError instanceof Error && (
+          yocoError.message.includes('secret key') ||
+          yocoError.message.includes('not configured') ||
+          yocoError.message.includes('API key')
+        )) {
           alert('Payment system not configured. Please contact support.')
         } else {
           alert('Payment system temporarily unavailable. Please try again later.')
@@ -269,101 +362,122 @@ export default function CheckoutPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Checkout Form */}
           <div className="space-y-6">
-            <div className="bg-card rounded-lg p-6">
-              <h2 className="text-xl font-semibold mb-4">Shipping Information</h2>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">First Name</label>
-                  <input
-                    type="text"
-                    name="firstName"
-                    value={formData.firstName}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border rounded-lg"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Last Name</label>
-                  <input
-                    type="text"
-                    name="lastName"
-                    value={formData.lastName}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border rounded-lg"
-                    required
-                  />
-                </div>
-              </div>
-              <div className="mt-4">
-                <label className="block text-sm font-medium mb-2">Email</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className="w-full p-3 border rounded-lg"
-                  required
-                />
-              </div>
-              <div className="mt-4">
-                <label className="block text-sm font-medium mb-2">Phone</label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  className="w-full p-3 border rounded-lg"
-                  required
-                />
-              </div>
-              <div className="mt-4">
-                <label className="block text-sm font-medium mb-2">Address</label>
+            {/* Shipping Address Section */}
+            <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
+              <h2 className="text-xl font-semibold mb-4">Shipping Address</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input
                   type="text"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  className="w-full p-3 border rounded-lg"
+                  placeholder="First Name"
+                  value={formData.firstName}
+                  onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                  className="border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Last Name"
+                  value={formData.lastName}
+                  onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                  className="border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={formData.email}
+                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  className="border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+                <input
+                  type="tel"
+                  placeholder="Phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                  className="border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Street Address"
+                  value={formData.street}
+                  onChange={(e) => setFormData(prev => ({ ...prev, street: e.target.value }))}
+                  className="border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-2 focus:ring-blue-500"
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="City"
+                  value={formData.city}
+                  onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
+                  className="border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="State/Province"
+                  value={formData.state}
+                  onChange={(e) => setFormData(prev => ({ ...prev, state: e.target.value }))}
+                  className="border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Postal Code"
+                  value={formData.postalCode}
+                  onChange={handlePostalCodeChange}
+                  maxLength={4}
+                  className="border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
               </div>
-              <div className="grid grid-cols-3 gap-4 mt-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">City</label>
-                  <input
-                    type="text"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border rounded-lg"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">State</label>
-                  <input
-                    type="text"
-                    name="state"
-                    value={formData.state}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border rounded-lg"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Postal Code</label>
-                  <input
-                    type="text"
-                    name="postalCode"
-                    value={formData.postalCode}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border rounded-lg"
-                    required
-                  />
+            </div>
+
+            {/* Shipping Rates Section */}
+            {shippingRates.length > 0 && (
+              <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
+                <h2 className="text-xl font-semibold mb-4">Shipping Options</h2>
+                
+                {shippingLoading && (
+                  <div className="text-center py-4">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                    <p className="text-gray-600 mt-2">Calculating shipping rates...</p>
+                  </div>
+                )}
+
+                {shippingError && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                    <p className="text-red-600">{shippingError}</p>
+                  </div>
+                )}
+
+                <div className="space-y-3">
+                  {shippingRates.map((rate, index) => (
+                    <label key={index} className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="radio"
+                        name="shippingRate"
+                        value={index}
+                        checked={selectedShippingRate === rate}
+                        onChange={() => setSelectedShippingRate(rate)}
+                        className="mr-3"
+                      />
+                      <div className="flex-1">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="font-medium">{rate.service}</p>
+                            <p className="text-sm text-gray-600">{rate.description}</p>
+                            <p className="text-sm text-gray-600">{rate.deliveryTime}</p>
+                          </div>
+                          <p className="text-lg font-semibold">R{rate.price.toFixed(2)}</p>
+                        </div>
+                      </div>
+                    </label>
+                  ))}
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Payment Method */}
             <div className="bg-card rounded-lg p-6">
@@ -386,45 +500,41 @@ export default function CheckoutPage() {
 
           {/* Order Summary */}
           <div className="space-y-6">
-            <div className="bg-card rounded-lg p-6">
+            {/* Order Summary */}
+            <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
               <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
-              
-              {/* Cart Items */}
-              <div className="space-y-4 mb-6">
-                {cartItems.map((item) => (
-                  <div key={`${item.id}-${item.size}-${item.color}`} className="flex items-center space-x-4">
-                    <img
-                      src={item.image || '/placeholder-product.jpg'}
-                      alt={item.name}
-                      className="w-16 h-16 object-cover rounded-lg"
-                    />
-                    <div className="flex-1">
-                      <h3 className="font-medium">{item.name}</h3>
-                      <p className="text-sm text-secondary">
-                        Qty: {item.quantity} | Size: {item.size} | Color: {item.color}
-                      </p>
+              <div className="space-y-3">
+                {cartItems.map((item, index) => (
+                  <div key={index} className="flex justify-between items-center">
+                    <div className="flex items-center space-x-3">
+                      <img src={item.image} alt={item.name} className="w-12 h-12 object-cover rounded" />
+                      <div>
+                        <p className="font-medium">{item.name}</p>
+                        <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
+                      </div>
                     </div>
-                    <p className="font-medium">R{item.price}</p>
+                    <p className="font-medium">R{(item.price * item.quantity).toFixed(2)}</p>
                   </div>
                 ))}
-              </div>
-
-              {/* Totals */}
-              <div className="border-t pt-4 space-y-2">
+                
+                <hr className="my-3" />
+                
                 <div className="flex justify-between">
-                  <span>Subtotal</span>
-                  <span>R{getTotalPrice()}</span>
+                  <span>Subtotal:</span>
+                  <span>R{cartItems.reduce((total, item) => total + (item.price * item.quantity), 0).toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Shipping</span>
-                  <span>R50</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>VAT (15%)</span>
-                  <span>R{(getTotalPrice() * 0.15).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-lg font-bold border-t pt-2">
-                  <span>Total</span>
+                
+                {selectedShippingRate && (
+                  <div className="flex justify-between">
+                    <span>Shipping ({selectedShippingRate.service}):</span>
+                    <span>R{selectedShippingRate.price.toFixed(2)}</span>
+                  </div>
+                )}
+                
+                <hr className="my-3" />
+                
+                <div className="flex justify-between text-lg font-semibold">
+                  <span>Total:</span>
                   <span>R{calculateTotal().toFixed(2)}</span>
                 </div>
               </div>

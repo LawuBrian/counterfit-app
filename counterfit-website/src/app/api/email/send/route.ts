@@ -32,6 +32,23 @@ export async function POST(request: NextRequest) {
 
     console.log('📧 Sending email:', { type, config: emailConfig })
 
+    // Validate email configuration
+    if (!emailConfig.apiKey && emailConfig.service === 'sendgrid') {
+      console.error('❌ Missing EMAIL_API_KEY for SendGrid')
+      return NextResponse.json(
+        { error: 'Email service not configured - missing API key' },
+        { status: 500 }
+      )
+    }
+
+    if (emailConfig.service === 'smtp' && (!emailConfig.smtp?.host || !emailConfig.smtp?.user || !emailConfig.smtp?.pass)) {
+      console.error('❌ Missing SMTP configuration')
+      return NextResponse.json(
+        { error: 'Email service not configured - missing SMTP settings' },
+        { status: 500 }
+      )
+    }
+
     let success = false
 
     switch (type) {
@@ -66,7 +83,7 @@ export async function POST(request: NextRequest) {
     } else {
       console.error('❌ Failed to send email:', type)
       return NextResponse.json(
-        { error: 'Failed to send email' },
+        { error: 'Failed to send email - check email service configuration' },
         { status: 500 }
       )
     }
@@ -74,7 +91,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ Email API error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error - email service unavailable' },
       { status: 500 }
     )
   }

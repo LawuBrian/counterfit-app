@@ -9,6 +9,23 @@ export async function POST(request: NextRequest) {
   try {
     console.log('🚀 POST /api/checkout/create-yoco - Route hit!')
     
+    // Validate Yoco configuration first
+    if (!process.env.YOCO_SECRET_KEY) {
+      console.error('❌ Missing YOCO_SECRET_KEY environment variable')
+      return NextResponse.json(
+        { error: 'Payment system not configured - missing Yoco secret key' },
+        { status: 500 }
+      )
+    }
+
+    if (!process.env.NEXT_PUBLIC_YOCO_PUBLIC_KEY) {
+      console.error('❌ Missing NEXT_PUBLIC_YOCO_PUBLIC_KEY environment variable')
+      return NextResponse.json(
+        { error: 'Payment system not configured - missing Yoco public key' },
+        { status: 500 }
+      )
+    }
+    
     // Get session for authentication
     const session = await getServerSession(authOptions)
     console.log('🔍 Session object:', JSON.stringify(session, null, 2))
@@ -121,7 +138,7 @@ export async function POST(request: NextRequest) {
 
     // Update order with checkout ID
     const updateResponse = await fetch(`${BACKEND_URL}/api/orders/${orderId}`, {
-      method: 'PATCH',
+      method: 'PUT',
       headers: {
         'Authorization': `Bearer ${session.user.accessToken}`,
         'Content-Type': 'application/json'
@@ -134,27 +151,31 @@ export async function POST(request: NextRequest) {
 
     if (!updateResponse.ok) {
       console.warn('⚠️ Failed to update order with checkout ID, but checkout was created')
-    } else {
-      console.log('✅ Order updated with checkout ID')
     }
 
-    // Return checkout data for frontend
     return NextResponse.json({
       success: true,
-      message: 'YOCO checkout created successfully',
-      checkout: {
-        id: yocoCheckout.id,
-        redirectUrl: yocoCheckout.redirectUrl,
-        amount: yocoCheckout.amount,
-        currency: yocoCheckout.currency,
-        status: yocoCheckout.status
-      }
+      message: 'Yoco checkout created successfully',
+      checkout: yocoCheckout
     })
 
   } catch (error) {
-    console.error('❌ YOCO checkout creation error:', error)
+    console.error('❌ Yoco checkout creation error:', error)
+    
+    // Check if it's a configuration error
+    if (error instanceof Error && (
+      error.message.includes('secret key') ||
+      error.message.includes('API key') ||
+      error.message.includes('configuration')
+    )) {
+      return NextResponse.json(
+        { error: 'Payment system not configured - please contact support' },
+        { status: 500 }
+      )
+    }
+    
     return NextResponse.json(
-      { error: 'Failed to create YOCO checkout' },
+      { error: 'Failed to create checkout - please try again later' },
       { status: 500 }
     )
   }
