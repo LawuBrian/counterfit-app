@@ -10,10 +10,10 @@ import { useState } from 'react'
 export default function HomePage() {
   const [showAdminInfo, setShowAdminInfo] = useState(false)
 
-    // Admin bypass - redirect to full website
+    // Admin bypass - redirect to original home page
   if (typeof window !== 'undefined' && window.location.search.includes('admin')) {
-    // Redirect to the original website structure
-    window.location.href = '/shop'
+    // Redirect to the original home page
+    window.location.href = '/home'
     return null
   }
 
@@ -50,10 +50,7 @@ export default function HomePage() {
           {/* Brand Story */}
           <div className="max-w-4xl mx-auto mb-12">
             <p className="font-paragraph text-xl sm:text-2xl text-white/90 mb-6 leading-relaxed">
-              Counterfit is built on failure turned to success. Every garment = a lesson in resilience.
-            </p>
-            <p className="font-paragraph text-lg sm:text-xl text-white/80 leading-relaxed">
-              The drip is a reminder that "mistakes are not the end, they're the foundation."
+              For the ones that don't fit in.
             </p>
           </div>
 
@@ -155,55 +152,49 @@ export default function HomePage() {
             <h2 className="font-heading text-4xl lg:text-6xl font-bold mb-6">
               Our Story
             </h2>
-            <p className="font-paragraph text-xl text-gray-300 max-w-3xl mx-auto">
-              Five pillars that define who we are and what we stand for. Each represents a different facet of the Counterfit movement.
-            </p>
+                         <p className="font-paragraph text-xl text-gray-300 max-w-3xl mx-auto">
+               Four pillars that define who we are and what we stand for. Each represents a different facet of the Counterfit movement.
+             </p>
           </div>
 
-          {/* Pillar 1: The Hustler's Blueprint */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center mb-24">
-            <div className="order-2 lg:order-1">
-              <div className="inline-block mb-6 bg-gradient-to-r from-amber-500 to-orange-500 text-black px-4 py-2 text-sm font-semibold rounded-full">
-                Pillar 1
-              </div>
-              <h3 className="font-heading text-3xl lg:text-4xl font-bold mb-6">
-                The Hustler's Blueprint
-              </h3>
-              <p className="font-paragraph text-lg text-gray-300 mb-6 leading-relaxed">
-                <strong>Style Influence:</strong> Fear of God / A-COLD-WALL (minimalist but raw, rooted in grind culture)
-              </p>
-              <p className="font-paragraph text-lg text-gray-300 mb-6 leading-relaxed">
-                <strong>Visuals:</strong> Neutral tones, oversized silhouettes, distressed textures
-              </p>
-              <div className="space-y-4 mb-8">
-                <div className="flex items-start">
-                  <div className="w-2 h-2 bg-amber-500 rounded-full mt-3 mr-3 flex-shrink-0"></div>
-                  <p className="font-paragraph text-gray-300">
-                    Counterfit is built on failure turned to success
-                  </p>
-                </div>
-                <div className="flex items-start">
-                  <div className="w-2 h-2 bg-amber-500 rounded-full mt-3 mr-3 flex-shrink-0"></div>
-                  <p className="font-paragraph text-gray-300">
-                    Every garment = a lesson in resilience
-                  </p>
-                </div>
-                <div className="flex items-start">
-                  <div className="w-2 h-2 bg-amber-500 rounded-full mt-3 mr-3 flex-shrink-0"></div>
-                  <p className="font-paragraph text-gray-300">
-                    The drip is a reminder that "mistakes are not the end, they're the foundation"
-                  </p>
-                </div>
-              </div>
-              <div className="space-y-3">
-                <div className="inline-block bg-white/10 text-amber-400 border border-amber-500/30 px-4 py-2 rounded-lg text-sm font-semibold">
-                  "Built from losses. Worn by winners."
-                </div>
-                <div className="inline-block bg-white/10 text-amber-400 border border-amber-500/30 px-4 py-2 rounded-lg text-sm font-semibold">
-                  "Grind stitched in every thread."
-                </div>
-              </div>
-            </div>
+                     {/* Pillar 1: The Hustler's Blueprint */}
+           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center mb-24">
+             <div className="order-2 lg:order-1">
+               <div className="inline-block mb-6 bg-gradient-to-r from-amber-500 to-orange-500 text-black px-4 py-2 text-sm font-semibold rounded-full">
+                 Pillar 1
+               </div>
+               <h3 className="font-heading text-3xl lg:text-4xl font-bold mb-6">
+                 The Hustler's Blueprint
+               </h3>
+               <p className="font-paragraph text-lg text-gray-300 mb-6 leading-relaxed">
+                 <strong>Style:</strong> Minimalist but raw, rooted in grind culture
+               </p>
+               <p className="font-paragraph text-lg text-gray-300 mb-6 leading-relaxed">
+                 <strong>Visuals:</strong> Neutral tones, oversized silhouettes, distressed textures
+               </p>
+               <div className="space-y-4 mb-8">
+                 <div className="flex items-start">
+                   <div className="w-2 h-2 bg-amber-500 rounded-full mt-3 mr-3 flex-shrink-0"></div>
+                   <p className="font-paragraph text-gray-300">
+                     Counterfit is built on failure turned to success
+                   </p>
+                 </div>
+                 <div className="flex items-start">
+                   <div className="w-2 h-2 bg-amber-500 rounded-full mt-3 mr-3 flex-shrink-0"></div>
+                   <p className="font-paragraph text-gray-300">
+                     Every garment = a lesson in resilience
+                   </p>
+                 </div>
+               </div>
+               <div className="space-y-3">
+                 <div className="inline-block bg-white/10 text-amber-400 border border-amber-500/30 px-4 py-2 rounded-lg text-sm font-semibold">
+                   "Built from losses. Worn by winners."
+                 </div>
+                 <div className="inline-block bg-white/10 text-amber-400 border border-amber-500/30 px-4 py-2 rounded-lg text-sm font-semibold">
+                   "Grind stitched in every thread."
+                 </div>
+               </div>
+             </div>
             <div className="order-1 lg:order-2">
               <div className="relative group">
                 <div className="aspect-[4/5] rounded-2xl overflow-hidden shadow-2xl">
@@ -250,35 +241,29 @@ export default function HomePage() {
               <div className="inline-block mb-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 text-sm font-semibold rounded-full">
                 Pillar 2
               </div>
-              <h3 className="font-heading text-3xl lg:text-4xl font-bold mb-6">
-                Street Luxury Movement
-              </h3>
-              <p className="font-paragraph text-lg text-gray-300 mb-6 leading-relaxed">
-                <strong>Style Influence:</strong> Off-White / Palm Angels (high fashion edge blended with street energy)
-              </p>
-              <p className="font-paragraph text-lg text-gray-300 mb-6 leading-relaxed">
-                <strong>Visuals:</strong> Bold graphics, statement prints, elevated cuts, striking typography
-              </p>
-              <div className="space-y-4 mb-8">
-                <div className="flex items-start">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full mt-3 mr-3 flex-shrink-0"></div>
-                  <p className="font-paragraph text-gray-300">
-                    Counterfit redefines what it means to "make it out"
-                  </p>
-                </div>
-                <div className="flex items-start">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full mt-3 mr-3 flex-shrink-0"></div>
-                  <p className="font-paragraph text-gray-300">
-                    Luxury is no longer gated — it's the reward of ambition
-                  </p>
-                </div>
-                <div className="flex items-start">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full mt-3 mr-3 flex-shrink-0"></div>
-                  <p className="font-paragraph text-gray-300">
-                    Streetwear as a crown for the self-made
-                  </p>
-                </div>
-              </div>
+                             <h3 className="font-heading text-3xl lg:text-4xl font-bold mb-6">
+                 Street Luxury Movement
+               </h3>
+               <p className="font-paragraph text-lg text-gray-300 mb-6 leading-relaxed">
+                 <strong>Style:</strong> High fashion edge blended with street energy
+               </p>
+               <p className="font-paragraph text-lg text-gray-300 mb-6 leading-relaxed">
+                 <strong>Visuals:</strong> Bold graphics, statement prints, elevated cuts, striking typography
+               </p>
+               <div className="space-y-4 mb-8">
+                 <div className="flex items-start">
+                   <div className="w-2 h-2 bg-purple-500 rounded-full mt-3 mr-3 flex-shrink-0"></div>
+                   <p className="font-paragraph text-gray-300">
+                     Counterfit redefines what it means to "make it out"
+                   </p>
+                 </div>
+                 <div className="flex items-start">
+                   <div className="w-2 h-2 bg-purple-500 rounded-full mt-3 mr-3 flex-shrink-0"></div>
+                   <p className="font-paragraph text-gray-300">
+                     Luxury is no longer gated — it's the reward of ambition
+                   </p>
+                 </div>
+               </div>
               <div className="space-y-3">
                 <div className="inline-block bg-white/10 text-purple-400 border border-purple-500/30 px-4 py-2 rounded-lg text-sm font-semibold">
                   "Luxury born in the streets."
@@ -296,35 +281,29 @@ export default function HomePage() {
               <div className="inline-block mb-6 bg-gradient-to-r from-red-500 to-orange-500 text-white px-4 py-2 text-sm font-semibold rounded-full">
                 Pillar 3
               </div>
-              <h3 className="font-heading text-3xl lg:text-4xl font-bold mb-6">
-                Rebel Energy
-              </h3>
-              <p className="font-paragraph text-lg text-gray-300 mb-6 leading-relaxed">
-                <strong>Style Influence:</strong> Supreme / Stüssy (provocative, unapologetic, rebellious)
-              </p>
-              <p className="font-paragraph text-lg text-gray-300 mb-6 leading-relaxed">
-                <strong>Visuals:</strong> Loud colors, bold logos, disruptive slogans
-              </p>
-              <div className="space-y-4 mb-8">
-                <div className="flex items-start">
-                  <div className="w-2 h-2 bg-red-500 rounded-full mt-3 mr-3 flex-shrink-0"></div>
-                  <p className="font-paragraph text-gray-300">
-                    Counterfit is for the ones who don't conform
-                  </p>
-                </div>
-                <div className="flex items-start">
-                  <div className="w-2 h-2 bg-red-500 rounded-full mt-3 mr-3 flex-shrink-0"></div>
-                  <p className="font-paragraph text-gray-300">
-                    Success is not about fitting in, it's about breaking rules live and loud
-                  </p>
-                </div>
-                <div className="flex items-start">
-                  <div className="w-2 h-2 bg-red-500 rounded-full mt-3 mr-3 flex-shrink-0"></div>
-                  <p className="font-paragraph text-gray-300">
-                    Every drop is an act of defiance against the system
-                  </p>
-                </div>
-              </div>
+                             <h3 className="font-heading text-3xl lg:text-4xl font-bold mb-6">
+                 Rebel Energy
+               </h3>
+               <p className="font-paragraph text-lg text-gray-300 mb-6 leading-relaxed">
+                 <strong>Style:</strong> Provocative, unapologetic, rebellious
+               </p>
+               <p className="font-paragraph text-lg text-gray-300 mb-6 leading-relaxed">
+                 <strong>Visuals:</strong> Loud colors, bold logos, disruptive slogans
+               </p>
+               <div className="space-y-4 mb-8">
+                 <div className="flex items-start">
+                   <div className="w-2 h-2 bg-red-500 rounded-full mt-3 mr-3 flex-shrink-0"></div>
+                   <p className="font-paragraph text-gray-300">
+                     Counterfit is for the ones who don't conform
+                   </p>
+                 </div>
+                 <div className="flex items-start">
+                   <div className="w-2 h-2 bg-red-500 rounded-full mt-3 mr-3 flex-shrink-0"></div>
+                   <p className="font-paragraph text-gray-300">
+                     Success is not about fitting in, it's about breaking rules live and loud
+                   </p>
+                 </div>
+               </div>
               <div className="space-y-3">
                 <div className="inline-block bg-white/10 text-red-400 border border-red-500/30 px-4 py-2 rounded-lg text-sm font-semibold">
                   "For the ones who don't fit in."
@@ -355,70 +334,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Pillar 4: Cultural Movement */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center mb-24">
-            <div className="order-1">
-              <div className="relative group">
-                <div className="aspect-[4/5] rounded-2xl overflow-hidden shadow-2xl">
-                  <Image
-                    src="/resources/DUONATURECAMOORBLACKWHITE MIX.jpeg"
-                    alt="Cultural Movement - Duo Nature Camo"
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-700"
-                  />
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent rounded-2xl"></div>
-                <div className="absolute bottom-4 left-4 right-4">
-                  <div className="bg-black/80 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-                    <p className="font-heading text-sm font-semibold text-green-400">Cultural Movement</p>
-                    <p className="font-paragraph text-xs text-white/80">Deeply tied to community, music, and heritage</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="order-2">
-              <div className="inline-block mb-6 bg-gradient-to-r from-green-500 to-teal-500 text-white px-4 py-2 text-sm font-semibold rounded-full">
-                Pillar 4
-              </div>
-              <h3 className="font-heading text-3xl lg:text-4xl font-bold mb-6">
-                Cultural Movement
-              </h3>
-              <p className="font-paragraph text-lg text-gray-300 mb-6 leading-relaxed">
-                <strong>Style Influence:</strong> Daily Paper / Trapstar (deeply tied to community, music, and heritage)
-              </p>
-              <p className="font-paragraph text-lg text-gray-300 mb-6 leading-relaxed">
-                <strong>Visuals:</strong> African-inspired patterns, amapiano & hip-hop collabs, storytelling designs
-              </p>
-              <div className="space-y-4 mb-8">
-                <div className="flex items-start">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mt-3 mr-3 flex-shrink-0"></div>
-                  <p className="font-paragraph text-gray-300">
-                    Counterfit is more than clothes — it's culture in motion
-                  </p>
-                </div>
-                <div className="flex items-start">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mt-3 mr-3 flex-shrink-0"></div>
-                  <p className="font-paragraph text-gray-300">
-                    Our success = our people's success
-                  </p>
-                </div>
-                <div className="flex items-start">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mt-3 mr-3 flex-shrink-0"></div>
-                  <p className="font-paragraph text-gray-300">
-                    Community is our runway
-                  </p>
-                </div>
-              </div>
-              <div className="space-y-3">
-                <div className="inline-block bg-white/10 text-green-400 border border-green-500/30 px-4 py-2 rounded-lg text-sm font-semibold">
-                  "Worn by the culture. Powered by the streets."
-                </div>
-                <div className="inline-block bg-white/10 text-green-400 border border-green-500/30 px-4 py-2 rounded-lg text-sm font-semibold">
-                  "From our block to the world."
-                </div>
-              </div>
-            </div>
-          </div>
+          
 
           {/* Pillar 5: Tech-Driven Hype */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
@@ -426,35 +342,29 @@ export default function HomePage() {
               <div className="inline-block mb-6 bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-4 py-2 text-sm font-semibold rounded-full">
                 Pillar 5
               </div>
-              <h3 className="font-heading text-3xl lg:text-4xl font-bold mb-6">
-                Tech-Driven Hype
-              </h3>
-              <p className="font-paragraph text-lg text-gray-300 mb-6 leading-relaxed">
-                <strong>Style Influence:</strong> Corteiz / Nike SNKRS (scarcity-driven, digital-first)
-              </p>
-              <p className="font-paragraph text-lg text-gray-300 mb-6 leading-relaxed">
-                <strong>Visuals:</strong> QR codes on garments, live-drop exclusives, futuristic graphics
-              </p>
-              <div className="space-y-4 mb-8">
-                <div className="flex items-start">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-3 mr-3 flex-shrink-0"></div>
-                  <p className="font-paragraph text-gray-300">
-                    Counterfit isn't just fashion — it's an experience
-                  </p>
-                </div>
-                <div className="flex items-start">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-3 mr-3 flex-shrink-0"></div>
-                  <p className="font-paragraph text-gray-300">
-                    The brand lives where live-stream meets streetwear
-                  </p>
-                </div>
-                <div className="flex items-start">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-3 mr-3 flex-shrink-0"></div>
-                  <p className="font-paragraph text-gray-300">
-                    The hustle of tomorrow = digital, instant, and global
-                  </p>
-                </div>
-              </div>
+                             <h3 className="font-heading text-3xl lg:text-4xl font-bold mb-6">
+                 Tech-Driven Hype
+               </h3>
+               <p className="font-paragraph text-lg text-gray-300 mb-6 leading-relaxed">
+                 <strong>Style:</strong> Scarcity-driven, digital-first experience
+               </p>
+               <p className="font-paragraph text-lg text-gray-300 mb-6 leading-relaxed">
+                 <strong>Visuals:</strong> QR codes on garments, live-drop exclusives, futuristic graphics
+               </p>
+               <div className="space-y-4 mb-8">
+                 <div className="flex items-start">
+                   <div className="w-2 h-2 bg-blue-500 rounded-full mt-3 mr-3 flex-shrink-0"></div>
+                   <p className="font-paragraph text-gray-300">
+                     Counterfit isn't just fashion — it's an experience
+                   </p>
+                 </div>
+                 <div className="flex items-start">
+                   <div className="w-2 h-2 bg-blue-500 rounded-full mt-3 mr-3 flex-shrink-0"></div>
+                   <p className="font-paragraph text-gray-300">
+                     The brand lives where live-stream meets streetwear
+                   </p>
+                 </div>
+               </div>
               <div className="space-y-3">
                 <div className="inline-block bg-white/10 text-blue-400 border border-blue-500/30 px-4 py-2 rounded-lg text-sm font-semibold">
                   "Live. Limited. Legendary."
@@ -491,10 +401,10 @@ export default function HomePage() {
               <h3 className="font-heading text-3xl lg:text-4xl font-bold mb-6">
                 Ready to Join the Movement?
               </h3>
-              <p className="font-paragraph text-xl text-gray-300 mb-8 max-w-3xl mx-auto">
-                These five pillars represent the foundation of Counterfit. Each tells a story of resilience, ambition, and unapologetic success. 
-                Which pillar resonates with you?
-              </p>
+                             <p className="font-paragraph text-xl text-gray-300 mb-8 max-w-3xl mx-auto">
+                 These four pillars represent the foundation of Counterfit. Each tells a story of resilience, ambition, and unapologetic success. 
+                 Which pillar resonates with you?
+               </p>
               <Button 
                 onClick={() => document.getElementById('signup-section')?.scrollIntoView({ behavior: 'smooth' })}
                 className="bg-white text-black hover:bg-white/90 font-semibold px-8 py-4 h-12 rounded-full text-lg shadow-lg transform hover:scale-105 transition-all duration-300"

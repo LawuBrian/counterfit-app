@@ -73,7 +73,7 @@ export default function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-shape-stroke">
+    <header className="sticky top-0 z-50 bg-white lg:bg-background/95 lg:backdrop-blur-sm border-b border-shape-stroke">
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Mobile Menu Button */}
@@ -236,7 +236,7 @@ export default function Header() {
 
       {/* Search Overlay - Only show for admins */}
       {isSearchOpen && isAdmin && (
-        <div className="absolute top-full left-0 right-0 bg-background border-b border-gray-200 shadow-lg">
+        <div className="absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-lg">
           <div className="max-w-screen-2xl mx-auto px-6 lg:px-8 py-4">
             <div className="flex items-center gap-4">
               <div className="flex-1 relative">
@@ -267,8 +267,8 @@ export default function Header() {
           />
           
           {/* Mobile Menu */}
-          <div className="fixed top-0 left-0 h-full w-80 bg-background shadow-xl z-50 lg:hidden transform transition-transform duration-300">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div className="fixed top-0 left-0 h-full w-80 bg-white shadow-xl z-50 lg:hidden transform transition-transform duration-300">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-white">
               <Link href="/" className="flex items-center space-x-3" onClick={toggleMobileMenu}>
                 <div className="w-8 h-8">
                   <Image
@@ -288,7 +288,7 @@ export default function Header() {
               </button>
             </div>
             
-            <nav className="p-6">
+            <nav className="p-6 bg-white">
               <div className="space-y-6">
                 <Link 
                   href="/" 
