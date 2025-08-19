@@ -320,11 +320,11 @@ export default function ShopPage() {
                           <span className="font-heading text-xl font-bold text-primary">
                             {formatPrice(product.price)}
                           </span>
-                          {product.comparePrice && product.comparePrice > 0 && product.comparePrice !== 0 && product.comparePrice > product.price && (
+                          {product.comparePrice && product.comparePrice > 0 && product.comparePrice > product.price && (
                             <span className="text-sm text-secondary/60 line-through">
                               {formatPrice(product.comparePrice)}
                             </span>
-                          )}
+                        )}
                         </div>
                         <Button size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
                           View Details

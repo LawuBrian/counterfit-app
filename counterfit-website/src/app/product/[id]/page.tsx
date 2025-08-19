@@ -146,7 +146,7 @@ export default function ProductPage() {
     alert(`Added ${quantity} ${product.name} (${selectedSize}) to cart!`)
   }
 
-  const originalPrice = product.comparePrice && product.comparePrice > 0 && product.comparePrice !== 0 && product.comparePrice > product.price ? product.comparePrice : null
+  const originalPrice = product.comparePrice && product.comparePrice > 0 && product.comparePrice > product.price ? product.comparePrice : null
 
   return (
     <div className="min-h-screen bg-background">

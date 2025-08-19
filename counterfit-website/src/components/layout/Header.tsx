@@ -3,8 +3,8 @@
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Search, User, ShoppingBag, Menu, X } from "lucide-react"
-import { useState } from "react"
+import { Search, User, ShoppingBag, Menu, X, Lock } from "lucide-react"
+import { useState, useEffect } from "react"
 import { useCart } from "@/contexts/CartContext"
 import { useSession, signOut } from "next-auth/react"
 import { usePathname } from "next/navigation"
@@ -12,9 +12,32 @@ import { usePathname } from "next/navigation"
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
   const { getTotalItems } = useCart()
   const { data: session } = useSession()
   const pathname = usePathname()
+
+  // Check if user is admin (either through session or URL parameter)
+  useEffect(() => {
+    const checkAdminStatus = () => {
+      // Check if URL contains admin parameter
+      const urlParams = new URLSearchParams(window.location.search)
+      const hasAdminParam = urlParams.has('admin')
+      
+      // Check if user has admin role in session
+      const hasAdminRole = session?.user?.role === 'ADMIN'
+      
+      setIsAdmin(hasAdminParam || hasAdminRole)
+    }
+
+    checkAdminStatus()
+    
+    // Listen for URL changes
+    const handleUrlChange = () => checkAdminStatus()
+    window.addEventListener('popstate', handleUrlChange)
+    
+    return () => window.removeEventListener('popstate', handleUrlChange)
+  }, [session])
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen)
@@ -43,6 +66,12 @@ export default function Header() {
     return `${baseClasses} ${activeClasses}`
   }
 
+  // Function to handle restricted navigation clicks
+  const handleRestrictedClick = (e: React.MouseEvent, section: string) => {
+    e.preventDefault()
+    alert(`🔒 ${section} is currently under development. Sign up for early access to be notified when it launches!`)
+  }
+
   return (
     <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-shape-stroke">
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -69,6 +98,11 @@ export default function Header() {
             <span className="font-heading text-lg lg:text-2xl font-bold text-primary tracking-wider">
               COUNTERFIT
             </span>
+            {isAdmin && (
+              <div className="inline-flex items-center px-2 py-1 bg-blue-600 text-white text-xs font-semibold rounded-full">
+                ADMIN
+              </div>
+            )}
           </Link>
 
           {/* Desktop Navigation */}
@@ -76,28 +110,69 @@ export default function Header() {
             <Link href="/" className={getLinkClasses('/')}>
               Home
             </Link>
-            <Link href="/shop" className={getLinkClasses('/shop')}>
-              Shop
-            </Link>
-            <Link href="/collections" className={getLinkClasses('/collections')}>
-              Collections
-            </Link>
-            <Link href="/about" className={getLinkClasses('/about')}>
-              About
-            </Link>
-            <Link href="/contact" className={getLinkClasses('/contact')}>
-              Contact
-            </Link>
+            
+            {isAdmin ? (
+              // Admin sees full navigation
+              <>
+                <Link href="/shop" className={getLinkClasses('/shop')}>
+                  Shop
+                </Link>
+                <Link href="/collections" className={getLinkClasses('/collections')}>
+                  Collections
+                </Link>
+                <Link href="/about" className={getLinkClasses('/about')}>
+                  About
+                </Link>
+                <Link href="/contact" className={getLinkClasses('/contact')}>
+                  Contact
+                </Link>
+              </>
+            ) : (
+              // Regular users see restricted navigation with lock icons
+              <>
+                <button 
+                  onClick={(e) => handleRestrictedClick(e, 'Shop')}
+                  className="flex items-center gap-2 font-paragraph text-sm font-medium text-secondary/60 cursor-not-allowed"
+                >
+                  <Lock className="h-4 w-4" />
+                  Shop
+                </button>
+                <button 
+                  onClick={(e) => handleRestrictedClick(e, 'Collections')}
+                  className="flex items-center gap-2 font-paragraph text-sm font-medium text-secondary/60 cursor-not-allowed"
+                >
+                  <Lock className="h-4 w-4" />
+                  Collections
+                </button>
+                <button 
+                  onClick={(e) => handleRestrictedClick(e, 'About')}
+                  className="flex items-center gap-2 font-paragraph text-sm font-medium text-secondary/60 cursor-not-allowed"
+                >
+                  <Lock className="h-4 w-4" />
+                  About
+                </button>
+                <button 
+                  onClick={(e) => handleRestrictedClick(e, 'Contact')}
+                  className="flex items-center gap-2 font-paragraph text-sm font-medium text-secondary/60 cursor-not-allowed"
+                >
+                  <Lock className="h-4 w-4" />
+                  Contact
+                </button>
+              </>
+            )}
           </nav>
 
           {/* Right Side Actions */}
           <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4">
-            <button 
-              className="p-1.5 lg:p-2 text-secondary hover:text-primary transition-colors"
-              onClick={toggleSearch}
-            >
-              <Search className="h-4 w-4 lg:h-5 lg:w-5" />
-            </button>
+            {isAdmin && (
+              <button 
+                className="p-1.5 lg:p-2 text-secondary hover:text-primary transition-colors"
+                onClick={toggleSearch}
+              >
+                <Search className="h-4 w-4 lg:h-5 lg:w-5" />
+              </button>
+            )}
+            
             {session ? (
               <div className="relative group">
                 <Button variant="ghost" size="sm" className="text-secondary hover:text-primary h-8 lg:h-9 px-2 lg:px-3">
@@ -137,18 +212,30 @@ export default function Header() {
                 </Link>
               </Button>
             )}
-            <Link href="/cart" className="p-1.5 lg:p-2 text-secondary hover:text-primary transition-colors relative">
-              <ShoppingBag className="h-4 w-4 lg:h-5 lg:w-5" />
-              <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {getTotalItems()}
-              </span>
-            </Link>
+            
+            {isAdmin ? (
+              <Link href="/cart" className="p-1.5 lg:p-2 text-secondary hover:text-primary transition-colors relative">
+                <ShoppingBag className="h-4 w-4 lg:h-5 lg:w-5" />
+                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {getTotalItems()}
+                </span>
+              </Link>
+            ) : (
+              <button 
+                onClick={(e) => handleRestrictedClick(e, 'Cart')}
+                className="p-1.5 lg:p-2 text-secondary/60 cursor-not-allowed relative"
+                title="Cart coming soon - sign up for early access!"
+              >
+                <ShoppingBag className="h-4 w-4 lg:h-5 lg:w-5" />
+                <Lock className="absolute -top-1 -right-1 h-4 w-4 text-secondary/60" />
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Search Overlay */}
-      {isSearchOpen && (
+      {/* Search Overlay - Only show for admins */}
+      {isSearchOpen && isAdmin && (
         <div className="absolute top-full left-0 right-0 bg-background border-b border-gray-200 shadow-lg">
           <div className="max-w-screen-2xl mx-auto px-6 lg:px-8 py-4">
             <div className="flex items-center gap-4">
@@ -210,47 +297,118 @@ export default function Header() {
                 >
                   Home
                 </Link>
-                <Link 
-                  href="/shop" 
-                  className={getMobileLinkClasses('/shop')}
-                  onClick={toggleMobileMenu}
-                >
-                  Shop
-                </Link>
-                <Link 
-                  href="/collections" 
-                  className={getMobileLinkClasses('/collections')}
-                  onClick={toggleMobileMenu}
-                >
-                  Collections
-                </Link>
-                <Link 
-                  href="/about" 
-                  className={getMobileLinkClasses('/about')}
-                  onClick={toggleMobileMenu}
-                >
-                  About
-                </Link>
-                <Link 
-                  href="/contact" 
-                  className={getMobileLinkClasses('/contact')}
-                  onClick={toggleMobileMenu}
-                >
-                  Contact
-                </Link>
+                
+                {isAdmin ? (
+                  // Admin sees full mobile navigation
+                  <>
+                    <Link 
+                      href="/shop" 
+                      className={getMobileLinkClasses('/shop')}
+                      onClick={toggleMobileMenu}
+                    >
+                      Shop
+                    </Link>
+                    <Link 
+                      href="/collections" 
+                      className={getMobileLinkClasses('/collections')}
+                      onClick={toggleMobileMenu}
+                    >
+                      Collections
+                    </Link>
+                    <Link 
+                      href="/about" 
+                      className={getMobileLinkClasses('/about')}
+                      onClick={toggleMobileMenu}
+                    >
+                      About
+                    </Link>
+                    <Link 
+                      href="/contact" 
+                      className={getMobileLinkClasses('/contact')}
+                      onClick={toggleMobileMenu}
+                    >
+                      Contact
+                    </Link>
+                  </>
+                ) : (
+                  // Regular users see restricted mobile navigation
+                  <>
+                    <button 
+                      onClick={(e) => {
+                        handleRestrictedClick(e, 'Shop')
+                        toggleMobileMenu()
+                      }}
+                      className="flex items-center gap-2 font-paragraph text-lg font-medium text-secondary/60 cursor-not-allowed w-full text-left"
+                    >
+                      <Lock className="h-5 w-5" />
+                      Shop
+                    </button>
+                    <button 
+                      onClick={(e) => {
+                        handleRestrictedClick(e, 'Collections')
+                        toggleMobileMenu()
+                      }}
+                      className="flex items-center gap-2 font-paragraph text-lg font-medium text-secondary/60 cursor-not-allowed w-full text-left"
+                    >
+                      <Lock className="h-5 w-5" />
+                      Collections
+                    </button>
+                    <button 
+                      onClick={(e) => {
+                        handleRestrictedClick(e, 'About')
+                        toggleMobileMenu()
+                      }}
+                      className="flex items-center gap-2 font-paragraph text-lg font-medium text-secondary/60 cursor-not-allowed w-full text-left"
+                    >
+                      <Lock className="h-5 w-5" />
+                      About
+                    </button>
+                    <button 
+                      onClick={(e) => {
+                        handleRestrictedClick(e, 'Contact')
+                        toggleMobileMenu()
+                      }}
+                      className="flex items-center gap-2 font-paragraph text-lg font-medium text-secondary/60 cursor-not-allowed w-full text-left"
+                    >
+                      <Lock className="h-5 w-5" />
+                      Contact
+                    </button>
+                  </>
+                )}
               </div>
               
               <div className="mt-8 pt-8 border-t border-gray-200">
-                <Button className="w-full mb-4" onClick={toggleMobileMenu}>
-                  <User className="h-5 w-5 mr-2" />
-                  Sign In
-                </Button>
-                <div className="flex items-center justify-center">
-                  <Link href="/cart" className="flex items-center gap-2 text-primary" onClick={toggleMobileMenu}>
-                    <ShoppingBag className="h-5 w-5" />
-                    <span>Cart ({getTotalItems()})</span>
-                  </Link>
-                </div>
+                {isAdmin ? (
+                  // Admin sees full mobile actions
+                  <>
+                    <Button className="w-full mb-4" onClick={toggleMobileMenu}>
+                      <User className="h-5 w-5 mr-2" />
+                      Sign In
+                    </Button>
+                    <div className="flex items-center justify-center">
+                      <Link href="/cart" className="flex items-center gap-2 text-primary" onClick={toggleMobileMenu}>
+                        <ShoppingBag className="h-5 w-5" />
+                        <span>Cart ({getTotalItems()})</span>
+                      </Link>
+                    </div>
+                  </>
+                ) : (
+                  // Regular users see signup-focused mobile actions
+                  <div className="text-center">
+                    <p className="text-sm text-secondary mb-4">
+                      Sign up for early access to unlock all features!
+                    </p>
+                    <Button 
+                      className="w-full mb-4" 
+                      onClick={() => {
+                        toggleMobileMenu()
+                        document.getElementById('signup-section')?.scrollIntoView({ behavior: 'smooth' })
+                      }}
+                    >
+                      Join the Movement
+                    </Button>
+                  </div>
+                )}
               </div>
             </nav>
           </div>

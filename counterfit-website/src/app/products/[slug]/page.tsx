@@ -254,7 +254,7 @@ export default function ProductPage() {
                   <span className="font-heading text-3xl font-bold text-primary">
                     {formatPrice(product.price)}
                   </span>
-                  {product.comparePrice && product.comparePrice > 0 && product.comparePrice !== 0 && product.comparePrice > product.price && (
+                  {product.comparePrice && product.comparePrice > 0 && product.comparePrice > product.price && (
                     <span className="text-xl text-secondary/60 line-through">
                       {formatPrice(product.comparePrice)}
                     </span>
