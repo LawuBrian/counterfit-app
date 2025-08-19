@@ -9,14 +9,14 @@ const router = express.Router();
 const uploadsDir = path.join(__dirname, '..', 'uploads');
 const productsUploadsDir = path.join(uploadsDir, 'products');
 
-// Create organized image directories
+// Create organized image directories on the BACKEND (not frontend)
 const organizedDirs = {
-  outerwear: path.join(__dirname, '..', '..', 'counterfit-website', 'public', 'images', 'outerwear'),
-  bottoms: path.join(__dirname, '..', '..', 'counterfit-website', 'public', 'images', 'bottoms'),
-  tops: path.join(__dirname, '..', '..', 'counterfit-website', 'public', 'images', 'tops'),
-  accessories: path.join(__dirname, '..', '..', 'counterfit-website', 'public', 'images', 'accessories'),
-  collections: path.join(__dirname, '..', '..', 'counterfit-website', 'public', 'images', 'collections'),
-  products: productsUploadsDir // Fallback
+  outerwear: path.join(__dirname, '..', 'uploads', 'images', 'outerwear'),
+  bottoms: path.join(__dirname, '..', 'uploads', 'images', 'bottoms'),
+  tops: path.join(__dirname, '..', 'uploads', 'images', 'tops'),
+  accessories: path.join(__dirname, '..', 'uploads', 'images', 'accessories'),
+  collections: path.join(__dirname, '..', 'uploads', 'images', 'collections'),
+  products: path.join(__dirname, '..', 'uploads', 'images', 'products')
 };
 
 if (!fs.existsSync(uploadsDir)) {
@@ -91,13 +91,38 @@ const upload = multer({
   }
 });
 
+// @desc    Serve uploaded images
+// @route   GET /uploads/images/:category/:filename
+// @access  Public
+router.get('/uploads/images/:category/:filename', (req, res) => {
+  const { category, filename } = req.params;
+  const imagePath = path.join(__dirname, '..', 'uploads', 'images', category, filename);
+  
+  console.log('🖼️ Serving image:', { category, filename, imagePath });
+  
+  // Check if file exists
+  if (!fs.existsSync(imagePath)) {
+    console.log('❌ Image not found:', imagePath);
+    return res.status(404).json({ error: 'Image not found' });
+  }
+  
+  // Set proper headers for image serving
+  res.setHeader('Content-Type', 'image/jpeg'); // Adjust based on file extension
+  res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  
+  // Stream the image file
+  const stream = fs.createReadStream(imagePath);
+  stream.pipe(res);
+});
+
 // @desc    Handle preflight CORS request
 // @route   OPTIONS /api/upload/product-image
 // @access  Public
 router.options('/product-image', (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type', 'Authorization');
   res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
   res.status(200).end();
 });
@@ -157,10 +182,11 @@ router.post('/product-image', upload.single('image'), (req, res) => {
       });
     }
 
-    // Generate organized path using the already declared category variable
-    const organizedPath = `/images/${category}/${req.file.filename}`;
+    // Generate backend URL that will serve the image
+    const backendUrl = process.env.BACKEND_URL || 'https://counterfit-backend.onrender.com';
+    const imageUrl = `${backendUrl}/uploads/images/${category}/${req.file.filename}`;
     
-    console.log('🔗 Generated organized path:', organizedPath)
+    console.log('🔗 Generated backend image URL:', imageUrl)
     console.log('📁 Category:', category)
     console.log('📁 Filename:', req.file.filename)
     
@@ -168,7 +194,7 @@ router.post('/product-image', upload.single('image'), (req, res) => {
       success: true,
       message: 'Image uploaded successfully',
       data: {
-        url: organizedPath,
+        url: imageUrl,
         filename: req.file.filename,
         originalName: req.file.originalname,
         size: req.file.size,
@@ -216,10 +242,11 @@ router.post('/product-images', upload.array('images', 10), (req, res) => {
       });
     }
 
-    // Return array of organized file paths
+    // Return array of backend image URLs
     const category = req.query.category || 'products';
+    const backendUrl = process.env.BACKEND_URL || 'https://counterfit-backend.onrender.com';
     const uploadedFiles = req.files.map(file => ({
-      url: `/images/${category}/${file.filename}`,
+      url: `${backendUrl}/uploads/images/${category}/${file.filename}`,
       filename: file.filename,
       originalName: file.originalname,
       size: file.size,

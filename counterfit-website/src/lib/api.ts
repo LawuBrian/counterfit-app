@@ -181,43 +181,24 @@ export function getImageUrl(imagePath: string): string {
   // If no image path provided, return placeholder
   if (!imagePath) {
     console.log('❌ No image path provided, returning placeholder')
-    return '/images/1d66cc_118bf0bf6588467e8c966076d949e1b3_mv2.png'
+    return 'https://counterfit-backend.onrender.com/uploads/images/placeholder/default-image.png'
   }
   
-  // If path starts with http/https, it's already a full URL
+  // If path starts with http/https, it's already a full URL (backend URLs)
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-    console.log('🌐 Full URL detected, returning as-is')
+    console.log('🌐 Backend URL detected, returning as-is')
     return imagePath
   }
   
-  // If path starts with /images/, serve from Next.js public folder (our organized structure)
-  if (imagePath.startsWith('/images/')) {
-    console.log('📁 Organized image path detected, serving from Next.js public folder')
-    return imagePath
-  }
-  
-  // If path starts with /resources/, serve from Next.js public folder
+  // If path starts with /resources/, serve from Next.js public folder (keep for resources)
   if (imagePath.startsWith('/resources/')) {
     console.log('📁 Resources path detected, serving from Next.js public folder')
     return imagePath
   }
   
-  // Handle legacy paths that might still exist
-  if (imagePath.startsWith('/1d66cc_') || imagePath.startsWith('/placeholder-')) {
-    console.log('📁 Legacy path detected, serving from Next.js public folder')
-    return imagePath
-  }
-  
-  // Handle backend upload paths (these should now be updated to descriptive names)
-  if (imagePath.startsWith('uploads/') || imagePath.startsWith('/uploads/')) {
-    console.log('⚠️ Backend upload path detected, this should be updated to descriptive name')
-    // Return a default image instead of broken backend path
-    return '/images/1d66cc_118bf0bf6588467e8c966076d949e1b3_mv2.png'
-  }
-  
-  // For any other unknown paths, return default image
-  console.log('⚠️ Unknown image path, returning default image')
-  return '/images/1d66cc_118bf0bf6588467e8c966076d949e1b3_mv2.png'
+  // For any other paths (including old /images/ paths), return placeholder
+  console.log('⚠️ Old image path detected, returning placeholder')
+  return 'https://counterfit-backend.onrender.com/uploads/images/placeholder/default-image.png'
 }
 
 export function formatPrice(price: number): string {

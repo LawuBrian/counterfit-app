@@ -214,6 +214,9 @@ app.use('/api/upload', require('./routes/upload'));
 app.use('/api', require('./routes/health'));
 app.use('/api/test', require('./routes/test'));
 
+// Serve uploaded images from the uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Root route for health checks
 app.get('/', (req, res) => {
   res.status(200).json({
