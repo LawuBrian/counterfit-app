@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
-import { Upload, X, Image as ImageIcon } from 'lucide-react'
+import { Upload, X, Image as ImageIcon, FolderOpen } from 'lucide-react'
 import { getImageUrl } from '@/lib/utils'
 
 interface ImageUploadProps {
@@ -13,12 +13,28 @@ interface ImageUploadProps {
   }>
   onChange: (images: Array<{ url: string; alt: string; isPrimary: boolean }>) => void
   maxImages?: number
+  category?: string // Add category prop for organizing images
 }
 
-export default function ImageUpload({ images, onChange, maxImages = 10 }: ImageUploadProps) {
+export default function ImageUpload({ images, onChange, maxImages = 10, category = 'products' }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false)
   const [dragActive, setDragActive] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Function to determine the appropriate folder based on category
+  const getImageFolder = (category: string) => {
+    const categoryMap: { [key: string]: string } = {
+      'outerwear': 'images/outerwear',
+      'tops': 'images/tops',
+      'bottoms': 'images/bottoms',
+      'footwear': 'images/footwear',
+      'accessories': 'images/accessories',
+      'collections': 'images/collections',
+      'hero': 'images/hero',
+      'products': 'images/products'
+    }
+    return categoryMap[category] || 'images/products'
+  }
 
   const handleFiles = async (files: FileList | null) => {
     console.log('🖼️ handleFiles called with:', files)
@@ -45,54 +61,43 @@ export default function ImageUpload({ images, onChange, maxImages = 10 }: ImageU
     setUploading(true)
 
     try {
-      // Upload files one by one to avoid body size limit issues
-      const uploadPromises = filesToUpload.map(async (file, index) => {
-        console.log(`🔄 Uploading file ${index + 1}/${filesToUpload.length}:`, {
-          name: file.name,
-          size: file.size,
-          type: file.type
-        })
-        
+      // Upload files to backend
+      const newImages = []
+      
+      for (const file of filesToUpload) {
         const formData = new FormData()
         formData.append('image', file)
         
-        console.log('📤 FormData created:', {
-          hasImage: formData.has('image'),
-          imageValue: formData.get('image')
-        })
-
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://counterfit-backend.onrender.com';
-        console.log('🌐 Making request directly to backend:', `${backendUrl}/api/upload/product-image`)
-        const response = await fetch(`${backendUrl}/api/upload/product-image`, {
+        console.log('📤 Uploading file:', file.name)
+        
+        const response = await fetch(`/api/upload/product-image?category=${category}`, {
           method: 'POST',
           body: formData,
-          headers: {
-            'Accept': 'application/json'
-          }
         })
-
-        console.log('📥 Response received:', {
-          status: response.status,
-          statusText: response.statusText,
-          ok: response.ok
-        })
-
-        const data = await response.json()
-        console.log('📄 Response data:', data)
-
+        
         if (!response.ok) {
-          throw new Error(data.message || 'Upload failed')
+          throw new Error(`Upload failed: ${response.statusText}`)
         }
-
-        console.log('✅ File uploaded successfully:', data.data.url)
-        return {
-          url: data.data.url,
-          alt: '',
-          isPrimary: false
+        
+        const result = await response.json()
+        
+        if (result.success) {
+          // Backend now returns the correct organized path
+          const organizedPath = result.data.url
+          const filename = result.data.filename
+          
+          console.log('📁 Backend returned organized path:', organizedPath)
+          
+          newImages.push({
+            url: organizedPath,
+            alt: file.name.replace(/\.[^/.]+$/, ''),
+            isPrimary: false
+          })
+        } else {
+          throw new Error(result.message || 'Upload failed')
         }
-      })
+      }
 
-      const newImages = await Promise.all(uploadPromises)
       console.log('🎉 All files uploaded:', newImages)
       
       // Set first image as primary if no images exist
@@ -190,6 +195,12 @@ export default function ImageUpload({ images, onChange, maxImages = 10 }: ImageU
         <div className="space-y-4">
           <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />
           <div>
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <FolderOpen className="w-4 h-4 text-primary" />
+              <span className="text-sm text-primary font-medium">
+                Saving to: {getImageFolder(category)}
+              </span>
+            </div>
             <p className="text-sm text-gray-600">
               Drop images here or{' '}
               <button
@@ -219,7 +230,7 @@ export default function ImageUpload({ images, onChange, maxImages = 10 }: ImageU
           {uploading && (
             <div className="flex items-center justify-center">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-              <span className="ml-2 text-sm text-gray-600">Uploading...</span>
+              <span className="ml-2 text-sm text-gray-600">Processing...</span>
             </div>
           )}
         </div>
@@ -244,6 +255,9 @@ export default function ImageUpload({ images, onChange, maxImages = 10 }: ImageU
                 
                 {/* Image Details */}
                 <div className="flex-1 space-y-2">
+                  <div className="text-xs text-gray-500 font-mono">
+                    {image.url}
+                  </div>
                   <input
                     type="text"
                     placeholder="Alt text (optional)"

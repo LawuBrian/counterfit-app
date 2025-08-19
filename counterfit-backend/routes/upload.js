@@ -9,6 +9,16 @@ const router = express.Router();
 const uploadsDir = path.join(__dirname, '..', 'uploads');
 const productsUploadsDir = path.join(uploadsDir, 'products');
 
+// Create organized image directories
+const organizedDirs = {
+  outerwear: path.join(__dirname, '..', '..', 'counterfit-website', 'public', 'images', 'outerwear'),
+  bottoms: path.join(__dirname, '..', '..', 'counterfit-website', 'public', 'images', 'bottoms'),
+  tops: path.join(__dirname, '..', '..', 'counterfit-website', 'public', 'images', 'tops'),
+  accessories: path.join(__dirname, '..', '..', 'counterfit-website', 'public', 'images', 'accessories'),
+  collections: path.join(__dirname, '..', '..', 'counterfit-website', 'public', 'images', 'collections'),
+  products: productsUploadsDir // Fallback
+};
+
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
   console.log('📁 Created uploads directory:', uploadsDir);
@@ -19,22 +29,46 @@ if (!fs.existsSync(productsUploadsDir)) {
   console.log('📁 Created products uploads directory:', productsUploadsDir);
 }
 
-// Configure multer for file uploads - simplified version
+// Create organized directories if they don't exist
+Object.entries(organizedDirs).forEach(([category, dirPath]) => {
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+    console.log(`📁 Created ${category} directory:`, dirPath);
+  }
+});
+
+// Configure multer for file uploads - organized version
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
+    // Determine category from query parameter or use default
+    const category = req.query.category || 'products';
+    const targetDir = organizedDirs[category] || organizedDirs.products;
+    
     console.log('📁 Multer destination called with:', {
       file: file.originalname,
-      destination: productsUploadsDir,
-      exists: fs.existsSync(productsUploadsDir)
+      category: category,
+      destination: targetDir,
+      exists: fs.existsSync(targetDir)
     });
-    cb(null, productsUploadsDir);
+    cb(null, targetDir);
   },
   filename: (req, file, cb) => {
-    // Generate unique filename
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const filename = 'product-' + uniqueSuffix + path.extname(file.originalname);
+    // Use original filename or generate descriptive name
+    const originalName = file.originalname;
+    const ext = path.extname(originalName);
+    const baseName = path.basename(originalName, ext);
+    
+    // Clean the filename (remove special characters, spaces)
+    const cleanName = baseName.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    
+    // Generate filename: clean original name + timestamp + extension
+    const timestamp = Date.now();
+    const filename = `${cleanName}-${timestamp}${ext}`;
+    
     console.log('📝 Generated filename:', filename);
-    console.log('📁 Full path will be:', path.join(productsUploadsDir, filename));
+    console.log('📁 Original name:', originalName);
+    console.log('📁 Clean name:', cleanName);
+    
     cb(null, filename);
   }
 });
@@ -81,6 +115,8 @@ router.post('/product-image', upload.single('image'), (req, res) => {
   console.log('📁 Request body:', req.body)
   console.log('📁 Request file:', req.file)
   console.log('📁 Request headers:', req.headers)
+  console.log('📁 Query parameters:', req.query)
+  console.log('📁 Category from query:', req.query.category)
   
   try {
     if (!req.file) {
@@ -99,36 +135,45 @@ router.post('/product-image', upload.single('image'), (req, res) => {
       path: req.file.path
     })
 
-    // Verify file was actually saved
-    const savedFilePath = path.join(productsUploadsDir, req.file.filename);
+    // Verify file was actually saved to the organized directory
+    const category = req.query.category || 'products';
+    const targetDir = organizedDirs[category] || organizedDirs.products;
+    const savedFilePath = path.join(targetDir, req.file.filename);
+    
     const fileExists = fs.existsSync(savedFilePath);
     console.log('🔍 File existence check:', {
+      category: category,
+      targetDir: targetDir,
       savedFilePath,
       exists: fileExists,
       size: fileExists ? fs.statSync(savedFilePath).size : 'N/A'
     });
 
     if (!fileExists) {
-      console.error('❌ File was not saved to disk!');
+      console.error('❌ File was not saved to organized directory!');
       return res.status(500).json({
         success: false,
-        message: 'File upload failed - file not saved to disk'
+        message: 'File upload failed - file not saved to organized directory'
       });
     }
 
-    // Return the file URL immediately - use Render backend URL
-    const backendUrl = process.env.BACKEND_URL || 'https://counterfit-backend.onrender.com';
-    const fileUrl = `${backendUrl}/uploads/products/${req.file.filename}`;
-    console.log('🔗 Generated file URL:', fileUrl)
+    // Determine the category and generate organized path
+    const category = req.query.category || 'products';
+    const organizedPath = `/images/${category}/${req.file.filename}`;
+    
+    console.log('🔗 Generated organized path:', organizedPath)
+    console.log('📁 Category:', category)
+    console.log('📁 Filename:', req.file.filename)
     
     const response = {
       success: true,
       message: 'Image uploaded successfully',
       data: {
-        url: fileUrl,
+        url: organizedPath,
         filename: req.file.filename,
         originalName: req.file.originalname,
-        size: req.file.size
+        size: req.file.size,
+        category: category
       }
     }
     
@@ -172,13 +217,14 @@ router.post('/product-images', upload.array('images', 10), (req, res) => {
       });
     }
 
-    // Return array of file URLs - use Render backend URL
-    const backendUrl = process.env.BACKEND_URL || 'https://counterfit-backend.onrender.com';
+    // Return array of organized file paths
+    const category = req.query.category || 'products';
     const uploadedFiles = req.files.map(file => ({
-      url: `${backendUrl}/uploads/products/${file.filename}`,
+      url: `/images/${category}/${file.filename}`,
       filename: file.filename,
       originalName: file.originalname,
-      size: file.size
+      size: file.size,
+      category: category
     }));
     
     res.json({
@@ -201,13 +247,22 @@ router.post('/product-images', upload.array('images', 10), (req, res) => {
 router.delete('/product-image/:filename', protect, adminOnly, (req, res) => {
   try {
     const { filename } = req.params;
-    const filePath = path.join(productsUploadsDir, filename);
+    const category = req.query.category || 'products';
+    const targetDir = organizedDirs[category] || organizedDirs.products;
+    const filePath = path.join(targetDir, filename);
+
+    console.log('🗑️ Delete request:', {
+      filename: filename,
+      category: category,
+      targetDir: targetDir,
+      filePath: filePath
+    });
 
     // Check if file exists
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({
         success: false,
-        message: 'File not found'
+        message: 'File not found in organized directory'
       });
     }
 
@@ -216,7 +271,7 @@ router.delete('/product-image/:filename', protect, adminOnly, (req, res) => {
 
     res.json({
       success: true,
-      message: 'Image deleted successfully'
+      message: 'Image deleted successfully from organized directory'
     });
   } catch (error) {
     console.error('Delete error:', error);

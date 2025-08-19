@@ -190,20 +190,33 @@ export function getImageUrl(imagePath: string): string {
     return imagePath
   }
   
-  // If path starts with /images/, /resources/, or is a public folder path, serve from Next.js public folder
-  if (imagePath.startsWith('/images/') || imagePath.startsWith('/resources/') || imagePath.startsWith('/1d66cc_') || imagePath.startsWith('/placeholder-')) {
-    console.log('📁 Public folder path detected, serving from Next.js public folder')
+  // If path starts with /images/, serve from Next.js public folder (our organized structure)
+  if (imagePath.startsWith('/images/')) {
+    console.log('📁 Organized image path detected, serving from Next.js public folder')
     return imagePath
   }
   
-  // TEMPORARY: For now, return a local placeholder instead of trying to load from broken backend
+  // If path starts with /resources/, serve from Next.js public folder
+  if (imagePath.startsWith('/resources/')) {
+    console.log('📁 Resources path detected, serving from Next.js public folder')
+    return imagePath
+  }
+  
+  // Handle legacy paths that might still exist
+  if (imagePath.startsWith('/1d66cc_') || imagePath.startsWith('/placeholder-')) {
+    console.log('📁 Legacy path detected, serving from Next.js public folder')
+    return imagePath
+  }
+  
+  // Handle backend upload paths (these should now be updated to descriptive names)
   if (imagePath.startsWith('uploads/') || imagePath.startsWith('/uploads/')) {
-    console.log('⚠️ Backend image path detected, returning local placeholder for now')
+    console.log('⚠️ Backend upload path detected, this should be updated to descriptive name')
+    // Return a default image instead of broken backend path
     return '/images/1d66cc_118bf0bf6588467e8c966076d949e1b3_mv2.png'
   }
   
-  // TEMPORARY: For now, return a local placeholder instead of trying to load from broken backend
-  console.log('⚠️ Unknown image path, returning local placeholder for now')
+  // For any other unknown paths, return default image
+  console.log('⚠️ Unknown image path, returning default image')
   return '/images/1d66cc_118bf0bf6588467e8c966076d949e1b3_mv2.png'
 }
 
