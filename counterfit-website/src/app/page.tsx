@@ -10,71 +10,11 @@ import { useState } from 'react'
 export default function HomePage() {
   const [showAdminInfo, setShowAdminInfo] = useState(false)
 
-  // Admin bypass - show when URL contains admin parameter
+    // Admin bypass - redirect to full website
   if (typeof window !== 'undefined' && window.location.search.includes('admin')) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white p-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h1 className="font-heading text-5xl font-bold mb-4">🔐 Admin Access Granted</h1>
-            <p className="text-xl text-gray-300">Here's what we have so far...</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                         <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-               <h3 className="text-xl font-bold mb-4 flex items-center">
-                 <Users className="w-6 h-6 mr-2 text-blue-400" />
-                 Waitlist Signups
-               </h3>
-               <p className="text-gray-300 mb-4">Users are now saved to Supabase:</p>
-               <ul className="text-sm text-gray-400 space-y-1">
-                 <li>• First & Last Name</li>
-                 <li>• Email Address (Unique)</li>
-                 <li>• Phone (Optional)</li>
-                 <li>• Duplicate prevention</li>
-                 <li>• Real-time database storage</li>
-               </ul>
-             </div>
-
-            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-              <h3 className="text-xl font-bold mb-4 flex items-center">
-                <Star className="w-6 h-6 mr-2 text-yellow-400" />
-                Brand Identity
-              </h3>
-              <p className="text-gray-300 mb-4">Core messaging established:</p>
-              <ul className="text-sm text-gray-400 space-y-1">
-                <li>• "Built from losses. Worn by winners."</li>
-                <li>• "Grind stitched in every thread."</li>
-                <li>• Resilience & success theme</li>
-              </ul>
-            </div>
-
-            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-              <h3 className="text-xl font-bold mb-4 flex items-center">
-                <Zap className="w-6 h-6 mr-2 text-green-400" />
-                Next Steps
-              </h3>
-              <p className="text-gray-300 mb-4">Development priorities:</p>
-              <ul className="text-sm text-gray-400 space-y-1">
-                <li>• Product catalog integration</li>
-                <li>• E-commerce functionality</li>
-                <li>• User authentication system</li>
-                <li>• Payment processing</li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="mt-12 text-center">
-            <Button 
-              onClick={() => setShowAdminInfo(false)}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              Hide Admin Info
-            </Button>
-          </div>
-        </div>
-      </div>
-    )
+    // Redirect to the original website structure
+    window.location.href = '/shop'
+    return null
   }
 
   return (
