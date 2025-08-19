@@ -157,8 +157,7 @@ router.post('/product-image', upload.single('image'), (req, res) => {
       });
     }
 
-    // Determine the category and generate organized path
-    const category = req.query.category || 'products';
+    // Generate organized path using the already declared category variable
     const organizedPath = `/images/${category}/${req.file.filename}`;
     
     console.log('🔗 Generated organized path:', organizedPath)
