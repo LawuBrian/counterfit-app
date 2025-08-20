@@ -89,7 +89,18 @@ export default function AccountPage() {
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.profile) {
-          setProfile(data.profile)
+          // Ensure address object exists and has all required properties
+          const profileData = {
+            ...data.profile,
+            address: {
+              street: data.profile.address?.street || '',
+              city: data.profile.address?.city || '',
+              state: data.profile.address?.state || '',
+              postalCode: data.profile.address?.postalCode || '',
+              country: data.profile.address?.country || 'South Africa'
+            }
+          }
+          setProfile(profileData)
         } else {
           // Fallback to session data if profile is empty
           setProfile({
@@ -110,10 +121,40 @@ export default function AccountPage() {
       } else {
         const errorData = await response.json()
         setError(errorData.error || 'Failed to fetch profile')
+        // Set default profile even on error
+        setProfile({
+          firstName: session?.user?.firstName || '',
+          lastName: session?.user?.lastName || '',
+          email: session?.user?.email || '',
+          phone: '',
+          address: {
+            street: '',
+            city: '',
+            state: '',
+            postalCode: '',
+            country: 'South Africa'
+          },
+          dateJoined: new Date().toISOString()
+        })
       }
     } catch (error) {
       console.error('Error fetching profile:', error)
       setError('Failed to fetch profile')
+      // Set default profile even on error
+      setProfile({
+        firstName: session?.user?.firstName || '',
+        lastName: session?.user?.lastName || '',
+        email: session?.user?.email || '',
+        phone: '',
+        address: {
+          street: '',
+          city: '',
+          state: '',
+          postalCode: '',
+          country: 'South Africa'
+        },
+        dateJoined: new Date().toISOString()
+      })
     } finally {
       setLoading(false)
     }
@@ -203,6 +244,15 @@ export default function AccountPage() {
 
   if (!session) {
     return null
+  }
+
+  // Ensure profile and address are properly initialized
+  if (!profile || !profile.address) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    )
   }
 
   return (
@@ -406,15 +456,21 @@ export default function AccountPage() {
                         <input
                           type="text"
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                          value={profile.address.street}
+                          value={profile.address?.street || ''}
                           onChange={(e) => setProfile(prev => ({ 
                             ...prev, 
-                            address: { ...prev.address, street: e.target.value }
+                            address: { 
+                              street: e.target.value,
+                              city: prev.address?.city || '',
+                              state: prev.address?.state || '',
+                              postalCode: prev.address?.postalCode || '',
+                              country: prev.address?.country || 'South Africa'
+                            }
                           }))}
                           placeholder="123 Main Street"
                         />
                       ) : (
-                        <p className="text-primary font-medium">{profile.address.street || 'Not provided'}</p>
+                        <p className="text-primary font-medium">{profile.address?.street || 'Not provided'}</p>
                       )}
                     </div>
 
@@ -424,19 +480,25 @@ export default function AccountPage() {
                           City
                         </label>
                         {isEditing ? (
-                          <input
-                            type="text"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                            value={profile.address.city}
-                            onChange={(e) => setProfile(prev => ({ 
-                              ...prev, 
-                              address: { ...prev.address, city: e.target.value }
-                            }))}
-                            placeholder="Cape Town"
-                          />
-                        ) : (
-                          <p className="text-primary font-medium">{profile.address.city || 'Not provided'}</p>
-                        )}
+                                                  <input
+                          type="text"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                          value={profile.address?.city || ''}
+                          onChange={(e) => setProfile(prev => ({ 
+                            ...prev, 
+                            address: { 
+                              street: prev.address?.street || '',
+                              city: e.target.value,
+                              state: prev.address?.state || '',
+                              postalCode: prev.address?.postalCode || '',
+                              country: prev.address?.country || 'South Africa'
+                            }
+                          }))}
+                          placeholder="Cape Town"
+                        />
+                      ) : (
+                        <p className="text-primary font-medium">{profile.address?.city || 'Not provided'}</p>
+                      )}
                       </div>
 
                       <div>
@@ -444,19 +506,25 @@ export default function AccountPage() {
                           State/Province
                         </label>
                         {isEditing ? (
-                          <input
-                            type="text"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                            value={profile.address.state}
-                            onChange={(e) => setProfile(prev => ({ 
-                              ...prev, 
-                              address: { ...prev.address, state: e.target.value }
-                            }))}
-                            placeholder="Western Cape"
-                          />
-                        ) : (
-                          <p className="text-primary font-medium">{profile.address.state || 'Not provided'}</p>
-                        )}
+                                                  <input
+                          type="text"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                          value={profile.address?.state || ''}
+                          onChange={(e) => setProfile(prev => ({ 
+                            ...prev, 
+                            address: { 
+                              street: prev.address?.street || '',
+                              city: prev.address?.city || '',
+                              state: e.target.value,
+                              postalCode: prev.address?.postalCode || '',
+                              country: prev.address?.country || 'South Africa'
+                            }
+                          }))}
+                          placeholder="Western Cape"
+                        />
+                      ) : (
+                        <p className="text-primary font-medium">{profile.address?.state || 'Not provided'}</p>
+                      )}
                       </div>
                     </div>
 
@@ -466,19 +534,25 @@ export default function AccountPage() {
                           Postal Code
                         </label>
                         {isEditing ? (
-                          <input
-                            type="text"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                            value={profile.address.postalCode}
-                            onChange={(e) => setProfile(prev => ({ 
-                              ...prev, 
-                              address: { ...prev.address, postalCode: e.target.value }
-                            }))}
-                            placeholder="8000"
-                          />
-                        ) : (
-                          <p className="text-primary font-medium">{profile.address.postalCode || 'Not provided'}</p>
-                        )}
+                                                  <input
+                          type="text"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                          value={profile.address?.postalCode || ''}
+                          onChange={(e) => setProfile(prev => ({ 
+                            ...prev, 
+                            address: { 
+                              street: prev.address?.street || '',
+                              city: prev.address?.city || '',
+                              state: prev.address?.state || '',
+                              postalCode: e.target.value,
+                              country: prev.address?.country || 'South Africa'
+                            }
+                          }))}
+                          placeholder="8000"
+                        />
+                      ) : (
+                        <p className="text-primary font-medium">{profile.address?.postalCode || 'Not provided'}</p>
+                      )}
                       </div>
 
                       <div>
@@ -486,22 +560,28 @@ export default function AccountPage() {
                           Country
                         </label>
                         {isEditing ? (
-                          <select
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                            value={profile.address.country}
-                            onChange={(e) => setProfile(prev => ({ 
-                              ...prev, 
-                              address: { ...prev.address, country: e.target.value }
-                            }))}
-                          >
-                            <option value="South Africa">South Africa</option>
-                            <option value="Botswana">Botswana</option>
-                            <option value="Namibia">Namibia</option>
-                            <option value="Zimbabwe">Zimbabwe</option>
-                          </select>
-                        ) : (
-                          <p className="text-primary font-medium">{profile.address.country}</p>
-                        )}
+                                                  <select
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                          value={profile.address?.country || 'South Africa'}
+                          onChange={(e) => setProfile(prev => ({ 
+                            ...prev, 
+                            address: { 
+                              street: prev.address?.street || '',
+                              city: prev.address?.city || '',
+                              state: prev.address?.state || '',
+                              postalCode: prev.address?.postalCode || '',
+                              country: e.target.value
+                            }
+                          }))}
+                        >
+                          <option value="South Africa">South Africa</option>
+                          <option value="Botswana">Botswana</option>
+                          <option value="Namibia">Namibia</option>
+                          <option value="Zimbabwe">Zimbabwe</option>
+                        </select>
+                      ) : (
+                        <p className="text-primary font-medium">{profile.address?.country || 'South Africa'}</p>
+                      )}
                       </div>
                     </div>
                   </div>

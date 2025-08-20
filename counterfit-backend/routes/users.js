@@ -321,4 +321,491 @@ router.put('/:id/role', protect, adminOnly, async (req, res) => {
   }
 });
 
+// @desc    Get user addresses
+// @route   GET /api/users/addresses
+// @access  Private
+router.get('/addresses', protect, async (req, res) => {
+  try {
+    const { data: user, error } = await supabase
+      .from('User')
+      .select('addresses')
+      .eq('id', req.user.id)
+      .single();
+
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch addresses'
+      });
+    }
+
+    const addresses = user?.addresses || [];
+    res.json({
+      success: true,
+      addresses: addresses
+    });
+  } catch (error) {
+    console.error('Get addresses error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// @desc    Add new address
+// @route   POST /api/users/addresses
+// @access  Private
+router.post('/addresses', protect, async (req, res) => {
+  try {
+    const { data: user, error: userError } = await supabase
+      .from('User')
+      .select('addresses')
+      .eq('id', req.user.id)
+      .single();
+
+    if (userError) {
+      console.error('❌ Supabase error:', userError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch user'
+      });
+    }
+
+    const currentAddresses = user?.addresses || [];
+    const newAddress = {
+      id: Date.now().toString(), // Simple ID generation
+      ...req.body,
+      createdAt: new Date().toISOString()
+    };
+
+    // If this is the first address, make it default
+    if (currentAddresses.length === 0) {
+      newAddress.isDefault = true;
+    }
+
+    const updatedAddresses = [...currentAddresses, newAddress];
+
+    const { data: updatedUser, error: updateError } = await supabase
+      .from('User')
+      .update({ 
+        addresses: updatedAddresses,
+        updatedAt: new Date().toISOString()
+      })
+      .eq('id', req.user.id)
+      .select('addresses')
+      .single();
+
+    if (updateError) {
+      console.error('❌ Supabase error:', updateError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to add address'
+      });
+    }
+
+    res.json({
+      success: true,
+      address: newAddress,
+      message: 'Address added successfully'
+    });
+  } catch (error) {
+    console.error('Add address error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// @desc    Update address
+// @route   PUT /api/users/addresses
+// @access  Private
+router.put('/addresses', protect, async (req, res) => {
+  try {
+    const { id, ...addressData } = req.body;
+    
+    const { data: user, error: userError } = await supabase
+      .from('User')
+      .select('addresses')
+      .eq('id', req.user.id)
+      .single();
+
+    if (userError) {
+      console.error('❌ Supabase error:', userError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch user'
+      });
+    }
+
+    const currentAddresses = user?.addresses || [];
+    const addressIndex = currentAddresses.findIndex(addr => addr.id === id);
+
+    if (addressIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Address not found'
+      });
+    }
+
+    const updatedAddress = {
+      ...currentAddresses[addressIndex],
+      ...addressData,
+      updatedAt: new Date().toISOString()
+    };
+
+    currentAddresses[addressIndex] = updatedAddress;
+
+    const { data: updatedUser, error: updateError } = await supabase
+      .from('User')
+      .update({ 
+        addresses: currentAddresses,
+        updatedAt: new Date().toISOString()
+      })
+      .eq('id', req.user.id)
+      .select('addresses')
+      .single();
+
+    if (updateError) {
+      console.error('❌ Supabase error:', updateError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to update address'
+      });
+    }
+
+    res.json({
+      success: true,
+      address: updatedAddress,
+      message: 'Address updated successfully'
+    });
+  } catch (error) {
+    console.error('Update address error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// @desc    Delete address
+// @route   DELETE /api/users/addresses
+// @access  Private
+router.delete('/addresses', protect, async (req, res) => {
+  try {
+    const { id } = req.query;
+    
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Address ID is required'
+      });
+    }
+
+    const { data: user, error: userError } = await supabase
+      .from('User')
+      .select('addresses')
+      .eq('id', req.user.id)
+      .single();
+
+    if (userError) {
+      console.error('❌ Supabase error:', userError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch user'
+      });
+    }
+
+    const currentAddresses = user?.addresses || [];
+    const filteredAddresses = currentAddresses.filter(addr => addr.id !== id);
+
+    if (filteredAddresses.length === currentAddresses.length) {
+      return res.status(404).json({
+        success: false,
+        message: 'Address not found'
+      });
+    }
+
+    const { data: updatedUser, error: updateError } = await supabase
+      .from('User')
+      .update({ 
+        addresses: filteredAddresses,
+        updatedAt: new Date().toISOString()
+      })
+      .eq('id', req.user.id)
+      .select('addresses')
+      .single();
+
+    if (updateError) {
+      console.error('❌ Supabase error:', updateError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to delete address'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Address deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete address error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// @desc    Get user payment methods
+// @route   GET /api/users/payment-methods
+// @access  Private
+router.get('/payment-methods', protect, async (req, res) => {
+  try {
+    const { data: user, error } = await supabase
+      .from('User')
+      .select('paymentMethods')
+      .eq('id', req.user.id)
+      .single();
+
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch payment methods'
+      });
+    }
+
+    const paymentMethods = user?.paymentMethods || [];
+    res.json({
+      success: true,
+      paymentMethods: paymentMethods
+    });
+  } catch (error) {
+    console.error('Get payment methods error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// @desc    Add payment method
+// @route   POST /api/users/payment-methods
+// @access  Private
+router.post('/payment-methods', protect, async (req, res) => {
+  try {
+    const { data: user, error: userError } = await supabase
+      .from('User')
+      .select('paymentMethods')
+      .eq('id', req.user.id)
+      .single();
+
+    if (userError) {
+      console.error('❌ Supabase error:', userError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch user'
+      });
+    }
+
+    const currentPaymentMethods = user?.paymentMethods || [];
+    const newPaymentMethod = {
+      id: Date.now().toString(),
+      ...req.body,
+      createdAt: new Date().toISOString()
+    };
+
+    const updatedPaymentMethods = [...currentPaymentMethods, newPaymentMethod];
+
+    const { data: updatedUser, error: updateError } = await supabase
+      .from('User')
+      .update({ 
+        paymentMethods: updatedPaymentMethods,
+        updatedAt: new Date().toISOString()
+      })
+      .eq('id', req.user.id)
+      .select('paymentMethods')
+      .single();
+
+    if (updateError) {
+      console.error('❌ Supabase error:', updateError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to add payment method'
+      });
+    }
+
+    res.json({
+      success: true,
+      paymentMethod: newPaymentMethod,
+      message: 'Payment method added successfully'
+    });
+  } catch (error) {
+    console.error('Add payment method error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// @desc    Delete payment method
+// @route   DELETE /api/users/payment-methods
+// @access  Private
+router.delete('/payment-methods', protect, async (req, res) => {
+  try {
+    const { id } = req.query;
+    
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Payment method ID is required'
+      });
+    }
+
+    const { data: user, error: userError } = await supabase
+      .from('User')
+      .select('paymentMethods')
+      .eq('id', req.user.id)
+      .single();
+
+    if (userError) {
+      console.error('❌ Supabase error:', userError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch user'
+      });
+    }
+
+    const currentPaymentMethods = user?.paymentMethods || [];
+    const filteredPaymentMethods = currentPaymentMethods.filter(pm => pm.id !== id);
+
+    if (filteredPaymentMethods.length === currentPaymentMethods.length) {
+      return res.status(404).json({
+        success: false,
+        message: 'Payment method not found'
+      });
+    }
+
+    const { data: updatedUser, error: updateError } = await supabase
+      .from('User')
+      .update({ 
+        paymentMethods: filteredPaymentMethods,
+        updatedAt: new Date().toISOString()
+      })
+      .eq('id', req.user.id)
+      .select('paymentMethods')
+      .single();
+
+    if (updateError) {
+      console.error('❌ Supabase error:', updateError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to delete payment method'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Payment method deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete payment method error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// @desc    Get user settings
+// @route   GET /api/users/settings
+// @access  Private
+router.get('/settings', protect, async (req, res) => {
+  try {
+    const { data: user, error } = await supabase
+      .from('User')
+      .select('settings')
+      .eq('id', req.user.id)
+      .single();
+
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch settings'
+      });
+    }
+
+    const settings = user?.settings || {};
+    res.json({
+      success: true,
+      settings: settings
+    });
+  } catch (error) {
+    console.error('Get settings error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// @desc    Update user settings
+// @route   PUT /api/users/settings
+// @access  Private
+router.put('/settings', protect, async (req, res) => {
+  try {
+    const { data: user, error: userError } = await supabase
+      .from('User')
+      .select('settings')
+      .eq('id', req.user.id)
+      .single();
+
+    if (userError) {
+      console.error('❌ Supabase error:', userError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch user'
+      });
+    }
+
+    const currentSettings = user?.settings || {};
+    const updatedSettings = { ...currentSettings, ...req.body };
+
+    const { data: updatedUser, error: updateError } = await supabase
+      .from('User')
+      .update({ 
+        settings: updatedSettings,
+        updatedAt: new Date().toISOString()
+      })
+      .eq('id', req.user.id)
+      .select('settings')
+      .single();
+
+    if (updateError) {
+      console.error('❌ Supabase error:', updateError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to update settings'
+      });
+    }
+
+    res.json({
+      success: true,
+      settings: updatedSettings,
+      message: 'Settings updated successfully'
+    });
+  } catch (error) {
+    console.error('Update settings error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
 module.exports = router;

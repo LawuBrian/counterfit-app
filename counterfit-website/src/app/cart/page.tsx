@@ -34,9 +34,8 @@ export default function CartPage() {
     }
   }
 
-  const shipping = getTotalPrice() >= 1000 ? 0 : 150
-  const tax = Math.round(getTotalPrice() * 0.15) // 15% VAT
-  const finalTotal = getTotalPrice() + shipping + tax
+  // Remove hardcoded shipping and VAT - these will be calculated in checkout
+  const finalTotal = getTotalPrice()
 
   const handleCheckout = async () => {
     if (!session) {
@@ -191,16 +190,6 @@ export default function CartPage() {
                     <span className="font-paragraph text-secondary">Subtotal ({getTotalItems()} items)</span>
                     <span className="font-medium text-primary">R{getTotalPrice().toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="font-paragraph text-secondary">Shipping</span>
-                    <span className="font-medium text-primary">
-                      {shipping === 0 ? 'Free' : `R${shipping.toLocaleString()}`}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="font-paragraph text-secondary">VAT (15%)</span>
-                    <span className="font-medium text-primary">R{tax.toLocaleString()}</span>
-                  </div>
                   <div className="border-t border-gray-200 pt-4">
                     <div className="flex justify-between">
                       <span className="font-heading text-lg font-semibold text-primary">Total</span>
@@ -208,15 +197,13 @@ export default function CartPage() {
                     </div>
                   </div>
                 </div>
-
-                {shipping > 0 && (
-                  <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-sm text-blue-800">
-                      <Truck className="inline w-4 h-4 mr-1" />
-                      Add R{(1000 - getTotalPrice()).toLocaleString()} more for free shipping
-                    </p>
-                  </div>
-                )}
+                
+                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <Truck className="inline w-4 h-4 mr-1" />
+                    Shipping and final total will be calculated at checkout
+                  </p>
+                </div>
 
                 <Button 
                   className="w-full font-semibold mb-4" 
@@ -243,7 +230,7 @@ export default function CartPage() {
                     </div>
                     <div className="flex items-center gap-3">
                       <Truck className="w-5 h-5 text-primary" />
-                      <span className="text-sm text-secondary">Free shipping over R1000</span>
+                      <span className="text-sm text-secondary">Fastway shipping integration</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
@@ -270,7 +257,7 @@ export default function CartPage() {
         </div>
       </section>
 
-      {/* Recommended Products */}
+            {/* Recommended Products - Removed hardcoded values */}
       <section className="py-16 bg-primary/5">
         <div className="max-w-screen-2xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-12">
@@ -278,59 +265,13 @@ export default function CartPage() {
             <p className="font-paragraph text-secondary">Complete your streetwear collection with these premium pieces</p>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              {
-                id: 3,
-                name: "Premium Camo Hoodie",
-                price: "R1,000",
-                image: "/images/1d66cc_dae82150175d4010871e43fef851f81a_mv2.jpg"
-              },
-              {
-                id: 4,
-                name: "Black Skull Cap",
-                price: "R200",
-                image: "/images/1d66cc_770f254da8114e36a8c99b2ae2d76e57_mv2.jpg"
-              },
-              {
-                id: 5,
-                name: "Luxury Cream Jacket",
-                price: "R1,100",
-                image: "/images/1d66cc_b4b6f42d5bec4d1296ef5f4525844fb8_mv2.png"
-              },
-              {
-                id: 6,
-                name: "Platform Series Tee",
-                price: "R450",
-                image: "/images/1d66cc_118bf0bf6588467e8c966076d949e1b3_mv2.png"
-              }
-            ].map((product) => (
-              <Link key={product.id} href={`/product/${product.id}`} className="group">
-                <div className="bg-background rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300">
-                  <div className="relative aspect-[4/5] overflow-hidden rounded-t-xl">
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  </div>
-                  <div className="p-4">
-                    <h3 className="font-heading text-lg font-semibold text-primary mb-2 group-hover:text-secondary transition-colors">
-                      {product.name}
-                    </h3>
-                    <div className="flex items-center justify-between">
-                      <span className="font-heading text-xl font-bold text-primary">
-                        {product.price}
-                      </span>
-                      <Button size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                        View Details
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            ))}
+          <div className="text-center py-8">
+            <p className="text-secondary mb-4">Dynamic product recommendations coming soon</p>
+            <Link href="/shop">
+              <Button>
+                Browse All Products
+              </Button>
+            </Link>
           </div>
         </div>
       </section>

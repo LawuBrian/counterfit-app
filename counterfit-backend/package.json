@@ -9,7 +9,8 @@
     "test": "jest",
     "create-admin": "node scripts/createAdmin.js",
     "clear-db": "node scripts/clear-supabase.js",
-    "start-fresh": "node scripts/start-fresh.js"
+    "start-fresh": "node scripts/start-fresh.js",
+    "add-user-fields": "node scripts/add-user-fields-supabase.js"
   },
   "keywords": [
     "api",
