@@ -99,7 +99,9 @@ export default function HomePage() {
           </div>
           
           <h1 className="font-heading text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-8 tracking-tight leading-tight">
-            For the ones that don't fit in.
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-gray-200 to-gray-400">
+              For the ones that don't fit in.
+            </span>
           </h1>
           
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
