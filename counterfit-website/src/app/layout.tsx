@@ -5,7 +5,7 @@ import Footer from "@/components/layout/Footer"
 import ClientProviders from "@/components/providers/ClientProviders"
 
 export const metadata: Metadata = {
-  title: "Home | Counterfit",
+  title: "Counterfit",
   description: "Redefining streetwear with a blend of luxury, innovation, and timeless design. Discover our premium collections designed for the modern individual.",
   icons: {
     icon: [
