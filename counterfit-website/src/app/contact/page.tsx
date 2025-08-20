@@ -3,8 +3,9 @@
 import Image from 'next/image'
 import Link from 'next/link'
 
-import { Mail, Phone, MapPin, Clock, MessageCircle } from 'lucide-react'
+import { Mail, Phone, MapPin, Clock, MessageCircle, MailOpen } from 'lucide-react'
 import ContactForm from '@/components/ContactForm'
+import NewsletterSubscribe from '@/components/NewsletterSubscribe'
 
 export default function ContactPage() {
 
@@ -159,6 +160,32 @@ export default function ContactPage() {
         </div>
       </section>
 
+      {/* Newsletter Section */}
+      <section className="py-20 lg:py-32 bg-primary/5">
+        <div className="max-w-4xl mx-auto px-6 lg:px-8 text-center">
+          <div className="mb-12">
+            <h2 className="font-heading text-4xl lg:text-5xl font-bold text-primary mb-6">
+              Stay Connected
+            </h2>
+            <p className="font-paragraph text-lg text-secondary max-w-2xl mx-auto">
+              Subscribe to our newsletter for exclusive offers, new arrivals, and styling tips delivered straight to your inbox.
+            </p>
+          </div>
+          <div className="bg-white rounded-2xl p-8 shadow-xl border border-gray-100 max-w-md mx-auto">
+            <div className="flex items-center justify-center mb-6">
+              <MailOpen className="w-12 h-12 text-primary" />
+            </div>
+            <h3 className="font-heading text-2xl font-semibold text-primary mb-4">
+              Newsletter Subscription
+            </h3>
+            <p className="font-paragraph text-secondary mb-6">
+              Be the first to know about new collections and exclusive offers
+            </p>
+            <NewsletterSubscribe />
+          </div>
+        </div>
+      </section>
+
       {/* Flagship Store Section - Matching scraped HTML */}
       <section className="py-20 lg:py-32">
         <div className="max-w-screen-2xl mx-auto px-6 lg:px-8">
@@ -180,7 +207,7 @@ export default function ContactPage() {
                 <p className="font-paragraph text-secondary">
                   Cnr Juno St & Kitchener Ave, Johannesburg 2101
                 </p>
-                <p className="font-paragraph text-sm text-secondary mt-2">
+                <p className="text-sm text-secondary mt-2">
                   Open Mon-Fri 9AM-6PM SAST
                 </p>
               </div>

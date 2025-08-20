@@ -1,13 +1,14 @@
 import Link from "next/link"
 import Image from "next/image"
+import NewsletterSubscribe from "@/components/NewsletterSubscribe"
 
 export default function Footer() {
   return (
     <footer className="bg-primary text-primary-foreground">
       <div className="max-w-screen-2xl mx-auto px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12">
           {/* Brand Section */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-2">
             <div className="flex items-center space-x-3 mb-6">
               <div className="w-8 h-8">
                 <Image
@@ -20,10 +21,21 @@ export default function Footer() {
               </div>
               <span className="font-heading text-xl font-bold tracking-wider">COUNTERFIT</span>
             </div>
-            <p className="font-paragraph text-sm text-primary-foreground/80 leading-relaxed">
+            <p className="font-paragraph text-sm text-primary-foreground/80 leading-relaxed mb-6">
               Redefining streetwear with a blend of luxury, innovation, and timeless design. 
               Discover our premium collections designed for the modern individual.
             </p>
+            
+            {/* Newsletter Subscription */}
+            <div className="bg-primary-foreground/10 rounded-lg p-4">
+              <h4 className="font-heading text-sm font-semibold text-primary-foreground mb-3">
+                Stay Updated
+              </h4>
+              <p className="font-paragraph text-xs text-primary-foreground/70 mb-3">
+                Subscribe to our newsletter for exclusive offers and new arrivals
+              </p>
+              <NewsletterSubscribe />
+            </div>
           </div>
 
           {/* Shop Links */}
