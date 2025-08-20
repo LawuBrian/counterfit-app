@@ -332,7 +332,7 @@ export default function HomePage() {
             {[
               { name: 'Outerwear', image: '/images/outerwear/blackjacket.jpg', desc: 'Premium jackets, blazers, and coats', href: '/shop?category=outerwear' },
               { name: 'Tops', image: '/images/tops/WHITEDUOCOLLECTION.jpg', desc: 'Hoodies, tees, and performance wear', href: '/shop?category=tops' },
-              { name: 'Bottoms', image: '/images/bottoms/DUONATURECAMOORBLACKWHITE MIX.jpeg', desc: 'Denim, joggers, and technical pants', href: '/shop?category=bottoms' },
+              { name: 'Bottoms', image: '/images/bottoms/COUNTERFITPANTS.jpeg', desc: 'Denim, joggers, and technical pants', href: '/shop?category=bottoms' },
               { name: 'Accessories', image: '/images/accessories/SKULLCAP.jpg', desc: 'Bags, caps, and luxury details', href: '/shop?category=accessories' }
             ].map((category) => (
               <Link key={category.name} href={category.href} className="group">
