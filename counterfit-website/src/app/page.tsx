@@ -98,16 +98,16 @@ export default function HomePage() {
             Premium Streetwear Collection
           </div>
           
-          <h1 className="font-heading text-6xl md:text-7xl lg:text-8xl font-bold text-white mb-8 tracking-tight leading-tight">
-            COUNTERFIT
+          <h1 className="font-heading text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-8 tracking-tight leading-tight">
+            Built from losses.
             <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-gray-200 to-gray-400">
-              STREETWEAR
+              Worn by winners.
             </span>
           </h1>
           
           <p className="font-paragraph text-xl md:text-2xl text-white/90 mb-12 max-w-3xl mx-auto leading-relaxed">
-            Built from losses. Worn by winners. Every garment tells a story of resilience and success.
+            for the ones that dont fit in
           </p>
           
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
@@ -328,12 +328,11 @@ export default function HomePage() {
             </p>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {[
               { name: 'Outerwear', image: '/images/outerwear/blackjacket.jpg', desc: 'Premium jackets, blazers, and coats', href: '/shop?category=outerwear' },
               { name: 'Tops', image: '/images/tops/WHITEDUOCOLLECTION.jpg', desc: 'Hoodies, tees, and performance wear', href: '/shop?category=tops' },
               { name: 'Bottoms', image: '/images/bottoms/DUONATURECAMOORBLACKWHITE MIX.jpeg', desc: 'Denim, joggers, and technical pants', href: '/shop?category=bottoms' },
-              { name: 'Footwear', image: '/images/footwear/COMBOPANTSJACKET.jpeg', desc: 'Statement sneakers and street shoes', href: '/shop?category=footwear' },
               { name: 'Accessories', image: '/images/accessories/SKULLCAP.jpg', desc: 'Bags, caps, and luxury details', href: '/shop?category=accessories' }
             ].map((category) => (
               <Link key={category.name} href={category.href} className="group">

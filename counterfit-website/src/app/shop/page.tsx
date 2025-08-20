@@ -25,7 +25,7 @@ export default function ShopPage() {
     maxPrice: 3500
   })
 
-  const categories = ["outerwear", "tops", "bottoms", "footwear", "accessories", "athletic"]
+  const categories = ["outerwear", "tops", "bottoms", "accessories"]
 
   // Combined effect for filtering and sorting
   useEffect(() => {

@@ -56,7 +56,7 @@ async function main() {
         create: {
           name: 'Dynamic Motion',
           slug: 'dynamic-motion',
-          description: 'Athletic-inspired pieces that blur the line between performance and style',
+          description: 'Dynamic pieces that blur the line between performance and style',
           featured: true,
         },
       }),

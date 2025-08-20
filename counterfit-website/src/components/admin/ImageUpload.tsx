@@ -27,7 +27,6 @@ export default function ImageUpload({ images, onChange, maxImages = 10, category
       'outerwear': 'images/outerwear',
       'tops': 'images/tops',
       'bottoms': 'images/bottoms',
-      'footwear': 'images/footwear',
       'accessories': 'images/accessories',
       'collections': 'images/collections',
       'hero': 'images/hero',

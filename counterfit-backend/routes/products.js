@@ -10,7 +10,7 @@ const router = express.Router();
 router.get('/', [
   query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
   query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
-  query('category').optional().isIn(['outerwear', 'tops', 'bottoms', 'footwear', 'accessories', 'athletic']),
+  query('category').optional().isIn(['outerwear', 'tops', 'bottoms', 'accessories']),
   query('minPrice').optional().isFloat({ min: 0 }).withMessage('Min price must be a positive number'),
   query('maxPrice').optional().isFloat({ min: 0 }).withMessage('Max price must be a positive number'),
   query('sort').optional().isIn(['price', '-price', 'name', '-name', 'createdAt', '-createdAt', 'featured'])
@@ -177,7 +177,7 @@ router.post('/', protect, adminOnly, [
   body('name').trim().notEmpty().withMessage('Product name is required'),
   body('description').trim().notEmpty().withMessage('Product description is required'),
   body('price').isFloat({ min: 0 }).withMessage('Price must be a positive number'),
-  body('category').isIn(['outerwear', 'tops', 'bottoms', 'footwear', 'accessories', 'athletic']).withMessage('Invalid category'),
+  body('category').isIn(['outerwear', 'tops', 'bottoms', 'accessories']).withMessage('Invalid category'),
   body('images').isArray({ min: 1 }).withMessage('At least one image is required'),
   body('stockCode').optional().trim().notEmpty().withMessage('Stock code cannot be empty'),
   body('sizes').optional().isArray().withMessage('Sizes must be an array'),
@@ -234,7 +234,7 @@ router.put('/:id', protect, adminOnly, [
   body('name').optional().trim().notEmpty().withMessage('Product name cannot be empty'),
   body('description').optional().trim().notEmpty().withMessage('Product description cannot be empty'),
   body('price').optional().isFloat({ min: 0 }).withMessage('Price must be a positive number'),
-  body('category').optional().isIn(['outerwear', 'tops', 'bottoms', 'footwear', 'accessories', 'athletic']).withMessage('Invalid category')
+  body('category').optional().isIn(['outerwear', 'tops', 'bottoms', 'accessories']).withMessage('Invalid category')
 ], async (req, res) => {
   try {
     // Check for validation errors

@@ -282,9 +282,7 @@ export default function AdminProductsPage() {
                 <option value="outerwear">Outerwear</option>
                 <option value="tops">Tops</option>
                 <option value="bottoms">Bottoms</option>
-                <option value="footwear">Footwear</option>
                 <option value="accessories">Accessories</option>
-                <option value="athletic">Athletic</option>
               </select>
             </div>
 

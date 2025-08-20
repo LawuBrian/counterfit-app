@@ -566,9 +566,7 @@ export default function EditProductPage() {
                     <option value="outerwear">Outerwear</option>
                     <option value="tops">Tops</option>
                     <option value="bottoms">Bottoms</option>
-                    <option value="footwear">Footwear</option>
                     <option value="accessories">Accessories</option>
-                    <option value="athletic">Athletic</option>
                   </select>
                   {errors.category && <p className="mt-1 text-sm text-red-600">{errors.category}</p>}
                 </div>

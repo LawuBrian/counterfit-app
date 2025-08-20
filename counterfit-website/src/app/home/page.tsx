@@ -178,7 +178,7 @@ export default function OriginalHomePage() {
               <div className="group cursor-pointer flex-shrink-0 w-80">
                 <div className="relative aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl mb-6">
                   <Image
-                    src="/images/footwear/COMBOPANTSJACKET.jpeg"
+                    src="/images/collections/WHITEDUOCOLLECTION.jpg"
                     alt="Combo Collection"
                     fill
                     className="object-cover group-hover:scale-110 transition-transform duration-700"
@@ -247,7 +247,7 @@ export default function OriginalHomePage() {
             <div className="relative">
               <div className="aspect-square rounded-3xl overflow-hidden shadow-2xl">
                 <Image
-                  src="/images/footwear/COMBOPANTSJACKET.jpeg"
+                  src="/images/collections/LUXURYJACKET.jpeg"
                   alt="Counterfit Story"
                   fill
                   className="object-cover"
