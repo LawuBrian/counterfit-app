@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     console.log('🔍 Fetching orders for user:', session.user.id)
 
     // Fetch orders from backend
-    const response = await fetch(`${BACKEND_URL}/api/orders`, {
+    const response = await fetch(`${BACKEND_URL}/api/orders/my`, {
       headers: {
         'Authorization': `Bearer ${session.user.accessToken}`,
         'Content-Type': 'application/json'
@@ -65,11 +65,11 @@ export async function GET(request: NextRequest) {
         message: 'Backend response error - orders will appear when service is restored'
       })
     }
-    console.log('✅ Orders fetched successfully:', data.orders?.length || 0, 'orders')
+    console.log('✅ Orders fetched successfully:', data.data?.length || 0, 'orders')
 
     return NextResponse.json({
       success: true,
-      orders: data.orders || []
+      orders: data.data || []
     })
 
   } catch (error) {
