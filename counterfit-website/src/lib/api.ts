@@ -43,6 +43,7 @@ export interface Product {
   totalStock?: number
   createdAt: string
   updatedAt: string
+  featuredOrder?: number // Added for featured products
 }
 
 export interface Collection {
@@ -133,7 +134,34 @@ export async function getFeaturedProducts(limit = 5, cacheBuster?: number): Prom
   if (cacheBuster) {
     params._t = cacheBuster
   }
-  return getProducts(params)
+  
+  try {
+    const response = await fetch(`/api/products?${new URLSearchParams(params)}`)
+    if (!response.ok) {
+      throw new Error('Failed to fetch featured products')
+    }
+    
+    const data = await response.json()
+    
+    // Sort by featuredOrder if available, otherwise by creation date
+    if (data.success && data.data) {
+      data.data.sort((a: Product, b: Product) => {
+        if (a.featuredOrder !== undefined && b.featuredOrder !== undefined) {
+          return a.featuredOrder - b.featuredOrder
+        }
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      })
+    }
+    
+    return data
+  } catch (error) {
+    console.error('Error fetching featured products:', error)
+    return {
+      success: false,
+      data: [],
+      message: 'Failed to fetch featured products'
+    }
+  }
 }
 
 export async function getNewProducts(limit = 10): Promise<ApiResponse<Product[]>> {

@@ -13,11 +13,14 @@ import {
   Edit,
   Eye,
   Trash2,
-  Truck
+  Truck,
+  Sparkles,
+  Tag
 } from 'lucide-react'
 import Link from 'next/link'
 import { getImageUrl } from '@/lib/utils'
 import AuthDebug from '@/components/debug/AuthDebug'
+import FeaturedProductOrderManager from '@/components/admin/FeaturedProductOrderManager'
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession()
@@ -136,56 +139,101 @@ export default function AdminDashboard() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
+        {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Package className="h-6 w-6 text-blue-600" />
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Products</p>
+                <p className="text-3xl font-bold text-primary">{stats.totalProducts}</p>
               </div>
-              <div className="ml-4">
-                <p className="text-sm text-secondary">Total Products</p>
-                <p className="text-2xl font-bold text-primary">{stats.totalProducts}</p>
+              <div className="p-3 bg-primary/10 rounded-lg">
+                <Package className="h-6 w-6 text-primary" />
               </div>
             </div>
+            {stats.totalProducts === 0 && (
+              <p className="text-xs text-gray-500 mt-2">No products yet. Start by adding your first product!</p>
+            )}
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <ShoppingCart className="h-6 w-6 text-green-600" />
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Orders</p>
+                <p className="text-3xl font-bold text-primary">{stats.totalOrders}</p>
               </div>
-              <div className="ml-4">
-                <p className="text-sm text-secondary">Total Orders</p>
-                <p className="text-2xl font-bold text-primary">{stats.totalOrders}</p>
+              <div className="p-3 bg-green-500/10 rounded-lg">
+                <ShoppingCart className="h-6 w-6 text-green-500" />
               </div>
             </div>
+            {stats.totalOrders === 0 && (
+              <p className="text-xs text-gray-500 mt-2">No orders yet. Orders will appear here when customers start shopping!</p>
+            )}
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <div className="flex items-center">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Users className="h-6 w-6 text-purple-600" />
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Users</p>
+                <p className="text-3xl font-bold text-primary">{stats.totalUsers}</p>
               </div>
-              <div className="ml-4">
-                <p className="text-sm text-secondary">Total Users</p>
-                <p className="text-2xl font-bold text-primary">{stats.totalUsers}</p>
+              <div className="p-3 bg-blue-500/10 rounded-lg">
+                <Users className="h-6 w-6 text-blue-500" />
               </div>
             </div>
+            {stats.totalUsers === 0 && (
+              <p className="text-xs text-gray-500 mt-2">No registered users yet. Users will appear here when they sign up!</p>
+            )}
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <div className="flex items-center">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <TrendingUp className="h-6 w-6 text-yellow-600" />
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Revenue</p>
+                <p className="text-3xl font-bold text-primary">R{stats.totalRevenue.toLocaleString()}</p>
               </div>
-              <div className="ml-4">
-                <p className="text-sm text-secondary">Revenue</p>
-                <p className="text-2xl font-bold text-primary">R{stats.totalRevenue.toLocaleString()}</p>
+              <div className="p-3 bg-yellow-500/10 rounded-lg">
+                <TrendingUp className="h-6 w-6 text-yellow-500" />
               </div>
             </div>
+            {stats.totalRevenue === 0 && (
+              <p className="text-xs text-gray-500 mt-2">No revenue yet. Revenue will appear here when orders are placed!</p>
+            )}
           </div>
         </div>
+
+        {/* Getting Started Guide - Show when no orders/users */}
+        {(stats.totalOrders === 0 || stats.totalUsers === 0) && (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 mb-8 border border-blue-200">
+            <div className="flex items-center mb-4">
+              <div className="p-2 bg-blue-100 rounded-lg mr-3">
+                <Sparkles className="h-5 w-5 text-blue-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-blue-900">Getting Started with Counterfit</h3>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white rounded-lg p-4 border border-blue-200">
+                <h4 className="font-medium text-blue-900 mb-2">✅ Products Ready</h4>
+                <p className="text-sm text-blue-700">You have {stats.totalProducts} products set up and ready to sell!</p>
+              </div>
+              
+              {stats.totalUsers === 0 && (
+                <div className="bg-white rounded-lg p-4 border border-blue-200">
+                  <h4 className="font-medium text-blue-900 mb-2">👥 Next: Get Customers</h4>
+                  <p className="text-sm text-blue-700">Share your store link and encourage customers to sign up for accounts.</p>
+                </div>
+              )}
+              
+              {stats.totalOrders === 0 && (
+                <div className="bg-white rounded-lg p-4 border border-blue-200">
+                  <h4 className="font-medium text-blue-900 mb-2">🛒 Next: Start Selling</h4>
+                  <p className="text-sm text-blue-700">Once customers place orders, you'll see revenue and order data here.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Recent Orders */}
@@ -215,7 +263,13 @@ export default function AdminDashboard() {
                   ))}
                 </div>
               ) : (
-                <p className="text-secondary text-center py-8">No recent orders</p>
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                    <ShoppingCart className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <p className="text-secondary mb-2">No orders yet</p>
+                  <p className="text-xs text-gray-500">Orders will appear here when customers start shopping</p>
+                </div>
               )}
             </div>
           </div>
@@ -232,12 +286,11 @@ export default function AdminDashboard() {
             </div>
             <div className="p-6">
               <div className="text-center py-8">
-                <div className="mx-auto h-12 w-12 text-gray-400 mb-4">
-                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-full h-full">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                  </svg>
+                <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                  <Tag className="w-8 h-8 text-gray-400" />
                 </div>
-                <p className="text-secondary mb-4">No collections yet</p>
+                <p className="text-secondary mb-2">No collections yet</p>
+                <p className="text-xs text-gray-500 mb-4">Create collections to group related products together</p>
                 <Button size="sm">
                   <Link href="/admin/collections/new">
                     <Plus className="mr-2 h-4 w-4" />
@@ -260,8 +313,11 @@ export default function AdminDashboard() {
             </div>
             <div className="p-6">
               <div className="text-center py-8">
-                <Truck className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <p className="text-secondary mb-4">Manage your Fastway shipments</p>
+                <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                  <Truck className="w-8 h-8 text-gray-400" />
+                </div>
+                <p className="text-secondary mb-2">No shipments yet</p>
+                <p className="text-xs text-gray-500 mb-4">Shipments will appear here when you create them for orders</p>
                 <Button size="sm">
                   <Link href="/admin/shipments">
                     <Truck className="mr-2 h-4 w-4" />
@@ -269,6 +325,18 @@ export default function AdminDashboard() {
                   </Link>
                 </Button>
               </div>
+            </div>
+          </div>
+
+          {/* Featured Product Order Management */}
+          <div className="bg-white rounded-xl shadow-sm">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="font-heading text-xl font-semibold text-primary">Featured Product Order</h2>
+              </div>
+            </div>
+            <div className="p-6">
+              <FeaturedProductOrderManager />
             </div>
           </div>
 

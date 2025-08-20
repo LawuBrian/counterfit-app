@@ -1,75 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
-import { supabase } from '@/lib/supabase'
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://counterfit-backend.onrender.com'
-
-// Function to fetch stats directly from Supabase as fallback
-async function fetchStatsFromSupabase() {
-  try {
-    console.log('🔄 Fetching stats directly from Supabase...')
-    
-    // Get total orders
-    const { count: totalOrders, error: ordersError } = await supabase
-      .from('Order')
-      .select('*', { count: 'exact', head: true })
-
-    if (ordersError) throw ordersError
-
-    // Get total revenue
-    const { data: revenueData, error: revenueError } = await supabase
-      .from('Order')
-      .select('totalAmount')
-      .eq('paymentStatus', 'paid')
-
-    if (revenueError) throw revenueError
-    const totalRevenue = revenueData?.reduce((sum, order) => sum + (order.totalAmount || 0), 0) || 0
-
-    // Get total products
-    const { count: totalProducts, error: productsError } = await supabase
-      .from('Product')
-      .select('*', { count: 'exact', head: true })
-
-    if (productsError) throw productsError
-
-    // Get total users
-    const { count: totalUsers, error: usersError } = await supabase
-      .from('User')
-      .select('*', { count: 'exact', head: true })
-
-    if (usersError) throw usersError
-
-    // Get recent orders
-    const { data: recentOrders, error: recentError } = await supabase
-      .from('Order')
-      .select(`
-        id,
-        orderNumber,
-        totalAmount,
-        status,
-        paymentStatus,
-        createdAt,
-        userId
-      `)
-      .order('createdAt', { ascending: false })
-      .limit(5)
-
-    if (recentError) throw recentError
-
-    console.log('✅ Supabase stats fetched')
-    return {
-      totalOrders: totalOrders || 0,
-      totalRevenue,
-      totalProducts: totalProducts || 0,
-      totalUsers: totalUsers || 0,
-      recentOrders: recentOrders || []
-    }
-  } catch (error) {
-    console.error('❌ Failed to fetch stats from Supabase:', error)
-    throw error
-  }
-}
 
 export async function GET(request: NextRequest) {
   try {
@@ -92,79 +23,55 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log('🔍 Admin fetching dashboard stats')
+    console.log('🔍 Admin fetching dashboard stats from backend...')
 
-    // Try backend first, fallback to Supabase
-    try {
-      if (session.user?.accessToken) {
-        console.log('🌐 Trying backend API first...')
-        const response = await fetch(`${BACKEND_URL}/api/admin/stats`, {
-          headers: {
-            'Authorization': `Bearer ${session.user.accessToken}`,
-            'Content-Type': 'application/json'
-          }
-        })
+    // Fetch stats from the backend's public stats endpoint
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:5000'
+    console.log('🔍 Backend URL:', backendUrl)
+    console.log('🔍 Full URL:', `${backendUrl}/api/admin/public-stats`)
+    
+    const response = await fetch(`${backendUrl}/api/admin/public-stats`)
+    
+    console.log('🔍 Backend response status:', response.status)
+    console.log('🔍 Backend response ok:', response.ok)
 
-        if (response.ok) {
-          let data
-          try {
-            data = await response.json()
-          } catch (jsonError) {
-            console.error('❌ Failed to parse backend response:', jsonError)
-            throw new Error('Backend response parsing failed')
-          }
-          
-          console.log('✅ Admin stats fetched from backend')
-          
-          // Transform backend data to expected format
-          const stats = {
-            totalOrders: data.data?.overview?.totalOrders || 0,
-            totalRevenue: data.data?.overview?.totalRevenue || 0,
-            totalProducts: data.data?.overview?.totalProducts || 0,
-            totalUsers: data.data?.overview?.totalUsers || 0,
-            recentOrders: data.data?.recentOrders || []
-          }
-          
-          return NextResponse.json({
-            success: true,
-            stats,
-            source: 'backend'
-          })
-        } else {
-          console.warn('⚠️ Backend returned error:', response.status, response.statusText)
-          throw new Error(`Backend error: ${response.status}`)
-        }
-      } else {
-        throw new Error('No access token available')
-      }
-    } catch (backendError) {
-      console.warn('⚠️ Backend failed, falling back to Supabase:', backendError)
-      
-      // Fallback to Supabase
-      try {
-        const stats = await fetchStatsFromSupabase()
-        return NextResponse.json({
-          success: true,
-          stats,
-          message: 'Stats loaded from database (backend unavailable)',
-          source: 'supabase'
-        })
-      } catch (supabaseError) {
-        console.error('❌ Both backend and Supabase failed:', supabaseError)
-        return NextResponse.json({
-          success: true,
-          stats: {
-            totalOrders: 0,
-            totalRevenue: 0,
-            totalProducts: 0,
-            totalUsers: 0,
-            recentOrders: []
-          },
-          message: 'Unable to load stats - both backend and database are unavailable',
-          source: 'none'
-        })
-      }
+    if (!response.ok) {
+      console.error('❌ Backend API error:', response.status, response.statusText)
+      return NextResponse.json({
+        success: false,
+        error: 'Failed to fetch stats from backend',
+        details: `Backend returned ${response.status}: ${response.statusText}`
+      }, { status: 500 })
     }
+
+    const backendData = await response.json()
+    console.log('🔍 Backend response data:', JSON.stringify(backendData, null, 2))
+    
+    if (!backendData.success) {
+      console.error('❌ Backend returned error:', backendData)
+      return NextResponse.json({
+        success: false,
+        error: 'Backend returned error',
+        details: backendData.message || 'Unknown backend error'
+      }, { status: 500 })
+    }
+
+    // Transform backend data to match frontend expectations
+    const stats = {
+      totalOrders: backendData.data.overview.totalOrders || 0,
+      totalRevenue: backendData.data.overview.totalRevenue || 0,
+      totalProducts: backendData.data.overview.totalProducts || 0,
+      totalUsers: backendData.data.overview.totalUsers || 0,
+      recentOrders: [] // Backend public endpoint doesn't return recent orders
+    }
+
+    console.log('✅ Stats fetched successfully from backend:', stats)
+
+    return NextResponse.json({
+      success: true,
+      stats,
+      source: 'backend'
+    })
 
   } catch (error) {
     console.error('❌ Admin stats API error:', error)

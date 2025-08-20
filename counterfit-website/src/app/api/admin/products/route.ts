@@ -3,56 +3,9 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://counterfit-backend.onrender.com'
 
-// Function to fetch products directly from Supabase as fallback
-async function fetchProductsFromSupabase(page: string, limit: string, search: string, category: string, status: string) {
-  try {
-    console.log('🔄 Fetching products directly from Supabase...')
-    
-    let query = supabase
-      .from('Product')
-      .select('*')
-      .order('createdAt', { ascending: false })
 
-    // Apply filters
-    if (search) {
-      query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`)
-    }
-    if (category) {
-      query = query.eq('category', category)
-    }
-    if (status) {
-      query = query.eq('status', status)
-    }
 
-    // Apply pagination
-    const pageNum = parseInt(page) || 1
-    const limitNum = parseInt(limit) || 10
-    const from = (pageNum - 1) * limitNum
-    const to = from + limitNum - 1
-
-    query = query.range(from, to)
-
-    const { data: products, error, count } = await query
-
-    if (error) throw error
-
-    console.log('✅ Supabase products fetched:', products?.length || 0)
-    return {
-      products: products || [],
-      pagination: {
-        page: pageNum,
-        limit: limitNum,
-        total: count || 0,
-        pages: Math.ceil((count || 0) / limitNum)
-      }
-    }
-  } catch (error) {
-    console.error('❌ Failed to fetch products from Supabase:', error)
-    throw error
-  }
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -169,87 +122,59 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category') || ''
     const status = searchParams.get('status') || ''
     
-    // Try backend first, fallback to Supabase
-    try {
-      if (session.user?.accessToken) {
-        console.log('🌐 Trying backend API first...')
-        
-        // Build query string
-        const queryParams = new URLSearchParams()
-        if (page) queryParams.append('page', page)
-        if (limit) queryParams.append('limit', limit)
-        if (search) queryParams.append('search', search)
-        if (category) queryParams.append('category', category)
-        if (status) queryParams.append('status', status)
+    console.log('🔍 Admin fetching products from Supabase...')
+    
+    let query = supabase
+      .from('Product')
+      .select('*')
+      .order('createdAt', { ascending: false })
 
-        const queryString = queryParams.toString()
+    // Apply filters
+    if (search) {
+      query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`)
+    }
+    if (category) {
+      query = query.eq('category', category)
+    }
+    if (status) {
+      query = query.eq('status', status)
+    }
 
-        const response = await fetch(`${BACKEND_URL}/api/admin/products${queryString ? `?${queryString}` : ''}`, {
-          headers: {
-            'Authorization': `Bearer ${session.user.accessToken}`,
-            'Content-Type': 'application/json'
-          }
-        })
+    // Apply pagination
+    const pageNum = parseInt(page) || 1
+    const limitNum = parseInt(limit) || 10
+    const from = (pageNum - 1) * limitNum
+    const to = from + limitNum - 1
 
-        if (response.ok) {
-          let result
-          try {
-            result = await response.json()
-          } catch (jsonError) {
-            console.error('❌ Failed to parse backend response:', jsonError)
-            throw new Error('Backend response parsing failed')
-          }
-          
-          console.log('✅ Admin products fetched from backend')
-          
-          // Transform backend data to expected format
-          const transformedResult = {
-            products: result.data || [],
-            pagination: result.pagination || {
-              page: parseInt(page) || 1,
-              limit: parseInt(limit) || 10,
-              total: 0,
-              pages: 0
-            }
-          }
-          
-          return NextResponse.json({
-            ...transformedResult,
-            source: 'backend'
-          })
-        } else {
-          console.warn('⚠️ Backend returned error:', response.status, response.statusText)
-          throw new Error(`Backend error: ${response.status}`)
-        }
-      } else {
-        throw new Error('No access token available')
-      }
-    } catch (backendError) {
-      console.warn('⚠️ Backend failed, falling back to Supabase:', backendError)
-      
-      // Fallback to Supabase
-      try {
-        const result = await fetchProductsFromSupabase(page, limit, search, category, status)
-        return NextResponse.json({
-          ...result,
-          message: 'Products loaded from database (backend unavailable)',
-          source: 'supabase'
-        })
-      } catch (supabaseError) {
-        console.error('❌ Both backend and Supabase failed:', supabaseError)
-        return NextResponse.json({
-          products: [],
-          pagination: {
-            page: parseInt(page) || 1,
-            limit: parseInt(limit) || 10,
-            total: 0,
-            pages: 0
-          },
-          message: 'Unable to load products - both backend and database are unavailable',
-          source: 'none'
-        })
+    query = query.range(from, to)
+
+    const { data: products, error, count } = await query
+
+    if (error) {
+      console.error('❌ Supabase error:', error)
+      return NextResponse.json({
+        success: false,
+        error: 'Failed to fetch products',
+        details: error.message
+      }, { status: 500 })
+    }
+
+    const result = {
+      products: products || [],
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total: count || 0,
+        pages: Math.ceil((count || 0) / limitNum)
       }
     }
+
+    console.log('✅ Products fetched successfully:', products?.length || 0, 'products')
+
+    return NextResponse.json({
+      ...result,
+      source: 'supabase'
+    })
 
   } catch (error) {
     console.error('Get products error:', error)

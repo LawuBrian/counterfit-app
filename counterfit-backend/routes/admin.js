@@ -3,6 +3,53 @@ const { supabase } = require('../lib/supabase');
 const { protect, adminOnly } = require('../middleware/auth');
 const router = express.Router();
 
+// Public stats endpoint - no authentication required
+// @desc    Get public dashboard stats
+// @route   GET /api/admin/public-stats
+// @access  Public
+router.get('/public-stats', async (req, res) => {
+  try {
+    const [
+      totalUsers,
+      totalProducts,
+      totalOrders,
+      totalCollections
+    ] = await Promise.all([
+      supabase.from('User').select('id', { count: 'exact' }),
+      supabase.from('Product').select('id', { count: 'exact' }), // Remove status filter to count ALL products
+      supabase.from('Order').select('id', { count: 'exact' }),
+      supabase.from('Collection').select('id', { count: 'exact' }) // Remove status filter to count ALL collections
+    ]);
+
+    // Calculate total revenue
+    const revenueResult = await supabase
+      .from('Order')
+      .select('totalAmount')
+      .eq('paymentStatus', 'paid');
+
+    const totalRevenue = revenueResult.data?.reduce((sum, order) => sum + parseFloat(order.totalAmount), 0) || 0;
+
+    res.json({
+      success: true,
+      data: {
+        overview: {
+          totalUsers: totalUsers.count || 0,
+          totalProducts: totalProducts.count || 0,
+          totalOrders: totalOrders.count || 0,
+          totalCollections: totalCollections.count || 0,
+          totalRevenue
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get public stats error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
 // Apply admin protection to all routes
 router.use(protect, adminOnly);
 
@@ -552,6 +599,90 @@ router.put('/products/bulk/status', async (req, res) => {
     });
   } catch (error) {
     console.error('Bulk update products error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// @desc    Get featured products with order for admin management
+// @route   GET /api/admin/products/featured-order
+// @access  Private/Admin
+router.get('/products/featured-order', async (req, res) => {
+  try {
+    const { data: products, error } = await supabase
+      .from('Product')
+      .select('id, name, images, featured, featuredOrder, status')
+      .eq('featured', true)
+      .eq('status', 'published')
+      .order('featuredOrder', { ascending: true, nullsLast: true })
+      .order('createdAt', { ascending: false });
+
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch featured products'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: products || []
+    });
+  } catch (error) {
+    console.error('Get featured products order error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// @desc    Update featured product order
+// @route   PUT /api/admin/products/featured-order
+// @access  Private/Admin
+router.put('/products/featured-order', async (req, res) => {
+  try {
+    const { productOrders } = req.body; // Array of {id, featuredOrder}
+
+    if (!Array.isArray(productOrders)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Product orders must be an array'
+      });
+    }
+
+    // Update each product's featured order
+    const updatePromises = productOrders.map(({ id, featuredOrder }) =>
+      supabase
+        .from('Product')
+        .update({ 
+          featuredOrder,
+          updatedAt: new Date().toISOString()
+        })
+        .eq('id', id)
+    );
+
+    const results = await Promise.all(updatePromises);
+    const errors = results.filter(result => result.error);
+
+    if (errors.length > 0) {
+      console.error('❌ Some products failed to update:', errors);
+      return res.status(500).json({
+        success: false,
+        message: 'Some products failed to update',
+        errors: errors.map(e => e.error)
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Featured product order updated successfully'
+    });
+  } catch (error) {
+    console.error('Update featured product order error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'

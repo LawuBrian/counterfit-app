@@ -311,6 +311,53 @@ router.delete('/:id', protect, adminOnly, async (req, res) => {
   }
 });
 
+// @desc    Update product featured order (Admin only)
+// @route   PUT /api/products/:id/featured-order
+// @access  Private/Admin
+router.put('/:id/featured-order', protect, adminOnly, async (req, res) => {
+  try {
+    const { featuredOrder } = req.body;
+
+    if (typeof featuredOrder !== 'number' || featuredOrder < 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Featured order must be a positive number'
+      });
+    }
+
+    const { data: product, error } = await supabase
+      .from('Product')
+      .update({ 
+        featuredOrder,
+        updatedAt: new Date().toISOString()
+      })
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to update product featured order',
+        error: error.message
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Product featured order updated successfully',
+      data: product
+    });
+  } catch (error) {
+    console.error('Update product featured order error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
 // @desc    Get related products
 // @route   GET /api/products/:id/related
 // @access  Public
