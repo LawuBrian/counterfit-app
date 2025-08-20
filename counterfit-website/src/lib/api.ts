@@ -196,9 +196,9 @@ export function getImageUrl(imagePath: string): string {
     return imagePath
   }
   
-  // For any other paths (including old /images/ paths), return placeholder
-  console.log('⚠️ Old image path detected, returning placeholder')
-  return 'https://counterfit-backend.onrender.com/uploads/images/placeholder/default-image.png'
+  // For any other paths (including /images/ paths), redirect to backend
+  console.log('🔄 Redirecting image path to backend:', imagePath)
+  return `https://counterfit-backend.onrender.com/uploads${imagePath}`
 }
 
 export function formatPrice(price: number): string {
