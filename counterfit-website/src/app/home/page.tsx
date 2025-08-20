@@ -55,10 +55,7 @@ export default function OriginalHomePage() {
           {/* Brand Story */}
           <div className="max-w-5xl mx-auto mb-16">
             <p className="font-paragraph text-2xl sm:text-3xl text-white/95 mb-8 leading-relaxed font-medium">
-              Built from losses. Worn by winners. Every garment tells a story of resilience and success.
-            </p>
-            <p className="font-paragraph text-xl sm:text-2xl text-white/85 leading-relaxed">
-              Join the movement that redefines what it means to make it out.
+              For the ones that don't fit in
             </p>
           </div>
 
