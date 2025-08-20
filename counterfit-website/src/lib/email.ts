@@ -278,6 +278,7 @@ async function sendViaSendGrid(
       body: JSON.stringify({
         personalizations: [{ to: [{ email: to }] }],
         from: { email: config.fromEmail, name: config.fromName },
+        reply_to: { email: config.fromEmail, name: config.fromName },
         subject,
         content: [{ type: 'text/html', value: html }]
       })

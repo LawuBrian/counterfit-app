@@ -53,6 +53,8 @@ export default function PaymentMethodsPage() {
     expiryYear: '',
     cardType: 'visa'
   })
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     if (status === 'loading') return
@@ -67,28 +69,24 @@ export default function PaymentMethodsPage() {
 
   const fetchPaymentMethods = async () => {
     try {
-      // Mock data for now - replace with actual API call
-      const mockMethods: PaymentMethod[] = [
-        {
-          id: '1',
-          type: 'card',
-          isDefault: true,
-          cardNumber: '**** **** **** 4242',
-          cardholderName: 'John Doe',
-          expiryMonth: '12',
-          expiryYear: '2026',
-          cardType: 'visa'
-        },
-        {
-          id: '2',
-          type: 'paypal',
-          isDefault: false,
-          paypalEmail: 'john.doe@example.com'
+      setError('')
+      setLoading(true)
+      const response = await fetch('/api/users/payment-methods')
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setPaymentMethods(data.paymentMethods || [])
+        } else {
+          setError(data.error || 'Failed to fetch payment methods')
         }
-      ]
-      setPaymentMethods(mockMethods)
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Failed to fetch payment methods')
+      }
     } catch (error) {
       console.error('Error fetching payment methods:', error)
+      setError('Failed to fetch payment methods')
     } finally {
       setLoading(false)
     }
@@ -98,31 +96,51 @@ export default function PaymentMethodsPage() {
     e.preventDefault()
     
     try {
+      setSaving(true)
+      setError('')
+      
+      let response
       if (editingMethod) {
         // Update existing payment method
-        setPaymentMethods(prev => prev.map(method => 
-          method.id === editingMethod.id 
-            ? { ...formData, id: editingMethod.id }
-            : method
-        ))
+        response = await fetch('/api/users/payment-methods', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ id: editingMethod.id, ...formData })
+        })
       } else {
         // Add new payment method
-        const newMethod: PaymentMethod = {
-          ...formData,
-          id: Date.now().toString()
-        }
-        setPaymentMethods(prev => [...prev, newMethod])
+        response = await fetch('/api/users/payment-methods', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(formData)
+        })
       }
-      
-      // Reset form
-      setShowForm(false)
-      setEditingMethod(null)
-      resetForm()
-      
-      alert(editingMethod ? 'Payment method updated!' : 'Payment method added!')
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          // Reset form and refresh payment methods
+          setShowForm(false)
+          setEditingMethod(null)
+          resetForm()
+          await fetchPaymentMethods()
+          alert(editingMethod ? 'Payment method updated!' : 'Payment method added!')
+        } else {
+          setError(data.error || 'Failed to save payment method')
+        }
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Failed to save payment method')
+      }
     } catch (error) {
       console.error('Error saving payment method:', error)
-      alert('Failed to save payment method')
+      setError('Failed to save payment method')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -142,30 +160,67 @@ export default function PaymentMethodsPage() {
     setEditingMethod(method)
     setFormData(method)
     setShowForm(true)
+    setError('')
   }
 
   const handleDelete = async (methodId: string) => {
     if (!confirm('Are you sure you want to delete this payment method?')) return
     
     try {
-      setPaymentMethods(prev => prev.filter(method => method.id !== methodId))
-      alert('Payment method deleted!')
+      setError('')
+      const response = await fetch(`/api/users/payment-methods?id=${methodId}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          await fetchPaymentMethods()
+          alert('Payment method deleted!')
+        } else {
+          setError(data.error || 'Failed to delete payment method')
+        }
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Failed to delete payment method')
+      }
     } catch (error) {
       console.error('Error deleting payment method:', error)
-      alert('Failed to delete payment method')
+      setError('Failed to delete payment method')
     }
   }
 
   const handleSetDefault = async (methodId: string) => {
     try {
-      setPaymentMethods(prev => prev.map(method => ({
+      setError('')
+      // Update all payment methods to set the selected one as default
+      const updatedMethods = paymentMethods.map(method => ({
         ...method,
         isDefault: method.id === methodId
-      })))
+      }))
+
+      // Update each payment method in the backend
+      for (const method of updatedMethods) {
+        if (method.isDefault || method.isDefault !== paymentMethods.find(m => m.id === method.id)?.isDefault) {
+          const response = await fetch('/api/users/payment-methods', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ id: method.id, ...method })
+          })
+
+          if (!response.ok) {
+            throw new Error('Failed to update payment method')
+          }
+        }
+      }
+
+      setPaymentMethods(updatedMethods)
       alert('Default payment method updated!')
     } catch (error) {
       console.error('Error updating default payment method:', error)
-      alert('Failed to update default payment method')
+      setError('Failed to update default payment method')
     }
   }
 
@@ -211,7 +266,12 @@ export default function PaymentMethodsPage() {
                 <p className="text-secondary">Manage your payment options</p>
               </div>
             </div>
-            <Button onClick={() => setShowForm(true)}>
+            <Button onClick={() => {
+              setShowForm(true)
+              setEditingMethod(null)
+              resetForm()
+              setError('')
+            }}>
               <Plus className="mr-2 h-4 w-4" />
               Add Payment Method
             </Button>
@@ -220,6 +280,12 @@ export default function PaymentMethodsPage() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-600 text-sm">{error}</p>
+          </div>
+        )}
+
         {/* Security Notice */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
           <div className="flex items-center">
@@ -243,6 +309,7 @@ export default function PaymentMethodsPage() {
                 setShowForm(false)
                 setEditingMethod(null)
                 resetForm()
+                setError('')
               }}>
                 <X className="h-4 w-4" />
               </Button>
@@ -393,8 +460,8 @@ export default function PaymentMethodsPage() {
               )}
 
               <div className="flex gap-4 pt-4">
-                <Button type="submit" className="flex-1">
-                  {editingMethod ? 'Update Payment Method' : 'Add Payment Method'}
+                <Button type="submit" className="flex-1" disabled={saving}>
+                  {saving ? 'Saving...' : (editingMethod ? 'Update Payment Method' : 'Add Payment Method')}
                 </Button>
                 <Button 
                   type="button" 
@@ -403,6 +470,7 @@ export default function PaymentMethodsPage() {
                     setShowForm(false)
                     setEditingMethod(null)
                     resetForm()
+                    setError('')
                   }}
                 >
                   Cancel
@@ -478,7 +546,7 @@ export default function PaymentMethodsPage() {
           ))}
         </div>
 
-        {paymentMethods.length === 0 && (
+        {paymentMethods.length === 0 && !showForm && (
           <div className="bg-white rounded-xl shadow-sm border p-12 text-center">
             <CreditCard className="mx-auto h-16 w-16 text-gray-400 mb-4" />
             <h3 className="font-heading text-xl font-semibold text-primary mb-2">
@@ -487,7 +555,12 @@ export default function PaymentMethodsPage() {
             <p className="text-secondary mb-6">
               Add a payment method to make checkout faster
             </p>
-            <Button onClick={() => setShowForm(true)}>
+            <Button onClick={() => {
+              setShowForm(true)
+              setEditingMethod(null)
+              resetForm()
+              setError('')
+            }}>
               <Plus className="mr-2 h-4 w-4" />
               Add Payment Method
             </Button>

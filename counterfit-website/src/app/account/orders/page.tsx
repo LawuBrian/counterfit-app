@@ -55,6 +55,7 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     if (status === 'loading') return
@@ -69,6 +70,7 @@ export default function OrdersPage() {
 
   const fetchOrders = async () => {
     try {
+      setError('')
       setLoading(true)
       const response = await fetch('/api/orders', {
         headers: {
@@ -78,12 +80,18 @@ export default function OrdersPage() {
 
       if (response.ok) {
         const data = await response.json()
-        setOrders(data.orders || [])
+        if (data.success) {
+          setOrders(data.orders || [])
+        } else {
+          setError(data.error || 'Failed to fetch orders')
+        }
       } else {
-        console.error('Failed to fetch orders:', response.status)
+        const errorData = await response.json()
+        setError(errorData.error || 'Failed to fetch orders')
       }
     } catch (error) {
       console.error('Failed to fetch orders:', error)
+      setError('Failed to fetch orders')
     } finally {
       setLoading(false)
     }
@@ -178,6 +186,12 @@ export default function OrdersPage() {
             Refresh
           </Button>
         </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-600 text-sm">{error}</p>
+          </div>
+        )}
 
         {orders.length === 0 ? (
           <div className="text-center py-12">

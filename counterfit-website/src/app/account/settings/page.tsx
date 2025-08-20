@@ -95,6 +95,8 @@ export default function SettingsPage() {
     new: false,
     confirm: false
   })
+  const [error, setError] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
 
   useEffect(() => {
     if (status === 'loading') return
@@ -109,35 +111,30 @@ export default function SettingsPage() {
 
   const fetchSettings = async () => {
     try {
-      // Mock data for now - replace with actual API call
-      const mockSettings: UserSettings = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john.doe@example.com',
-        phone: '+27 21 123 4567',
-        dateOfBirth: '1990-01-01',
-        emailNotifications: {
-          orderUpdates: true,
-          promotions: true,
-          newsletter: false,
-          stockAlerts: true
-        },
-        smsNotifications: {
-          orderUpdates: true,
-          deliveryUpdates: true
-        },
-        profileVisibility: 'private',
-        showPurchaseHistory: false,
-        allowDataCollection: true,
-        theme: 'system',
-        language: 'en',
-        currency: 'ZAR',
-        twoFactorEnabled: false,
-        loginAlerts: true
+      setError('')
+      setLoading(true)
+      const response = await fetch('/api/users/settings')
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.settings) {
+          setSettings(data.settings)
+        } else {
+          // Fallback to session data if settings are empty
+          setSettings(prev => ({
+            ...prev,
+            firstName: session?.user?.firstName || '',
+            lastName: session?.user?.lastName || '',
+            email: session?.user?.email || ''
+          }))
+        }
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Failed to fetch settings')
       }
-      setSettings(mockSettings)
     } catch (error) {
       console.error('Error fetching settings:', error)
+      setError('Failed to fetch settings')
     } finally {
       setLoading(false)
     }
@@ -145,13 +142,33 @@ export default function SettingsPage() {
 
   const handleSaveSettings = async () => {
     setSaving(true)
+    setError('')
+    setSuccessMessage('')
+    
     try {
-      // API call to save settings
-      await new Promise(resolve => setTimeout(resolve, 1000)) // Mock delay
-      alert('Settings saved successfully!')
+      const response = await fetch('/api/users/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(settings)
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setSuccessMessage('Settings saved successfully!')
+          setTimeout(() => setSuccessMessage(''), 3000)
+        } else {
+          setError(data.error || 'Failed to save settings')
+        }
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Failed to save settings')
+      }
     } catch (error) {
       console.error('Error saving settings:', error)
-      alert('Failed to save settings')
+      setError('Failed to save settings')
     } finally {
       setSaving(false)
     }
@@ -161,27 +178,50 @@ export default function SettingsPage() {
     e.preventDefault()
     
     if (newPassword !== confirmPassword) {
-      alert('New passwords do not match')
+      setError('New passwords do not match')
       return
     }
     
     if (newPassword.length < 8) {
-      alert('Password must be at least 8 characters long')
+      setError('Password must be at least 8 characters long')
       return
     }
 
     try {
       setSaving(true)
-      // API call to change password
-      await new Promise(resolve => setTimeout(resolve, 1000)) // Mock delay
+      setError('')
+      setSuccessMessage('')
       
-      setCurrentPassword('')
-      setNewPassword('')
-      setConfirmPassword('')
-      alert('Password changed successfully!')
+      const response = await fetch('/api/users/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'change-password',
+          currentPassword,
+          newPassword
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setCurrentPassword('')
+          setNewPassword('')
+          setConfirmPassword('')
+          setSuccessMessage('Password changed successfully!')
+          setTimeout(() => setSuccessMessage(''), 3000)
+        } else {
+          setError(data.error || 'Failed to change password')
+        }
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Failed to change password')
+      }
     } catch (error) {
       console.error('Error changing password:', error)
-      alert('Failed to change password')
+      setError('Failed to change password')
     } finally {
       setSaving(false)
     }
@@ -194,15 +234,34 @@ export default function SettingsPage() {
 
     try {
       setSaving(true)
-      // API call to delete account
-      await new Promise(resolve => setTimeout(resolve, 1000)) // Mock delay
+      setError('')
       
-      // Sign out and redirect
-      alert('Account deleted successfully')
-      router.push('/')
+      const response = await fetch('/api/users/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'delete-account',
+          confirm: true
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          alert('Account deleted successfully')
+          router.push('/')
+        } else {
+          setError(data.error || 'Failed to delete account')
+        }
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Failed to delete account')
+      }
     } catch (error) {
       console.error('Error deleting account:', error)
-      alert('Failed to delete account')
+      setError('Failed to delete account')
     } finally {
       setSaving(false)
     }
@@ -210,30 +269,51 @@ export default function SettingsPage() {
 
   const handleExportData = async () => {
     try {
-      // API call to export user data
-      await new Promise(resolve => setTimeout(resolve, 1000)) // Mock delay
+      setError('')
+      setSuccessMessage('')
       
-      // Create mock data export
-      const exportData = {
-        profile: settings,
-        exportDate: new Date().toISOString(),
-        dataTypes: ['profile', 'orders', 'addresses', 'payment_methods']
+      const response = await fetch('/api/users/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'export-data'
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          // Create data export
+          const exportData = {
+            profile: settings,
+            exportDate: new Date().toISOString(),
+            dataTypes: ['profile', 'orders', 'addresses', 'payment_methods']
+          }
+          
+          const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = `counterfit-data-export-${new Date().toISOString().split('T')[0]}.json`
+          document.body.appendChild(a)
+          a.click()
+          document.body.removeChild(a)
+          URL.revokeObjectURL(url)
+          
+          setSuccessMessage('Data export downloaded successfully!')
+          setTimeout(() => setSuccessMessage(''), 3000)
+        } else {
+          setError(data.error || 'Failed to export data')
+        }
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Failed to export data')
       }
-      
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `counterfit-data-export-${new Date().toISOString().split('T')[0]}.json`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-      
-      alert('Data export downloaded successfully!')
     } catch (error) {
       console.error('Error exporting data:', error)
-      alert('Failed to export data')
+      setError('Failed to export data')
     }
   }
 
@@ -278,6 +358,18 @@ export default function SettingsPage() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        {error && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-600 text-sm">{error}</p>
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-green-600 text-sm">{successMessage}</p>
+          </div>
+        )}
+
         {/* Profile Settings */}
         <div className="bg-white rounded-xl shadow-sm border p-6">
           <h2 className="font-heading text-xl font-semibold text-primary mb-6">
@@ -632,7 +724,7 @@ export default function SettingsPage() {
                 </div>
                 
                 <Button type="submit" disabled={saving}>
-                  Change Password
+                  {saving ? 'Changing Password...' : 'Change Password'}
                 </Button>
               </form>
             </div>
@@ -668,10 +760,11 @@ export default function SettingsPage() {
               <Button 
                 variant="outline" 
                 onClick={handleDeleteAccount}
+                disabled={saving}
                 className="text-red-600 border-red-300 hover:bg-red-50"
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                Delete Account
+                {saving ? 'Deleting...' : 'Delete Account'}
               </Button>
             </div>
           </div>

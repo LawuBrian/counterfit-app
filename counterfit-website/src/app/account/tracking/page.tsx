@@ -66,6 +66,7 @@ function TrackingPageContent() {
   const [selectedOrder, setSelectedOrder] = useState<OrderTracking | null>(null)
   const [trackingLoading, setTrackingLoading] = useState(false)
   const [trackingError, setTrackingError] = useState('')
+  const [error, setError] = useState('')
 
   useEffect(() => {
     if (status === 'loading') return
@@ -92,6 +93,7 @@ function TrackingPageContent() {
 
   const fetchOrders = async () => {
     try {
+      setError('')
       setLoading(true)
       const response = await fetch('/api/orders', {
         headers: {
@@ -101,12 +103,18 @@ function TrackingPageContent() {
 
       if (response.ok) {
         const data = await response.json()
-        setOrders(data.orders || [])
+        if (data.success) {
+          setOrders(data.orders || [])
+        } else {
+          setError(data.error || 'Failed to fetch orders')
+        }
       } else {
-        console.error('Failed to fetch orders:', response.status)
+        const errorData = await response.json()
+        setError(errorData.error || 'Failed to fetch orders')
       }
     } catch (error) {
       console.error('Failed to fetch orders:', error)
+      setError('Failed to fetch orders')
     } finally {
       setLoading(false)
     }
@@ -121,17 +129,21 @@ function TrackingPageContent() {
       
       if (response.ok) {
         const data = await response.json()
-        const tracking = data.tracking
-        
-        // Update the selected order with tracking information
-        if (selectedOrder) {
-          setSelectedOrder(prev => prev ? {
-            ...prev,
-            status: tracking.status,
-            currentLocation: tracking.currentLocation,
-            estimatedDelivery: tracking.estimatedDelivery,
-            trackingUpdates: tracking.updates
-          } : null)
+        if (data.success && data.tracking) {
+          const tracking = data.tracking
+          
+          // Update the selected order with tracking information
+          if (selectedOrder) {
+            setSelectedOrder(prev => prev ? {
+              ...prev,
+              status: tracking.status,
+              currentLocation: tracking.currentLocation,
+              estimatedDelivery: tracking.estimatedDelivery,
+              trackingUpdates: tracking.updates
+            } : null)
+          }
+        } else {
+          setTrackingError(data.error || 'No tracking information available')
         }
       } else {
         const errorData = await response.json()
@@ -231,6 +243,12 @@ function TrackingPageContent() {
           </Link>
           <h1 className="text-3xl font-bold">Order Tracking</h1>
         </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-600 text-sm">{error}</p>
+          </div>
+        )}
 
         {/* Search Bar */}
         <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">

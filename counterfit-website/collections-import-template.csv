@@ -1,7 +1,0 @@
-name,description,image,featured,status,collectionType,basePrice,allowCustomSelection,maxSelections,productCategories
-"Urban Elite Jacket + Pants Combo","Premium jacket and pants combination with customer choice","https://example.com/combo-pants-jacket.jpg",true,"active","combo",1500.00,true,2,"jackets|pants"
-"Skull King Jacket + Cap Combo","Premium jacket and skull cap combination with customer choice","https://example.com/combo-skully-jacket.jpg",true,"active","combo",1100.00,true,2,"jackets|accessories"
-"Dynamic Duo Collection","Premium collection of any two jackets of customer's choice","https://example.com/jacket-duo-collection.jpg",true,"active","duo",1900.00,true,2,"jackets"
-"Polar Twins Collection","Premium collection of any two jackets of customer's choice","https://example.com/white-duo-collection.jpg",true,"active","duo",1900.00,true,2,"jackets"
-"Trinity Elite Collection","Premium collection of any three jackets of customer's choice","https://example.com/trio-collection.jpg",true,"active","trio",2700.00,true,3,"jackets"
-"Wilderness Elite Collection","Pre-curated combination of Nature Camo + Black/White jackets","https://example.com/duo-nature-camo.jpg",true,"active","mixed",1900.00,false,2,"jackets"

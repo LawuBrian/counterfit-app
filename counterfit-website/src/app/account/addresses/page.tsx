@@ -54,6 +54,8 @@ export default function AddressesPage() {
     country: 'South Africa',
     phone: ''
   })
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     if (status === 'loading') return
@@ -68,39 +70,24 @@ export default function AddressesPage() {
 
   const fetchAddresses = async () => {
     try {
-      // Mock data for now - replace with actual API call
-      const mockAddresses: Address[] = [
-        {
-          id: '1',
-          type: 'home',
-          isDefault: true,
-          firstName: 'John',
-          lastName: 'Doe',
-          street: '123 Main Street',
-          apartment: 'Apt 4B',
-          city: 'Cape Town',
-          state: 'Western Cape',
-          postalCode: '8000',
-          country: 'South Africa',
-          phone: '+27 21 123 4567'
-        },
-        {
-          id: '2',
-          type: 'work',
-          isDefault: false,
-          firstName: 'John',
-          lastName: 'Doe',
-          company: 'Tech Company',
-          street: '456 Business Ave',
-          city: 'Cape Town',
-          state: 'Western Cape',
-          postalCode: '8001',
-          country: 'South Africa'
+      setError('')
+      setLoading(true)
+      const response = await fetch('/api/users/addresses')
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setAddresses(data.addresses || [])
+        } else {
+          setError(data.error || 'Failed to fetch addresses')
         }
-      ]
-      setAddresses(mockAddresses)
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Failed to fetch addresses')
+      }
     } catch (error) {
       console.error('Error fetching addresses:', error)
+      setError('Failed to fetch addresses')
     } finally {
       setLoading(false)
     }
@@ -110,75 +97,136 @@ export default function AddressesPage() {
     e.preventDefault()
     
     try {
+      setSaving(true)
+      setError('')
+      
+      let response
       if (editingAddress) {
         // Update existing address
-        setAddresses(prev => prev.map(addr => 
-          addr.id === editingAddress.id 
-            ? { ...formData, id: editingAddress.id }
-            : addr
-        ))
+        response = await fetch('/api/users/addresses', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ id: editingAddress.id, ...formData })
+        })
       } else {
         // Add new address
-        const newAddress: Address = {
-          ...formData,
-          id: Date.now().toString()
-        }
-        setAddresses(prev => [...prev, newAddress])
+        response = await fetch('/api/users/addresses', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(formData)
+        })
       }
-      
-      // Reset form
-      setShowForm(false)
-      setEditingAddress(null)
-      setFormData({
-        type: 'home',
-        isDefault: false,
-        firstName: '',
-        lastName: '',
-        company: '',
-        street: '',
-        apartment: '',
-        city: '',
-        state: '',
-        postalCode: '',
-        country: 'South Africa',
-        phone: ''
-      })
-      
-      alert(editingAddress ? 'Address updated!' : 'Address added!')
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          // Reset form and refresh addresses
+          setShowForm(false)
+          setEditingAddress(null)
+          resetForm()
+          await fetchAddresses()
+          alert(editingAddress ? 'Address updated!' : 'Address added!')
+        } else {
+          setError(data.error || 'Failed to save address')
+        }
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Failed to save address')
+      }
     } catch (error) {
       console.error('Error saving address:', error)
-      alert('Failed to save address')
+      setError('Failed to save address')
+    } finally {
+      setSaving(false)
     }
+  }
+
+  const resetForm = () => {
+    setFormData({
+      type: 'home',
+      isDefault: false,
+      firstName: '',
+      lastName: '',
+      company: '',
+      street: '',
+      apartment: '',
+      city: '',
+      state: '',
+      postalCode: '',
+      country: 'South Africa',
+      phone: ''
+    })
   }
 
   const handleEdit = (address: Address) => {
     setEditingAddress(address)
     setFormData(address)
     setShowForm(true)
+    setError('')
   }
 
   const handleDelete = async (addressId: string) => {
     if (!confirm('Are you sure you want to delete this address?')) return
     
     try {
-      setAddresses(prev => prev.filter(addr => addr.id !== addressId))
-      alert('Address deleted!')
+      setError('')
+      const response = await fetch(`/api/users/addresses?id=${addressId}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          await fetchAddresses()
+          alert('Address deleted!')
+        } else {
+          setError(data.error || 'Failed to delete address')
+        }
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Failed to delete address')
+      }
     } catch (error) {
       console.error('Error deleting address:', error)
-      alert('Failed to delete address')
+      setError('Failed to delete address')
     }
   }
 
   const handleSetDefault = async (addressId: string) => {
     try {
-      setAddresses(prev => prev.map(addr => ({
+      setError('')
+      // Update all addresses to set the selected one as default
+      const updatedAddresses = addresses.map(addr => ({
         ...addr,
         isDefault: addr.id === addressId
-      })))
+      }))
+
+      // Update each address in the backend
+      for (const address of updatedAddresses) {
+        if (address.isDefault || address.isDefault !== addresses.find(a => a.id === address.id)?.isDefault) {
+          const response = await fetch('/api/users/addresses', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ id: address.id, ...address })
+          })
+
+          if (!response.ok) {
+            throw new Error('Failed to update address')
+          }
+        }
+      }
+
+      setAddresses(updatedAddresses)
       alert('Default address updated!')
     } catch (error) {
       console.error('Error updating default address:', error)
-      alert('Failed to update default address')
+      setError('Failed to update default address')
     }
   }
 
@@ -225,7 +273,12 @@ export default function AddressesPage() {
                 <p className="text-secondary">Manage your shipping addresses</p>
               </div>
             </div>
-            <Button onClick={() => setShowForm(true)}>
+            <Button onClick={() => {
+              setShowForm(true)
+              setEditingAddress(null)
+              resetForm()
+              setError('')
+            }}>
               <Plus className="mr-2 h-4 w-4" />
               Add Address
             </Button>
@@ -234,6 +287,12 @@ export default function AddressesPage() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-600 text-sm">{error}</p>
+          </div>
+        )}
+
         {showForm && (
           <div className="bg-white rounded-xl shadow-sm border p-6 mb-8">
             <div className="flex items-center justify-between mb-6">
@@ -243,6 +302,8 @@ export default function AddressesPage() {
               <Button variant="outline" onClick={() => {
                 setShowForm(false)
                 setEditingAddress(null)
+                resetForm()
+                setError('')
               }}>
                 <X className="h-4 w-4" />
               </Button>
@@ -417,8 +478,8 @@ export default function AddressesPage() {
               </div>
 
               <div className="flex gap-4 pt-4">
-                <Button type="submit" className="flex-1">
-                  {editingAddress ? 'Update Address' : 'Save Address'}
+                <Button type="submit" className="flex-1" disabled={saving}>
+                  {saving ? 'Saving...' : (editingAddress ? 'Update Address' : 'Save Address')}
                 </Button>
                 <Button 
                   type="button" 
@@ -426,6 +487,8 @@ export default function AddressesPage() {
                   onClick={() => {
                     setShowForm(false)
                     setEditingAddress(null)
+                    resetForm()
+                    setError('')
                   }}
                 >
                   Cancel
@@ -506,7 +569,7 @@ export default function AddressesPage() {
           ))}
         </div>
 
-        {addresses.length === 0 && (
+        {addresses.length === 0 && !showForm && (
           <div className="bg-white rounded-xl shadow-sm border p-12 text-center">
             <MapPin className="mx-auto h-16 w-16 text-gray-400 mb-4" />
             <h3 className="font-heading text-xl font-semibold text-primary mb-2">
@@ -515,7 +578,12 @@ export default function AddressesPage() {
             <p className="text-secondary mb-6">
               Add your first address to make checkout faster
             </p>
-            <Button onClick={() => setShowForm(true)}>
+            <Button onClick={() => {
+              setShowForm(true)
+              setEditingAddress(null)
+              resetForm()
+              setError('')
+            }}>
               <Plus className="mr-2 h-4 w-4" />
               Add Address
             </Button>

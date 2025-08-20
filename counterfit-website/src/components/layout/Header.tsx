@@ -66,7 +66,7 @@ export default function Header() {
     return `${baseClasses} ${activeClasses}`
   }
 
-  // Function to handle restricted navigation clicks
+  // Function to handle restricted navigation clicks (only for Collections)
   const handleRestrictedClick = (e: React.MouseEvent, section: string) => {
     e.preventDefault()
     alert(`🔒 ${section} is currently under development. Sign up for early access to be notified when it launches!`)
@@ -111,67 +111,36 @@ export default function Header() {
               Home
             </Link>
             
-            {isAdmin ? (
-              // Admin sees full navigation
-              <>
-                <Link href="/shop" className={getLinkClasses('/shop')}>
-                  Shop
-                </Link>
-                <Link href="/collections" className={getLinkClasses('/collections')}>
-                  Collections
-                </Link>
-                <Link href="/about" className={getLinkClasses('/about')}>
-                  About
-                </Link>
-                <Link href="/contact" className={getLinkClasses('/contact')}>
-                  Contact
-                </Link>
-              </>
-            ) : (
-              // Regular users see restricted navigation with lock icons
-              <>
-                <button 
-                  onClick={(e) => handleRestrictedClick(e, 'Shop')}
-                  className="flex items-center gap-2 font-paragraph text-sm font-medium text-secondary/60 cursor-not-allowed"
-                >
-                  <Lock className="h-4 w-4" />
-                  Shop
-                </button>
-                <button 
-                  onClick={(e) => handleRestrictedClick(e, 'Collections')}
-                  className="flex items-center gap-2 font-paragraph text-sm font-medium text-secondary/60 cursor-not-allowed"
-                >
-                  <Lock className="h-4 w-4" />
-                  Collections
-                </button>
-                <button 
-                  onClick={(e) => handleRestrictedClick(e, 'About')}
-                  className="flex items-center gap-2 font-paragraph text-sm font-medium text-secondary/60 cursor-not-allowed"
-                >
-                  <Lock className="h-4 w-4" />
-                  About
-                </button>
-                <button 
-                  onClick={(e) => handleRestrictedClick(e, 'Contact')}
-                  className="flex items-center gap-2 font-paragraph text-sm font-medium text-secondary/60 cursor-not-allowed"
-                >
-                  <Lock className="h-4 w-4" />
-                  Contact
-                </button>
-              </>
-            )}
+            {/* Shop - Available to all users */}
+            <Link href="/shop" className={getLinkClasses('/shop')}>
+              Shop
+            </Link>
+            
+            {/* Collections - Available to all users */}
+            <Link href="/collections" className={getLinkClasses('/collections')}>
+              Collections
+            </Link>
+            
+            {/* About - Available to all users */}
+            <Link href="/about" className={getLinkClasses('/about')}>
+              About
+            </Link>
+            
+            {/* Contact - Available to all users */}
+            <Link href="/contact" className={getLinkClasses('/contact')}>
+              Contact
+            </Link>
           </nav>
 
           {/* Right Side Actions */}
           <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4">
-            {isAdmin && (
-              <button 
-                className="p-1.5 lg:p-2 text-secondary hover:text-primary transition-colors"
-                onClick={toggleSearch}
-              >
-                <Search className="h-4 w-4 lg:h-5 lg:w-5" />
-              </button>
-            )}
+            {/* Search - Available to all users */}
+            <button 
+              className="p-1.5 lg:p-2 text-secondary hover:text-primary transition-colors"
+              onClick={toggleSearch}
+            >
+              <Search className="h-4 w-4 lg:h-5 lg:w-5" />
+            </button>
             
             {session ? (
               <div className="relative group">
@@ -213,29 +182,19 @@ export default function Header() {
               </Button>
             )}
             
-            {isAdmin ? (
-              <Link href="/cart" className="p-1.5 lg:p-2 text-secondary hover:text-primary transition-colors relative">
-                <ShoppingBag className="h-4 w-4 lg:h-5 lg:w-5" />
-                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  {getTotalItems()}
-                </span>
-              </Link>
-            ) : (
-              <button 
-                onClick={(e) => handleRestrictedClick(e, 'Cart')}
-                className="p-1.5 lg:p-2 text-secondary/60 cursor-not-allowed relative"
-                title="Cart coming soon - sign up for early access!"
-              >
-                <ShoppingBag className="h-4 w-4 lg:h-5 lg:w-5" />
-                <Lock className="absolute -top-1 -right-1 h-4 w-4 text-secondary/60" />
-              </button>
-            )}
+            {/* Cart - Available to all users */}
+            <Link href="/cart" className="p-1.5 lg:p-2 text-secondary hover:text-primary transition-colors relative">
+              <ShoppingBag className="h-4 w-4 lg:h-5 lg:w-5" />
+              <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {getTotalItems()}
+              </span>
+            </Link>
           </div>
         </div>
       </div>
 
-      {/* Search Overlay - Only show for admins */}
-      {isSearchOpen && isAdmin && (
+      {/* Search Overlay - Available to all users */}
+      {isSearchOpen && (
         <div className="absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-lg">
           <div className="max-w-screen-2xl mx-auto px-6 lg:px-8 py-4">
             <div className="flex items-center gap-4">
@@ -298,93 +257,53 @@ export default function Header() {
                   Home
                 </Link>
                 
-                {isAdmin ? (
-                  // Admin sees full mobile navigation
-                  <>
-                    <Link 
-                      href="/shop" 
-                      className={getMobileLinkClasses('/shop')}
-                      onClick={toggleMobileMenu}
-                    >
-                      Shop
-                    </Link>
-                    <Link 
-                      href="/collections" 
-                      className={getMobileLinkClasses('/collections')}
-                      onClick={toggleMobileMenu}
-                    >
-                      Collections
-                    </Link>
-                    <Link 
-                      href="/about" 
-                      className={getMobileLinkClasses('/about')}
-                      onClick={toggleMobileMenu}
-                    >
-                      About
-                    </Link>
-                    <Link 
-                      href="/contact" 
-                      className={getMobileLinkClasses('/contact')}
-                      onClick={toggleMobileMenu}
-                    >
-                      Contact
-                    </Link>
-                  </>
-                ) : (
-                  // Regular users see restricted mobile navigation
-                  <>
-                    <button 
-                      onClick={(e) => {
-                        handleRestrictedClick(e, 'Shop')
-                        toggleMobileMenu()
-                      }}
-                      className="flex items-center gap-2 font-paragraph text-lg font-medium text-secondary/60 cursor-not-allowed w-full text-left"
-                    >
-                      <Lock className="h-5 w-5" />
-                      Shop
-                    </button>
-                    <button 
-                      onClick={(e) => {
-                        handleRestrictedClick(e, 'Collections')
-                        toggleMobileMenu()
-                      }}
-                      className="flex items-center gap-2 font-paragraph text-lg font-medium text-secondary/60 cursor-not-allowed w-full text-left"
-                    >
-                      <Lock className="h-5 w-5" />
-                      Collections
-                    </button>
-                    <button 
-                      onClick={(e) => {
-                        handleRestrictedClick(e, 'About')
-                        toggleMobileMenu()
-                      }}
-                      className="flex items-center gap-2 font-paragraph text-lg font-medium text-secondary/60 cursor-not-allowed w-full text-left"
-                    >
-                      <Lock className="h-5 w-5" />
-                      About
-                    </button>
-                    <button 
-                      onClick={(e) => {
-                        handleRestrictedClick(e, 'Contact')
-                        toggleMobileMenu()
-                      }}
-                      className="flex items-center gap-2 font-paragraph text-lg font-medium text-secondary/60 cursor-not-allowed w-full text-left"
-                    >
-                      <Lock className="h-5 w-5" />
-                      Contact
-                    </button>
-                  </>
-                )}
+                {/* Shop - Available to all users */}
+                <Link 
+                  href="/shop" 
+                  className={getMobileLinkClasses('/shop')}
+                  onClick={toggleMobileMenu}
+                >
+                  Shop
+                </Link>
+                
+                {/* Collections - Available to all users */}
+                <Link 
+                  href="/collections" 
+                  className={getMobileLinkClasses('/collections')}
+                  onClick={toggleMobileMenu}
+                >
+                  Collections
+                </Link>
+                
+                {/* About - Available to all users */}
+                <Link 
+                  href="/about" 
+                  className={getMobileLinkClasses('/about')}
+                  onClick={toggleMobileMenu}
+                >
+                  About
+                </Link>
+                
+                {/* Contact - Available to all users */}
+                <Link 
+                  href="/contact" 
+                  className={getMobileLinkClasses('/contact')}
+                  onClick={toggleMobileMenu}
+                >
+                  Contact
+                </Link>
               </div>
               
               <div className="mt-8 pt-8 border-t border-gray-200">
-                {isAdmin ? (
-                  // Admin sees full mobile actions
+                {session ? (
+                  // Logged in users see account actions
                   <>
-                    <Button className="w-full mb-4" onClick={toggleMobileMenu}>
-                      <User className="h-5 w-5 mr-2" />
-                      Sign In
-                    </Button>
+                    <Link href="/account" className="block w-full mb-4" onClick={toggleMobileMenu}>
+                      <Button className="w-full">
+                        <User className="h-5 w-5 mr-2" />
+                        My Account
+                      </Button>
+                    </Link>
                     <div className="flex items-center justify-center">
                       <Link href="/cart" className="flex items-center gap-2 text-primary" onClick={toggleMobileMenu}>
                         <ShoppingBag className="h-5 w-5" />
@@ -393,7 +312,7 @@ export default function Header() {
                     </div>
                   </>
                 ) : (
-                  // Regular users see signup-focused mobile actions
+                  // Non-logged in users see signup-focused actions
                   <div className="text-center">
                     <p className="text-sm text-secondary mb-4">
                       Sign up for early access to unlock all features!

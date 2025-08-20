@@ -39,6 +39,7 @@ interface UserProfile {
 
 interface RecentOrder {
   id: string
+  orderNumber: string
   date: string
   total: number
   status: string
@@ -66,6 +67,7 @@ export default function AccountPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([])
+  const [error, setError] = useState('')
 
   useEffect(() => {
     if (status === 'loading') return
@@ -81,23 +83,37 @@ export default function AccountPage() {
 
   const fetchUserProfile = async () => {
     try {
-      // For now, use session data and localStorage for additional info
-      setProfile({
-        firstName: session?.user?.firstName || '',
-        lastName: session?.user?.lastName || '',
-        email: session?.user?.email || '',
-        phone: localStorage.getItem('userPhone') || '',
-        address: {
-          street: localStorage.getItem('userStreet') || '',
-          city: localStorage.getItem('userCity') || '',
-          state: localStorage.getItem('userState') || '',
-          postalCode: localStorage.getItem('userPostalCode') || '',
-          country: localStorage.getItem('userCountry') || 'South Africa'
-        },
-        dateJoined: new Date().toISOString() // Default to current date since createdAt not available in session
-      })
+      setError('')
+      const response = await fetch('/api/users/profile')
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.profile) {
+          setProfile(data.profile)
+        } else {
+          // Fallback to session data if profile is empty
+          setProfile({
+            firstName: session?.user?.firstName || '',
+            lastName: session?.user?.lastName || '',
+            email: session?.user?.email || '',
+            phone: '',
+            address: {
+              street: '',
+              city: '',
+              state: '',
+              postalCode: '',
+              country: 'South Africa'
+            },
+            dateJoined: new Date().toISOString()
+          })
+        }
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Failed to fetch profile')
+      }
     } catch (error) {
       console.error('Error fetching profile:', error)
+      setError('Failed to fetch profile')
     } finally {
       setLoading(false)
     }
@@ -105,44 +121,63 @@ export default function AccountPage() {
 
   const fetchRecentOrders = async () => {
     try {
-      // Mock data for now - replace with actual API call
-      setRecentOrders([
-        {
-          id: 'ORD-001',
-          date: '2024-01-15',
-          total: 2500,
-          status: 'Delivered',
-          items: 2
-        },
-        {
-          id: 'ORD-002', 
-          date: '2024-01-10',
-          total: 1800,
-          status: 'Processing',
-          items: 1
+      const response = await fetch('/api/orders')
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.orders) {
+          // Get only the 3 most recent orders
+          const recent = data.orders
+            .slice(0, 3)
+            .map((order: any) => ({
+              id: order.id,
+              orderNumber: order.orderNumber || order.id,
+              date: order.createdAt || order.date,
+              total: order.totalAmount || order.total,
+              status: order.status,
+              items: order.items?.length || 0
+            }))
+          setRecentOrders(recent)
+        } else {
+          setRecentOrders([])
         }
-      ])
+      } else {
+        setRecentOrders([])
+      }
     } catch (error) {
       console.error('Error fetching orders:', error)
+      setRecentOrders([])
     }
   }
 
   const handleSave = async () => {
     setSaving(true)
     try {
-      // Save to localStorage for now - replace with actual API call
-      localStorage.setItem('userPhone', profile.phone)
-      localStorage.setItem('userStreet', profile.address.street)
-      localStorage.setItem('userCity', profile.address.city)
-      localStorage.setItem('userState', profile.address.state)
-      localStorage.setItem('userPostalCode', profile.address.postalCode)
-      localStorage.setItem('userCountry', profile.address.country)
-      
-      setIsEditing(false)
-      alert('Profile updated successfully!')
+      const response = await fetch('/api/users/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(profile)
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setIsEditing(false)
+          setError('')
+          // Show success message
+          alert('Profile updated successfully!')
+        } else {
+          setError(data.error || 'Failed to update profile')
+        }
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Failed to update profile')
+      }
     } catch (error) {
       console.error('Error saving profile:', error)
-      alert('Failed to save profile')
+      setError('Failed to save profile')
     } finally {
       setSaving(false)
     }
@@ -151,6 +186,7 @@ export default function AccountPage() {
   const handleCancel = () => {
     setIsEditing(false)
     fetchUserProfile() // Reset to original values
+    setError('')
   }
 
   const handleSignOut = () => {
@@ -190,6 +226,12 @@ export default function AccountPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-600 text-sm">{error}</p>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Sidebar Navigation */}
           <div className="lg:col-span-1">
@@ -469,7 +511,7 @@ export default function AccountPage() {
                 <div className="mt-8 pt-6 border-t border-gray-200">
                   <h3 className="font-heading text-lg font-medium text-primary mb-4">Account Information</h3>
                   <div className="flex items-center text-sm text-secondary">
-                    <span>Member since: {new Date(profile.dateJoined).toLocaleDateString()}</span>
+                    <span>Member since: {profile.dateJoined ? new Date(profile.dateJoined).toLocaleDateString() : 'Recently'}</span>
                   </div>
                 </div>
               </div>
@@ -500,7 +542,7 @@ export default function AccountPage() {
                             <ShoppingBag className="w-6 h-6 text-primary" />
                           </div>
                           <div>
-                            <p className="font-medium text-primary">Order {order.id}</p>
+                            <p className="font-medium text-primary">Order {order.orderNumber}</p>
                             <p className="text-sm text-secondary">
                               {new Date(order.date).toLocaleDateString()} • {order.items} item{order.items > 1 ? 's' : ''}
                             </p>
@@ -509,11 +551,12 @@ export default function AccountPage() {
                         <div className="text-right">
                           <p className="font-medium text-primary">R{order.total.toLocaleString()}</p>
                           <p className={`text-sm ${
-                            order.status === 'Delivered' ? 'text-green-600' :
-                            order.status === 'Processing' ? 'text-yellow-600' :
+                            order.status === 'delivered' ? 'text-green-600' :
+                            order.status === 'processing' ? 'text-yellow-600' :
+                            order.status === 'shipped' ? 'text-blue-600' :
                             'text-gray-600'
                           }`}>
-                            {order.status}
+                            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                           </p>
                         </div>
                       </div>

@@ -58,10 +58,10 @@ export interface FastwayShipment {
   status: string
 }
 
-// Fastway API Configuration - Updated to v3
+// Fastway API Configuration - Updated to match env config
 export const FASTWAY_CONFIG: FastwayConfig = {
   apiKey: process.env.FASTWAY_API_KEY || '716180395a51ca35608ca88bee56492e',
-  baseUrl: process.env.FASTWAY_BASE_URL || 'https://api.fastway.co.za/v3',
+  baseUrl: process.env.FASTWAY_BASE_URL || 'https://api.fastway.co.za',
   environment: (process.env.FASTWAY_ENVIRONMENT as 'test' | 'live') || 'test'
 }
 
@@ -75,10 +75,10 @@ export async function getShippingRates(
   packageDimensions: { length: number; width: number; height: number }
 ): Promise<ShippingRate[]> {
   try {
-    console.log('🚚 Getting Fastway v3 shipping rates for:', destinationPostalCode)
+    console.log('🚚 Getting Fastway shipping rates for:', destinationPostalCode)
     
-    // Try v3 endpoint first, fallback to v1 if needed
-    let response = await fetch(`${FASTWAY_CONFIG.baseUrl}/rates`, {
+    // Use the base URL directly without version
+    const response = await fetch(`${FASTWAY_CONFIG.baseUrl}/rates`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${FASTWAY_CONFIG.apiKey}`,
@@ -94,28 +94,6 @@ export async function getShippingRates(
         service_type: 'parcel'
       })
     })
-
-    // If v3 fails, try v1 as fallback
-    if (!response.ok && response.status === 404) {
-      console.log('⚠️ v3 endpoint not found, trying v1...')
-      const v1Url = FASTWAY_CONFIG.baseUrl.replace('/v3', '/v1')
-      response = await fetch(`${v1Url}/rates`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${FASTWAY_CONFIG.apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          origin: '8001',
-          destination: destinationPostalCode,
-          weight: packageWeight,
-          length: packageDimensions.length,
-          width: packageDimensions.width,
-          height: packageDimensions.height,
-          service_type: 'parcel'
-        })
-      })
-    }
 
     if (!response.ok) {
       throw new Error(`Fastway API error: ${response.status} ${response.statusText}`)

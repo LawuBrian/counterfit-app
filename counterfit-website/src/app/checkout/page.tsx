@@ -554,7 +554,7 @@ export default function CheckoutPage() {
             {/* Checkout Button */}
             <Button
               onClick={handleCheckout}
-              disabled={loading}
+              disabled={loading || !selectedShippingRate || shippingLoading}
               className="w-full h-12 text-lg"
             >
               {loading ? (
@@ -562,7 +562,10 @@ export default function CheckoutPage() {
               ) : (
                 <CreditCard className="h-5 w-5 mr-2" />
               )}
-              {loading ? 'Processing...' : `Pay R${calculateTotal().toFixed(2)}`}
+              {loading ? 'Processing...' : 
+               !selectedShippingRate ? 'Select Shipping Method' :
+               shippingLoading ? 'Loading Shipping Rates...' :
+               `Pay R${calculateTotal().toFixed(2)}`}
             </Button>
 
             {/* Security Notice */}

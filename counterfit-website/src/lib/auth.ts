@@ -1,6 +1,5 @@
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
-import GoogleProvider from "next-auth/providers/google"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://counterfit-backend.onrender.com'
 
@@ -8,10 +7,6 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === 'development',
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
     CredentialsProvider({
       id: "credentials",
       name: "credentials",
@@ -74,44 +69,6 @@ export const authOptions: NextAuthOptions = {
     })
   ],
   callbacks: {
-    async signIn({ user, account, profile }) {
-      // Handle Google sign-in
-      if (account?.provider === 'google') {
-        try {
-          // Check if user exists in your backend
-          const response = await fetch(`${BACKEND_URL}/api/auth/google`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              email: user.email,
-              name: user.name,
-              image: user.image,
-              googleId: profile?.sub
-            })
-          })
-
-          if (response.ok) {
-            const data = await response.json()
-            // Update user object with backend data
-            user.id = data.user.id
-            user.role = data.user.role
-            user.firstName = data.user.firstName
-            user.lastName = data.user.lastName
-            user.accessToken = data.token
-            return true
-          } else {
-            console.error('❌ Google auth failed with backend')
-            return false
-          }
-        } catch (error) {
-          console.error('❌ Google auth error:', error)
-          return false
-        }
-      }
-      return true
-    },
     async jwt({ token, user, account }) {
       if (user) {
         token.role = user.role
