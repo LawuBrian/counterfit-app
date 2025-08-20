@@ -186,8 +186,10 @@ export function getImageUrl(imagePath: string): string {
   
   // If path starts with http/https, it's already a full URL (backend URLs)
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-    console.log('🌐 Backend URL detected, returning as-is')
-    return imagePath
+    console.log('🌐 Backend URL detected, adding cache-busting parameter')
+    // Add cache-busting parameter to prevent CDN caching issues
+    const separator = imagePath.includes('?') ? '&' : '?'
+    return `${imagePath}${separator}v=${Date.now()}`
   }
   
   // If path starts with /resources/, serve from Next.js public folder (keep for resources)
@@ -198,7 +200,9 @@ export function getImageUrl(imagePath: string): string {
   
   // For any other paths (including /images/ paths), redirect to backend
   console.log('🔄 Redirecting image path to backend:', imagePath)
-  return `https://counterfit-backend.onrender.com/uploads${imagePath}`
+  const backendUrl = `https://counterfit-backend.onrender.com/uploads${imagePath}`
+  // Add cache-busting parameter to prevent CDN caching issues
+  return `${backendUrl}?v=${Date.now()}`
 }
 
 export function formatPrice(price: number): string {
