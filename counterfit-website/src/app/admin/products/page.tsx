@@ -113,12 +113,12 @@ export default function AdminProductsPage() {
       if (response.ok) {
         const data = await response.json()
         console.log('🔍 Products API response:', data)
-        console.log('🔍 Products array:', data.data)
-                 if (data.data && data.data.length > 0) {
-           console.log('🔍 First product structure:', data.data[0])
-           console.log('🔍 Product ID field:', data.data[0].id || data.data[0]._id)
+        console.log('🔍 Products array:', data.products)
+                 if (data.products && data.products.length > 0) {
+           console.log('🔍 First product structure:', data.products[0])
+           console.log('🔍 Product ID field:', data.products[0].id || data.products[0]._id)
          }
-        setProducts(data.data)
+        setProducts(data.products || [])
         setTotalPages(data.pagination.pages)
       } else {
         console.error('Failed to fetch products')

@@ -87,11 +87,11 @@ export const emailTemplates = {
               <p><strong>Order Date:</strong> ${new Date().toLocaleDateString()}</p>
               
               <h3>Items Ordered:</h3>
-              ${data.items.map(item => `
+              ${(data.items || []).map(item => `
                 <div class="item">
-                  <strong>${item.name}</strong><br>
-                  Size: ${item.size}${item.color ? ` | Color: ${item.color}` : ''}<br>
-                  Quantity: ${item.quantity} | Price: R${item.price}
+                  <strong>${item.name || 'Unknown Item'}</strong><br>
+                  Size: ${item.size || 'N/A'}${item.color ? ` | Color: ${item.color}` : ''}<br>
+                  Quantity: ${item.quantity || 1} | Price: R${item.price || 0}
                 </div>
               `).join('')}
               
@@ -103,10 +103,10 @@ export const emailTemplates = {
             <div class="order-details">
               <h3>Shipping Address</h3>
               <p>
-                ${data.shippingAddress.firstName} ${data.shippingAddress.lastName}<br>
-                ${data.shippingAddress.address}<br>
-                ${data.shippingAddress.city}, ${data.shippingAddress.state} ${data.shippingAddress.postalCode}<br>
-                ${data.shippingAddress.country}
+                ${data.shippingAddress?.firstName || 'N/A'} ${data.shippingAddress?.lastName || 'N/A'}<br>
+                ${data.shippingAddress?.address || 'N/A'}<br>
+                ${data.shippingAddress?.city || 'N/A'}, ${data.shippingAddress?.state || 'N/A'} ${data.shippingAddress?.postalCode || 'N/A'}<br>
+                ${data.shippingAddress?.country || 'N/A'}
               </p>
             </div>
             
@@ -213,10 +213,10 @@ export const emailTemplates = {
             <div class="order-details">
               <h3>Shipping Address</h3>
               <p>
-                ${data.shippingAddress.firstName} ${data.shippingAddress.lastName}<br>
-                ${data.shippingAddress.address}<br>
-                ${data.shippingAddress.city}, ${data.shippingAddress.state} ${data.shippingAddress.postalCode}<br>
-                ${data.shippingAddress.country}
+                ${data.shippingAddress?.firstName || 'N/A'} ${data.shippingAddress?.lastName || 'N/A'}<br>
+                ${data.shippingAddress?.address || 'N/A'}<br>
+                ${data.shippingAddress?.city || 'N/A'}, ${data.shippingAddress?.state || 'N/A'} ${data.shippingAddress?.postalCode || 'N/A'}<br>
+                ${data.shippingAddress?.country || 'N/A'}
               </p>
             </div>
             

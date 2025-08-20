@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { Button } from '@/components/ui/button'
 import { 
   ArrowLeft,
@@ -54,7 +54,7 @@ interface OrderTracking {
   currentLocation?: string
 }
 
-export default function TrackingPage() {
+function TrackingPageContent() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -434,5 +434,13 @@ export default function TrackingPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function TrackingPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <TrackingPageContent />
+    </Suspense>
   )
 }

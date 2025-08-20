@@ -173,6 +173,11 @@ model Order {
   shipping      Decimal     @db.Decimal(10, 2)
   paymentStatus PaymentStatus @default(PENDING)
   paymentId     String?
+  trackingNumber String?    // Unique tracking number
+  carrier       String?     // Shipping carrier
+  estimatedDelivery DateTime? // Estimated delivery date
+  notes         String?     // Order notes
+  paymentMethod String?     // Payment method used
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 

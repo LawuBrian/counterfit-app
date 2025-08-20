@@ -211,7 +211,6 @@ app.use('/api/collections', require('./routes/collections'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/upload', require('./routes/upload'));
-app.use('/api', require('./routes/health'));
 app.use('/api/test', require('./routes/test'));
 
 // Serve uploaded images from the uploads directory with optimization

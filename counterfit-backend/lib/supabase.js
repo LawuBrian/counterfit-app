@@ -1,5 +1,8 @@
 const { createClient } = require('@supabase/supabase-js')
 
+// Ensure environment variables are loaded
+require('dotenv').config()
+
 // Get Supabase credentials from environment variables
 const supabaseUrl = process.env.SUPABASE_URL || 'https://ohrayboywmcsqkirqrty.supabase.co'
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY

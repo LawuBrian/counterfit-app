@@ -11,12 +11,18 @@
     "db:studio": "npx prisma studio",
     "db:push": "npx prisma db push",
     "db:generate": "npx prisma generate",
-    "check:env": "node scripts/check-env.js"
+    "check:env": "node scripts/check-env.js",
+    "test:orders": "node scripts/test-supabase-orders.js",
+    "test:create-order": "node scripts/test-create-order.js",
+    "test:backend": "node scripts/test-backend-connection.js",
+    "debug:admin": "node scripts/debug-admin-session.js"
   },
   "dependencies": {
+    "@auth/core": "^0.34.2",
     "@auth/prisma-adapter": "^2.10.0",
     "@prisma/client": "^6.14.0",
     "@radix-ui/react-slot": "^1.0.2",
+    "@sendgrid/mail": "^8.1.5",
     "@stripe/stripe-js": "^7.8.0",
     "@supabase/supabase-js": "^2.39.0",
     "autoprefixer": "^10.4.21",

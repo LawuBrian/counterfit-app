@@ -87,39 +87,117 @@ export async function POST(request: NextRequest) {
     console.log('🌐 Calling backend API:', `${BACKEND_URL}/api/orders`)
     console.log('🔑 Authorization header:', `Bearer ${session.user.accessToken ? 'TOKEN_PRESENT' : 'NO_TOKEN'}`)
 
-    // Create order in backend
-    const response = await fetch(`${BACKEND_URL}/api/orders`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.user.accessToken}`
-      },
-      body: JSON.stringify(orderData)
-    })
+    // Try to create order in backend first, fallback to Supabase
+    let order
+    let orderSource = 'backend'
+    
+    try {
+      console.log('🌐 Trying to create order in backend...')
+      const response = await fetch(`${BACKEND_URL}/api/orders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.user.accessToken}`
+        },
+        body: JSON.stringify(orderData)
+      })
 
-    console.log('📥 Backend response status:', response.status, response.statusText)
+      if (response.ok) {
+        const backendOrder = await response.json()
+        order = backendOrder.data || backendOrder.order || backendOrder
+        console.log('✅ Order created in backend:', JSON.stringify(order, null, 2))
+      } else {
+        throw new Error(`Backend error: ${response.status}`)
+      }
+    } catch (backendError) {
+      console.warn('⚠️ Backend failed, creating order directly in Supabase:', backendError)
+      
+      // Fallback to Supabase
+      try {
+        const { supabase } = await import('@/lib/supabase')
+        
+        // Create order in Supabase
+        const { data: supabaseOrder, error } = await supabase
+          .from('Order')
+          .insert([{
+            id: orderData.userId + '-' + Date.now(), // Generate unique ID
+            orderNumber: orderData.orderNumber,
+            status: orderData.status,
+            totalAmount: orderData.totalAmount,
+            subtotal: orderData.totalAmount,
+            tax: 0,
+            shipping: 0,
+            paymentStatus: orderData.paymentStatus,
+            paymentId: null,
+            trackingNumber: orderData.trackingNumber,
+            carrier: orderData.carrier,
+            notes: orderData.notes,
+            paymentMethod: orderData.paymentMethod,
+            userId: orderData.userId,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }])
+          .select()
+          .single()
 
-    if (!response.ok) {
-      const errorData = await response.json()
-      console.error('❌ Backend error:', errorData)
-      return NextResponse.json(
-        { error: errorData.message || 'Failed to create order' },
-        { status: response.status }
-      )
+        if (error) throw error
+        
+        // Create shipping address
+        await supabase
+          .from('ShippingAddress')
+          .insert([{
+            firstName: orderData.shippingAddress.firstName,
+            lastName: orderData.shippingAddress.lastName,
+            address1: orderData.shippingAddress.address,
+            city: orderData.shippingAddress.city,
+            province: orderData.shippingAddress.state,
+            postalCode: orderData.shippingAddress.postalCode,
+            country: orderData.shippingAddress.country,
+            phone: orderData.shippingAddress.phone,
+            orderId: supabaseOrder.id
+          }])
+
+        // Create order items
+        for (const item of orderData.items) {
+          await supabase
+            .from('OrderItem')
+            .insert([{
+              quantity: item.quantity,
+              price: item.price,
+              orderId: supabaseOrder.id,
+              productId: item.id
+            }])
+        }
+
+        order = {
+          id: supabaseOrder.id,
+          orderNumber: supabaseOrder.orderNumber,
+          totalAmount: supabaseOrder.totalAmount,
+          trackingNumber: orderData.trackingNumber,
+          status: supabaseOrder.status,
+          paymentStatus: supabaseOrder.paymentStatus
+        }
+        
+        orderSource = 'supabase'
+        console.log('✅ Order created in Supabase:', JSON.stringify(order, null, 2))
+      } catch (supabaseError) {
+        console.error('❌ Both backend and Supabase failed:', supabaseError)
+        return NextResponse.json(
+          { error: 'Failed to create order - both backend and database are unavailable' },
+          { status: 500 }
+        )
+      }
     }
-
-    const order = await response.json()
-    console.log('✅ Order created successfully:', JSON.stringify(order, null, 2))
 
     // Return order data for Yoco payment
     return NextResponse.json({
       success: true,
       message: 'Order created successfully',
       order: {
-        id: order.data.id,
-        orderNumber: order.data.orderNumber,
-        totalAmount: order.data.totalAmount,
-        trackingNumber: order.data.trackingNumber
+        id: order.id,
+        orderNumber: order.orderNumber,
+        totalAmount: order.totalAmount,
+        trackingNumber: order.trackingNumber
       }
     })
 

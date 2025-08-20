@@ -177,6 +177,132 @@ router.post('/login', [
   }
 });
 
+// @desc    Google OAuth authentication
+// @route   POST /api/auth/google
+// @access  Public
+router.post('/google', [
+  body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email'),
+  body('name').notEmpty().withMessage('Name is required'),
+  body('googleId').notEmpty().withMessage('Google ID is required')
+], async (req, res) => {
+  try {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      });
+    }
+
+    const { email, name, image, googleId } = req.body;
+
+    // Parse name into firstName and lastName
+    const nameParts = name.trim().split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+
+    // Check if user exists
+    const { data: existingUser, error: checkError } = await supabase
+      .from('User')
+      .select('*')
+      .eq('email', email)
+      .single();
+    
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('❌ Supabase error:', checkError);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error during Google authentication'
+      });
+    }
+
+    let user;
+    let isNewUser = false;
+
+    if (existingUser) {
+      // User exists, update Google ID if not set
+      if (!existingUser.googleId) {
+        const { data: updatedUser, error: updateError } = await supabase
+          .from('User')
+          .update({ 
+            googleId,
+            avatar: image || existingUser.avatar,
+            updatedAt: new Date().toISOString()
+          })
+          .eq('id', existingUser.id)
+          .select('*')
+          .single();
+
+        if (updateError) {
+          console.error('❌ Supabase error:', updateError);
+          return res.status(500).json({
+            success: false,
+            message: 'Failed to update user with Google ID'
+          });
+        }
+        user = updatedUser;
+      } else {
+        user = existingUser;
+      }
+    } else {
+      // Create new user
+      const crypto = require('crypto');
+      const userId = crypto.randomUUID();
+      
+      const { data: newUser, error: createError } = await supabase
+        .from('User')
+        .insert({
+          id: userId,
+          firstName,
+          lastName,
+          email,
+          googleId,
+          avatar: image,
+          role: 'USER',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        })
+        .select('*')
+        .single();
+
+      if (createError) {
+        console.error('❌ Supabase error:', createError);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to create user'
+        });
+      }
+      user = newUser;
+      isNewUser = true;
+    }
+
+    // Generate token
+    const token = generateToken(user.id);
+
+    res.status(isNewUser ? 201 : 200).json({
+      success: true,
+      message: isNewUser ? 'User created successfully' : 'Login successful',
+      token,
+      user: {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar
+      }
+    });
+  } catch (error) {
+    console.error('Google auth error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during Google authentication'
+    });
+  }
+});
+
 // @desc    Get current user profile
 // @route   GET /api/auth/me
 // @access  Private

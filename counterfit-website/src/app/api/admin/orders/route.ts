@@ -1,8 +1,46 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
+import { supabase } from '@/lib/supabase'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://counterfit-backend.onrender.com'
+
+// Function to fetch orders directly from Supabase as fallback
+async function fetchOrdersFromSupabase() {
+  try {
+    console.log('🔄 Fetching orders directly from Supabase...')
+    
+    const { data: orders, error } = await supabase
+      .from('Order')
+      .select(`
+        id,
+        orderNumber,
+        totalAmount,
+        status,
+        paymentStatus,
+        paymentMethod,
+        trackingNumber,
+        carrier,
+        estimatedDelivery,
+        createdAt,
+        updatedAt,
+        userId,
+        notes
+      `)
+      .order('createdAt', { ascending: false })
+
+    if (error) {
+      console.error('❌ Supabase error:', error)
+      throw error
+    }
+
+    console.log('✅ Supabase orders fetched:', orders?.length || 0)
+    return orders || []
+  } catch (error) {
+    console.error('❌ Failed to fetch from Supabase:', error)
+    throw error
+  }
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,59 +63,63 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    if (!session.user?.accessToken) {
-      return NextResponse.json(
-        { error: 'No access token found - please login again' },
-        { status: 401 }
-      )
-    }
-
     console.log('🔍 Admin fetching all orders')
 
-    // Fetch all orders from backend (admin can see all orders)
-    const response = await fetch(`${BACKEND_URL}/api/orders`, {
-      headers: {
-        'Authorization': `Bearer ${session.user.accessToken}`,
-        'Content-Type': 'application/json'
-      }
-    })
+    // Try backend first, fallback to Supabase
+    try {
+      if (session.user?.accessToken) {
+        console.log('🌐 Trying backend API first...')
+        const response = await fetch(`${BACKEND_URL}/api/admin/orders`, {
+          headers: {
+            'Authorization': `Bearer ${session.user.accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        })
 
-    if (!response.ok) {
-      console.error('❌ Backend error:', response.status, response.statusText)
+        if (response.ok) {
+          let data
+          try {
+            data = await response.json()
+          } catch (jsonError) {
+            console.error('❌ Failed to parse backend response:', jsonError)
+            throw new Error('Backend response parsing failed')
+          }
+          
+          console.log('✅ Admin orders fetched from backend:', data.data?.length || 0, 'orders')
+          return NextResponse.json({
+            success: true,
+            orders: data.data || [],
+            source: 'backend'
+          })
+        } else {
+          console.warn('⚠️ Backend returned error:', response.status, response.statusText)
+          throw new Error(`Backend error: ${response.status}`)
+        }
+      } else {
+        throw new Error('No access token available')
+      }
+    } catch (backendError) {
+      console.warn('⚠️ Backend failed, falling back to Supabase:', backendError)
       
-      // If backend is down, return empty orders with message
-      if (response.status === 503 || response.status === 502) {
-        console.warn('⚠️ Backend unavailable, returning empty orders')
+      // Fallback to Supabase
+      try {
+        const orders = await fetchOrdersFromSupabase()
+        return NextResponse.json({
+          success: true,
+          orders: orders,
+          message: 'Orders loaded from database (backend unavailable)',
+          source: 'supabase'
+        })
+      } catch (supabaseError) {
+        console.error('❌ Both backend and Supabase failed:', supabaseError)
         return NextResponse.json({
           success: true,
           orders: [],
-          message: 'Backend temporarily unavailable - orders will appear when service is restored'
+          message: 'Unable to load orders - both backend and database are unavailable',
+          source: 'none'
         })
       }
-      
-      return NextResponse.json(
-        { error: 'Failed to fetch orders from backend' },
-        { status: response.status }
-      )
     }
-
-    let data
-    try {
-      data = await response.json()
-    } catch (jsonError) {
-      console.error('❌ Failed to parse backend response:', jsonError)
-      return NextResponse.json({
-        success: true,
-        orders: [],
-        message: 'Backend response error - orders will appear when service is restored'
-      })
-    }
-    console.log('✅ Admin orders fetched successfully:', data.orders?.length || 0, 'orders')
-
-    return NextResponse.json({
-      success: true,
-      orders: data.orders || []
-    })
 
   } catch (error) {
     console.error('❌ Admin orders API error:', error)

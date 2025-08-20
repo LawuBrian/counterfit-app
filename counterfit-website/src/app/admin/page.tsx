@@ -54,12 +54,17 @@ export default function AdminDashboard() {
 
       if (statsRes.ok) {
         const statsData = await statsRes.json()
-        setStats(statsData)
+        setStats({
+          totalProducts: statsData.totalProducts || 0,
+          totalOrders: statsData.totalOrders || 0,
+          totalUsers: statsData.totalUsers || 0,
+          totalRevenue: statsData.totalRevenue || 0
+        })
       }
 
       if (ordersRes.ok) {
         const ordersData = await ordersRes.json()
-        setRecentOrders(ordersData.orders)
+        setRecentOrders(ordersData.orders || [])
       }
 
       if (productsRes.ok) {
@@ -68,6 +73,15 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
+      // Set default values on error
+      setStats({
+        totalProducts: 0,
+        totalOrders: 0,
+        totalUsers: 0,
+        totalRevenue: 0
+      })
+      setRecentOrders([])
+      setProducts([])
     } finally {
       setLoading(false)
     }
@@ -190,12 +204,12 @@ export default function AdminDashboard() {
                   {recentOrders.map((order: any) => (
                     <div key={order.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                       <div>
-                        <p className="font-medium text-primary">#{order.orderNumber}</p>
+                        <p className="font-medium text-primary">#{order.orderNumber || 'Unknown'}</p>
                         <p className="text-sm text-secondary">{order.user?.name || 'Guest'}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium text-primary">R{order.totalAmount.toLocaleString()}</p>
-                        <p className="text-sm text-secondary">{order.status}</p>
+                        <p className="font-medium text-primary">R{(order.totalAmount || 0).toLocaleString()}</p>
+                        <p className="text-sm text-secondary">{order.status || 'Unknown'}</p>
                       </div>
                     </div>
                   ))}
@@ -271,8 +285,8 @@ export default function AdminDashboard() {
             <div className="p-6">
               {products.length > 0 ? (
                 <div className="space-y-4">
-                  {products.slice(0, 5).map((product: any) => (
-                    <div key={product.id || product._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                  {products.slice(0, 5).map((product: any, index: number) => (
+                    <div key={product.id || product._id || index} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                       <div className="flex items-center gap-3">
                         {product.images && product.images.length > 0 && product.images[0] && (
                           <img 
@@ -282,13 +296,13 @@ export default function AdminDashboard() {
                           />
                         )}
                         <div>
-                          <p className="font-medium text-primary">{product.name}</p>
-                          <p className="text-sm text-secondary">R{product.price.toLocaleString()}</p>
+                          <p className="font-medium text-primary">{product.name || 'Unnamed Product'}</p>
+                          <p className="text-sm text-secondary">R{(product.price || 0).toLocaleString()}</p>
                         </div>
                       </div>
                       <div className="flex gap-2">
                         <Button size="sm" variant="outline">
-                          <Link href={`/admin/products/${product.id || product._id}/edit`}>
+                          <Link href={`/admin/products/${product.id || product._id || 'new'}/edit`}>
                             <Edit className="h-4 w-4" />
                           </Link>
                         </Button>

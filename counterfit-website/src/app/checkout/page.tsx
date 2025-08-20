@@ -208,14 +208,25 @@ export default function CheckoutPage() {
       // Send order confirmation email to customer
       console.log('📧 Sending order confirmation email...')
       try {
+        // Use the original cart items and form data for email since order.items might not be expanded
         const emailData = {
           orderId: order.id,
           orderNumber: order.orderNumber,
           customerName: `${formData.firstName} ${formData.lastName}`,
           customerEmail: formData.email,
           totalAmount: order.totalAmount,
-          items: order.items,
-          shippingAddress: order.shippingAddress,
+          items: cartItems, // Use cart items instead of order.items
+          shippingAddress: {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            email: formData.email,
+            phone: formData.phone,
+            address: formData.street,
+            city: formData.city,
+            state: formData.state,
+            postalCode: formData.postalCode,
+            country: formData.country
+          },
           trackingNumber: order.trackingNumber
         }
 
