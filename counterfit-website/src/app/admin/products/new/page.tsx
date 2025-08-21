@@ -377,6 +377,7 @@ export default function NewProductPage() {
                 images={formData.images}
                 onChange={(images) => handleInputChange('images', images)}
                 maxImages={10}
+                category={formData.category}
               />
             </div>
 

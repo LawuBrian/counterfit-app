@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
+import { config } from '@/lib/config'
 
 
 
@@ -58,14 +59,14 @@ export async function POST(request: NextRequest) {
       console.log('🔗 Generated slug:', productData.slug)
     }
     
-    console.log('🌐 Calling backend API:', `${BACKEND_URL}/api/admin/products`)
+    console.log('🌐 Calling backend API:', `${config.apiUrl}/api/admin/products`)
     console.log('📤 Request headers:', {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${session.user.accessToken.substring(0, 20)}...`
     })
     
     // Call the backend API to create the product
-    const response = await fetch(`${BACKEND_URL}/api/admin/products`, {
+    const response = await fetch(`${config.apiUrl}/api/admin/products`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

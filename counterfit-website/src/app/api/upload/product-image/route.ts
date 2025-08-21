@@ -5,8 +5,12 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
     
-    // Forward the request to the backend
-    const backendResponse = await fetch(`${config.apiUrl}/api/upload/product-image`, {
+    // Get the category from the query parameters
+    const { searchParams } = new URL(request.url)
+    const category = searchParams.get('category') || 'products'
+    
+    // Forward the request to the backend with the category
+    const backendResponse = await fetch(`${config.apiUrl}/api/upload/product-image?category=${category}`, {
       method: 'POST',
       body: formData,
     })
