@@ -8,6 +8,7 @@ import SignupForm from '@/components/SignupForm'
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { getFeaturedProducts, getFeaturedCollections, Product, Collection } from '@/lib/api'
+import { useVisitorTracking } from '@/lib/visitorTracking'
 
 export default function HomePage() {
   const [showAdminInfo, setShowAdminInfo] = useState(false)
@@ -16,6 +17,9 @@ export default function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
   const [featuredCollections, setFeaturedCollections] = useState<Collection[]>([])
   const [loading, setLoading] = useState(true)
+  
+  // Track visitor analytics
+  useVisitorTracking('/', 'Counterfit - Luxury Streetwear')
 
   // Check if user is admin (either through session or URL parameter)
   useEffect(() => {

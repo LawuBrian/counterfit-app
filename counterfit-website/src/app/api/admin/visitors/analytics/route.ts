@@ -4,14 +4,14 @@ import { authOptions } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('📊 GET /api/admin/stats - Route hit!')
+    console.log('📊 GET /api/admin/visitors/analytics - Route hit!')
     
     // Get session for authentication
     const session = await getServerSession(authOptions)
     
     if (!session) {
       return NextResponse.json(
-        { error: 'Unauthorized - Please login to view stats' },
+        { error: 'Unauthorized - Please login to view analytics' },
         { status: 401 }
       )
     }
@@ -23,14 +23,17 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log('🔍 Admin fetching dashboard stats from backend...')
+    const { searchParams } = new URL(request.url)
+    const period = searchParams.get('period') || '7d'
 
-    // Fetch stats from the backend's public stats endpoint
+    console.log('🔍 Admin fetching visitor analytics from backend...')
+
+    // Fetch analytics from the backend
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:5000'
     console.log('🔍 Backend URL:', backendUrl)
-    console.log('🔍 Full URL:', `${backendUrl}/api/admin/public-stats`)
+    console.log('🔍 Full URL:', `${backendUrl}/api/visitors/analytics?period=${period}`)
     
-    const response = await fetch(`${backendUrl}/api/admin/public-stats`)
+    const response = await fetch(`${backendUrl}/api/visitors/analytics?period=${period}`)
     
     console.log('🔍 Backend response status:', response.status)
     console.log('🔍 Backend response ok:', response.ok)
@@ -39,7 +42,7 @@ export async function GET(request: NextRequest) {
       console.error('❌ Backend API error:', response.status, response.statusText)
       return NextResponse.json({
         success: false,
-        error: 'Failed to fetch stats from backend',
+        error: 'Failed to fetch analytics from backend',
         details: `Backend returned ${response.status}: ${response.statusText}`
       }, { status: 500 })
     }
@@ -56,29 +59,19 @@ export async function GET(request: NextRequest) {
       }, { status: 500 })
     }
 
-    // Transform backend data to match frontend expectations
-    const stats = {
-      totalOrders: backendData.data.overview.totalOrders || 0,
-      totalRevenue: backendData.data.overview.totalRevenue || 0,
-      totalProducts: backendData.data.overview.totalProducts || 0,
-      totalUsers: backendData.data.overview.totalUsers || 0,
-      recentOrders: [] // Backend public endpoint doesn't return recent orders
-    }
-
-    console.log('✅ Stats fetched successfully from backend:', stats)
+    console.log('✅ Visitor analytics fetched successfully from backend')
 
     return NextResponse.json({
       success: true,
-      ...stats,
+      data: backendData.data,
       source: 'backend'
     })
 
   } catch (error) {
-    console.error('❌ Admin stats API error:', error)
+    console.error('❌ Admin visitor analytics API error:', error)
     return NextResponse.json(
-      { error: 'Internal server error - failed to fetch stats' },
+      { error: 'Internal server error - failed to fetch analytics' },
       { status: 500 }
     )
   }
 }
-

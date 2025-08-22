@@ -21,6 +21,7 @@ import Link from 'next/link'
 import { getImageUrl } from '@/lib/utils'
 import AuthDebug from '@/components/debug/AuthDebug'
 import FeaturedProductOrderManager from '@/components/admin/FeaturedProductOrderManager'
+import VisitorAnalytics from '@/components/admin/VisitorAnalytics'
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession()
@@ -57,12 +58,17 @@ export default function AdminDashboard() {
 
       if (statsRes.ok) {
         const statsData = await statsRes.json()
+        console.log('📊 Frontend received stats data:', statsData)
         setStats({
           totalProducts: statsData.totalProducts || 0,
           totalOrders: statsData.totalOrders || 0,
           totalUsers: statsData.totalUsers || 0,
           totalRevenue: statsData.totalRevenue || 0
         })
+      } else {
+        console.error('❌ Stats response not ok:', statsRes.status, statsRes.statusText)
+        const errorText = await statsRes.text()
+        console.error('❌ Stats error response:', errorText)
       }
 
       if (ordersRes.ok) {
@@ -337,6 +343,18 @@ export default function AdminDashboard() {
             </div>
             <div className="p-6">
               <FeaturedProductOrderManager />
+            </div>
+          </div>
+
+          {/* Visitor Analytics */}
+          <div className="bg-white rounded-xl shadow-sm">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="font-heading text-xl font-semibold text-primary">Visitor Analytics</h2>
+              </div>
+            </div>
+            <div className="p-6">
+              <VisitorAnalytics />
             </div>
           </div>
 

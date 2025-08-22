@@ -212,6 +212,7 @@ app.use('/api/orders', require('./routes/orders'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/test', require('./routes/test'));
+app.use('/api/visitors', require('./routes/visitors'));
 
 // Serve uploaded images from the uploads directory with optimization
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
