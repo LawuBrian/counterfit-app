@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     console.log('🔍 Admin fetching recent visitors from backend...')
 
     // Fetch recent visitors from the backend
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:5000'
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
     console.log('🔍 Backend URL:', backendUrl)
     console.log('🔍 Full URL:', `${backendUrl}/api/visitors/recent?limit=${limit}`)
     

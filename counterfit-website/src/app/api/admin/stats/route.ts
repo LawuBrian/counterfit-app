@@ -26,34 +26,75 @@ export async function GET(request: NextRequest) {
     console.log('🔍 Admin fetching dashboard stats from backend...')
 
     // Fetch stats from the backend's public stats endpoint
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:5000'
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
     console.log('🔍 Backend URL:', backendUrl)
     console.log('🔍 Full URL:', `${backendUrl}/api/admin/public-stats`)
     
-    const response = await fetch(`${backendUrl}/api/admin/public-stats`)
+    if (!backendUrl) {
+      console.error('❌ No backend URL configured')
+      return NextResponse.json({
+        success: false,
+        error: 'Backend URL not configured',
+        details: 'NEXT_PUBLIC_BACKEND_URL environment variable is missing'
+      }, { status: 500 })
+    }
+    
+    const response = await fetch(`${backendUrl}/api/admin/public-stats`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      // Add timeout for production environments
+      signal: AbortSignal.timeout(10000) // 10 second timeout
+    })
     
     console.log('🔍 Backend response status:', response.status)
     console.log('🔍 Backend response ok:', response.ok)
 
     if (!response.ok) {
       console.error('❌ Backend API error:', response.status, response.statusText)
+      
+      // Return fallback stats instead of error to prevent dashboard from breaking
+      console.log('⚠️ Returning fallback stats due to backend error')
       return NextResponse.json({
-        success: false,
-        error: 'Failed to fetch stats from backend',
-        details: `Backend returned ${response.status}: ${response.statusText}`
-      }, { status: 500 })
+        success: true,
+        totalProducts: 0,
+        totalOrders: 0,
+        totalUsers: 0,
+        totalRevenue: 0,
+        source: 'fallback',
+        warning: 'Backend temporarily unavailable, showing fallback data'
+      })
     }
 
-    const backendData = await response.json()
-    console.log('🔍 Backend response data:', JSON.stringify(backendData, null, 2))
+    let backendData
+    try {
+      backendData = await response.json()
+      console.log('🔍 Backend response data:', JSON.stringify(backendData, null, 2))
+    } catch (parseError) {
+      console.error('❌ Failed to parse backend response:', parseError)
+      return NextResponse.json({
+        success: true,
+        totalProducts: 0,
+        totalOrders: 0,
+        totalUsers: 0,
+        totalRevenue: 0,
+        source: 'fallback',
+        warning: 'Backend response could not be parsed, showing fallback data'
+      })
+    }
     
     if (!backendData.success) {
       console.error('❌ Backend returned error:', backendData)
       return NextResponse.json({
-        success: false,
-        error: 'Backend returned error',
-        details: backendData.message || 'Unknown backend error'
-      }, { status: 500 })
+        success: true,
+        totalProducts: 0,
+        totalOrders: 0,
+        totalUsers: 0,
+        totalRevenue: 0,
+        source: 'fallback',
+        warning: 'Backend returned error, showing fallback data'
+      })
     }
 
     // Transform backend data to match frontend expectations
