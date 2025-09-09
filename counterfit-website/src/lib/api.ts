@@ -206,31 +206,28 @@ export async function getCollection(id: string): Promise<ApiResponse<Collection>
 export function getImageUrl(imagePath: string): string {
   console.log('🖼️ getImageUrl called with:', imagePath)
   
-  // If no image path provided, return placeholder
+  // If no image path provided, return local placeholder
   if (!imagePath) {
-    console.log('❌ No image path provided, returning placeholder')
-    return 'https://counterfit-backend.onrender.com/uploads/images/placeholder/default-image.png'
+    console.log('❌ No image path provided, returning local placeholder')
+    return '/images/1d66cc_118bf0bf6588467e8c966076d949e1b3_mv2.png'
   }
   
   // If path starts with http/https, it's already a full URL (backend URLs)
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-    console.log('🌐 Backend URL detected, adding cache-busting parameter')
-    // Add cache-busting parameter to prevent CDN caching issues
-    const separator = imagePath.includes('?') ? '&' : '?'
-    return `${imagePath}${separator}v=${Date.now()}`
-  }
-  
-  // If path starts with /resources/, serve from Next.js public folder (keep for resources)
-  if (imagePath.startsWith('/resources/')) {
-    console.log('📁 Resources path detected, serving from Next.js public folder')
+    console.log('🌐 Backend URL detected, returning as-is')
     return imagePath
   }
   
-  // For any other paths (including /images/ paths), redirect to backend
-  console.log('🔄 Redirecting image path to backend:', imagePath)
+  // If path starts with /resources/ or /images/, serve from Next.js public folder
+  if (imagePath.startsWith('/resources/') || imagePath.startsWith('/images/')) {
+    console.log('📁 Public folder path detected')
+    return imagePath
+  }
+  
+  // For any other paths, try to construct backend URL
+  console.log('🔄 Constructing backend URL for:', imagePath)
   const backendUrl = `https://counterfit-backend.onrender.com/uploads${imagePath}`
-  // Add cache-busting parameter to prevent CDN caching issues
-  return `${backendUrl}?v=${Date.now()}`
+  return backendUrl
 }
 
 export function formatPrice(price: number): string {

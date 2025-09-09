@@ -22,31 +22,45 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Fetch user profile from backend
-    const response = await fetch(`${BACKEND_URL}/api/users/profile`, {
-      headers: {
-        'Authorization': `Bearer ${session.user.accessToken}`,
-        'Content-Type': 'application/json'
-      }
-    })
+    // Try to fetch user profile from backend first
+    try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
 
-    if (!response.ok) {
-      if (response.status === 503) {
-        return NextResponse.json(
-          { error: 'Backend service temporarily unavailable. Please try again later.' },
-          { status: 503 }
-        )
+      const response = await fetch(`${BACKEND_URL}/api/users/profile`, {
+        headers: {
+          'Authorization': `Bearer ${session.user.accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        signal: controller.signal
+      })
+
+      clearTimeout(timeoutId)
+
+      if (response.ok) {
+        const data = await response.json()
+        return NextResponse.json(data)
       }
-      
-      const errorData = await response.json()
-      return NextResponse.json(
-        { error: errorData.message || 'Failed to fetch profile' },
-        { status: response.status }
-      )
+    } catch (backendError) {
+      console.log('⚠️ Backend unavailable, using session data fallback:', backendError.message)
     }
 
-    const data = await response.json()
-    return NextResponse.json(data)
+    // Fallback: Use session data if backend is unavailable
+    const fallbackProfile = {
+      id: session.user.id,
+      email: session.user.email,
+      firstName: session.user.firstName || '',
+      lastName: session.user.lastName || '',
+      phone: '',
+      createdAt: new Date().toISOString()
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: fallbackProfile,
+      profile: fallbackProfile,
+      message: 'Using cached profile data (backend unavailable)'
+    })
 
   } catch (error) {
     console.error('Profile API error:', error)
@@ -76,8 +90,9 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
+    console.log('🔄 Profile update request body:', body)
 
-    // Forward request to backend
+    // Forward request to backend (where users are actually stored)
     const response = await fetch(`${BACKEND_URL}/api/users/profile`, {
       method: 'PUT',
       headers: {
@@ -86,6 +101,8 @@ export async function PUT(request: NextRequest) {
       },
       body: JSON.stringify(body)
     })
+
+    console.log('🌐 Backend response status:', response.status)
 
     if (!response.ok) {
       if (response.status === 503) {
@@ -96,6 +113,7 @@ export async function PUT(request: NextRequest) {
       }
       
       const errorData = await response.json()
+      console.error('❌ Backend error response:', errorData)
       return NextResponse.json(
         { error: errorData.message || 'Failed to update profile' },
         { status: response.status }
@@ -107,6 +125,8 @@ export async function PUT(request: NextRequest) {
 
   } catch (error) {
     console.error('Profile update API error:', error)
+    console.error('Error details:', error.message)
+    console.error('Stack:', error.stack)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -71,6 +71,7 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user, account }) {
       if (user) {
+        token.id = user.id // Store the actual user ID from backend
         token.role = user.role
         token.firstName = user.firstName
         token.lastName = user.lastName
@@ -81,7 +82,8 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (token) {
-        session.user.id = token.sub!
+        // Use the actual user ID from the backend, not token.sub
+        session.user.id = token.id as string || token.sub!
         session.user.role = token.role as string
         session.user.firstName = token.firstName as string
         session.user.lastName = token.lastName as string

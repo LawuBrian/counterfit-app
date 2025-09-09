@@ -10,7 +10,6 @@ import {
   Edit,
   Trash2,
   MapPin,
-  Home,
   Building,
   Check,
   X
@@ -19,15 +18,15 @@ import Link from 'next/link'
 
 interface Address {
   id: string
-  type: 'home' | 'work' | 'other'
+  type: 'shipping' | 'billing'
   isDefault: boolean
   firstName: string
   lastName: string
   company?: string
-  street: string
-  apartment?: string
+  address1: string
+  address2?: string
   city: string
-  state: string
+  province: string
   postalCode: string
   country: string
   phone?: string
@@ -41,15 +40,15 @@ export default function AddressesPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingAddress, setEditingAddress] = useState<Address | null>(null)
   const [formData, setFormData] = useState<Omit<Address, 'id'>>({
-    type: 'home',
+    type: 'shipping',
     isDefault: false,
     firstName: '',
     lastName: '',
     company: '',
-    street: '',
-    apartment: '',
+    address1: '',
+    address2: '',
     city: '',
-    state: '',
+    province: '',
     postalCode: '',
     country: 'South Africa',
     phone: ''
@@ -147,15 +146,15 @@ export default function AddressesPage() {
 
   const resetForm = () => {
     setFormData({
-      type: 'home',
+      type: 'shipping',
       isDefault: false,
       firstName: '',
       lastName: '',
       company: '',
-      street: '',
-      apartment: '',
+      address1: '',
+      address2: '',
       city: '',
-      state: '',
+      province: '',
       postalCode: '',
       country: 'South Africa',
       phone: ''
@@ -232,9 +231,9 @@ export default function AddressesPage() {
 
   const getAddressIcon = (type: string) => {
     switch (type) {
-      case 'home':
-        return <Home className="w-4 h-4" />
-      case 'work':
+      case 'shipping':
+        return <MapPin className="w-4 h-4" />
+      case 'billing':
         return <Building className="w-4 h-4" />
       default:
         return <MapPin className="w-4 h-4" />
@@ -318,11 +317,10 @@ export default function AddressesPage() {
                   <select
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     value={formData.type}
-                    onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as 'home' | 'work' | 'other' }))}
+                    onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as 'shipping' | 'billing' }))}
                   >
-                    <option value="home">Home</option>
-                    <option value="work">Work</option>
-                    <option value="other">Other</option>
+                    <option value="shipping">Shipping Address</option>
+                    <option value="billing">Billing Address</option>
                   </select>
                 </div>
                 
@@ -387,8 +385,8 @@ export default function AddressesPage() {
                   type="text"
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                  value={formData.street}
-                  onChange={(e) => setFormData(prev => ({ ...prev, street: e.target.value }))}
+                  value={formData.address1}
+                  onChange={(e) => setFormData(prev => ({ ...prev, address1: e.target.value }))}
                 />
               </div>
 
@@ -399,8 +397,8 @@ export default function AddressesPage() {
                 <input
                   type="text"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                  value={formData.apartment}
-                  onChange={(e) => setFormData(prev => ({ ...prev, apartment: e.target.value }))}
+                  value={formData.address2}
+                  onChange={(e) => setFormData(prev => ({ ...prev, address2: e.target.value }))}
                 />
               </div>
 
@@ -426,8 +424,8 @@ export default function AddressesPage() {
                     type="text"
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                    value={formData.state}
-                    onChange={(e) => setFormData(prev => ({ ...prev, state: e.target.value }))}
+                    value={formData.province}
+                    onChange={(e) => setFormData(prev => ({ ...prev, province: e.target.value }))}
                   />
                 </div>
                 
@@ -524,11 +522,11 @@ export default function AddressesPage() {
                       <p className="text-sm text-gray-600">{address.company}</p>
                     )}
                     <p className="text-sm text-gray-600">
-                      {address.street}
-                      {address.apartment && `, ${address.apartment}`}
+                      {address.address1}
+                      {address.address2 && `, ${address.address2}`}
                     </p>
                     <p className="text-sm text-gray-600">
-                      {address.city}, {address.state} {address.postalCode}
+                      {address.city}, {address.province} {address.postalCode}
                     </p>
                     <p className="text-sm text-gray-600">{address.country}</p>
                     {address.phone && (

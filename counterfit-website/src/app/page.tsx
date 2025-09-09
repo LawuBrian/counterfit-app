@@ -7,7 +7,7 @@ import { ArrowRight, Star, Zap, Tag, Sparkles, Shield, TrendingUp, Users, Shoppi
 import SignupForm from '@/components/SignupForm'
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { getFeaturedProducts, getFeaturedCollections, Product, Collection } from '@/lib/api'
+import { getFeaturedProducts, getFeaturedCollections, formatPrice, Product, Collection } from '@/lib/api'
 import { useVisitorTracking } from '@/lib/visitorTracking'
 
 export default function HomePage() {
@@ -208,13 +208,18 @@ export default function HomePage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="font-heading text-lg font-bold text-primary">
-                          R{product.price}
+                          {formatPrice(product.price)}
                         </span>
-                        {product.comparePrice && product.comparePrice > 0 && product.comparePrice > product.price && (
+                        {product.comparePrice && 
+                         typeof product.comparePrice === 'number' && 
+                         !isNaN(product.comparePrice) &&
+                         product.comparePrice > 0 && 
+                         product.comparePrice !== 0 &&
+                         product.comparePrice > (product.price || 0) ? (
                           <span className="text-sm text-gray-500 line-through">
-                            R{product.comparePrice}
+                            {formatPrice(product.comparePrice)}
                           </span>
-                        )}
+                        ) : null}
                       </div>
                       
                       <Link href={`/product/${product.id}`}>

@@ -130,7 +130,7 @@ export default function ShopPage() {
       <section className="relative py-20 lg:py-32 overflow-hidden bg-gradient-to-r from-primary to-primary/90">
         <div className="absolute inset-0 z-0">
           <img
-            src="/1d66cc_a11baf46680b4215b9e69ddb52d2051c_mv2.png"
+            src="/images/hero/Shop_hero.jpeg"
             alt="Shop Hero"
             className="w-full h-full object-cover opacity-20"
           />
