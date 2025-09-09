@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://counterfit-backend.onrender.com'
+import { supabase } from '@/lib/supabase'
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,64 +14,86 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    if (!session.user?.accessToken) {
+    // Fetch user and settings from Supabase
+    const { data: user, error: userError } = await supabase
+      .from('User')
+      .select('id, firstName, lastName, email, phone')
+      .eq('id', session.user.id)
+      .single()
+
+    if (userError) {
+      console.error('❌ User fetch error:', userError)
       return NextResponse.json(
-        { error: 'No access token found - please login again' },
-        { status: 401 }
+        { error: 'Failed to fetch user data' },
+        { status: 500 }
       )
     }
 
-    // Fetch user settings from backend
-    const response = await fetch(`${BACKEND_URL}/api/users/settings`, {
-      headers: {
-        'Authorization': `Bearer ${session.user.accessToken}`,
-        'Content-Type': 'application/json'
-      }
-    })
+    // Fetch user settings (create default if not exists)
+    let { data: settings, error: settingsError } = await supabase
+      .from('UserSettings')
+      .select('*')
+      .eq('userId', session.user.id)
+      .single()
 
-    if (!response.ok) {
-      if (response.status === 503 || response.status === 502) {
-        return NextResponse.json({
-          success: true,
-          settings: {
-            firstName: session.user.firstName || '',
-            lastName: session.user.lastName || '',
-            email: session.user.email || '',
-            phone: '',
-            dateOfBirth: '',
-            emailNotifications: {
-              orderUpdates: true,
-              promotions: true,
-              newsletter: false,
-              stockAlerts: true
-            },
-            smsNotifications: {
-              orderUpdates: true,
-              deliveryUpdates: true
-            },
-            profileVisibility: 'private',
-            showPurchaseHistory: false,
-            allowDataCollection: true,
-            theme: 'system',
-            language: 'en',
-            currency: 'ZAR',
-            twoFactorEnabled: false,
-            loginAlerts: true
-          },
-          message: 'Backend temporarily unavailable - using default settings'
-        })
+    if (settingsError && settingsError.code === 'PGRST116') {
+      // No settings found, create default settings
+      const { data: newSettings, error: createError } = await supabase
+        .from('UserSettings')
+        .insert([{
+          userId: session.user.id,
+          emailNotifications: true,
+          smsNotifications: false,
+          marketingEmails: true,
+          orderUpdates: true,
+          newsletter: false,
+          twoFactorEnabled: false,
+          preferredLanguage: 'en',
+          timezone: 'Africa/Johannesburg'
+        }])
+        .select()
+        .single()
+
+      if (createError) {
+        console.error('❌ Settings creation error:', createError)
+        // Return default settings if creation fails
+        settings = {
+          emailNotifications: true,
+          smsNotifications: false,
+          marketingEmails: true,
+          orderUpdates: true,
+          newsletter: false,
+          twoFactorEnabled: false,
+          preferredLanguage: 'en',
+          timezone: 'Africa/Johannesburg'
+        }
+      } else {
+        settings = newSettings
       }
-      
+    } else if (settingsError) {
+      console.error('❌ Settings fetch error:', settingsError)
       return NextResponse.json(
-        { error: 'Failed to fetch settings from backend' },
-        { status: response.status }
+        { error: 'Failed to fetch user settings' },
+        { status: 500 }
       )
     }
 
-    const data = await response.json()
     return NextResponse.json({
       success: true,
-      settings: data.settings || data
+      settings: {
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        emailNotifications: settings.emailNotifications,
+        smsNotifications: settings.smsNotifications,
+        marketingEmails: settings.marketingEmails,
+        orderUpdates: settings.orderUpdates,
+        newsletter: settings.newsletter,
+        twoFactorEnabled: settings.twoFactorEnabled,
+        preferredLanguage: settings.preferredLanguage,
+        timezone: settings.timezone
+      }
     })
 
   } catch (error) {
@@ -95,43 +116,66 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    if (!session.user?.accessToken) {
-      return NextResponse.json(
-        { error: 'No access token found - please login again' },
-        { status: 401 }
-      )
-    }
-
     const body = await request.json()
+    const {
+      firstName,
+      lastName,
+      phone,
+      emailNotifications,
+      smsNotifications,
+      marketingEmails,
+      orderUpdates,
+      newsletter,
+      twoFactorEnabled,
+      preferredLanguage,
+      timezone
+    } = body
 
-    // Update user settings in backend
-    const response = await fetch(`${BACKEND_URL}/api/users/settings`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${session.user.accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
-    })
-
-    if (!response.ok) {
-      if (response.status === 503 || response.status === 502) {
-        return NextResponse.json({
-          success: true,
-          message: 'Backend temporarily unavailable - settings will be updated when service is restored'
+    // Update user profile fields
+    if (firstName !== undefined || lastName !== undefined || phone !== undefined) {
+      const { error: userError } = await supabase
+        .from('User')
+        .update({
+          ...(firstName !== undefined && { firstName }),
+          ...(lastName !== undefined && { lastName }),
+          ...(phone !== undefined && { phone })
         })
+        .eq('id', session.user.id)
+
+      if (userError) {
+        console.error('❌ User update error:', userError)
+        return NextResponse.json(
+          { error: 'Failed to update user profile' },
+          { status: 500 }
+        )
       }
-      
+    }
+
+    // Update user settings
+    const { error: settingsError } = await supabase
+      .from('UserSettings')
+      .upsert({
+        userId: session.user.id,
+        ...(emailNotifications !== undefined && { emailNotifications }),
+        ...(smsNotifications !== undefined && { smsNotifications }),
+        ...(marketingEmails !== undefined && { marketingEmails }),
+        ...(orderUpdates !== undefined && { orderUpdates }),
+        ...(newsletter !== undefined && { newsletter }),
+        ...(twoFactorEnabled !== undefined && { twoFactorEnabled }),
+        ...(preferredLanguage !== undefined && { preferredLanguage }),
+        ...(timezone !== undefined && { timezone })
+      })
+
+    if (settingsError) {
+      console.error('❌ Settings update error:', settingsError)
       return NextResponse.json(
-        { error: 'Failed to update settings in backend' },
-        { status: response.status }
+        { error: 'Failed to update user settings' },
+        { status: 500 }
       )
     }
 
-    const data = await response.json()
     return NextResponse.json({
       success: true,
-      settings: data.settings || data,
       message: 'Settings updated successfully'
     })
 

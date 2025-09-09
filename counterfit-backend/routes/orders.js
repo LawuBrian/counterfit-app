@@ -138,11 +138,31 @@ router.get('/:id', protect, async (req, res) => {
   }
 });
 
-// @desc    Update order status (Admin only)
+// @desc    Update order status (Admin only or Webhook)
 // @route   PUT /api/orders/:id/status
-// @access  Private/Admin
-router.put('/:id/status', protect, adminOnly, async (req, res) => {
+// @access  Private/Admin or Webhook
+router.put('/:id/status', async (req, res) => {
   try {
+    // Check if it's a webhook call or admin call
+    const webhookSecret = req.headers['x-webhook-secret'];
+    const isWebhookCall = webhookSecret && webhookSecret === process.env.YOCO_WEBHOOK_SECRET;
+    
+    if (!isWebhookCall) {
+      // For non-webhook calls, require admin authentication
+      const protectResult = await new Promise((resolve, reject) => {
+        protect(req, res, (err) => {
+          if (err) reject(err);
+          else resolve(true);
+        });
+      });
+      
+      const adminResult = await new Promise((resolve, reject) => {
+        adminOnly(req, res, (err) => {
+          if (err) reject(err);
+          else resolve(true);
+        });
+      });
+    }
     const { status, paymentStatus, trackingNumber, carrier, estimatedDelivery } = req.body;
 
     const updateData = {

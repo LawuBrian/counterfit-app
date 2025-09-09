@@ -9,10 +9,6 @@ import {
   Save,
   Bell,
   Shield,
-  Globe,
-  Moon,
-  Sun,
-  Monitor,
   Eye,
   EyeOff,
   Trash2,
@@ -46,9 +42,7 @@ interface UserSettings {
   showPurchaseHistory: boolean
   allowDataCollection: boolean
   
-  // Display Settings
-  theme: 'light' | 'dark' | 'system'
-  language: string
+  // Currency Settings
   currency: string
   
   // Security Settings
@@ -78,8 +72,6 @@ export default function SettingsPage() {
     profileVisibility: 'private',
     showPurchaseHistory: false,
     allowDataCollection: true,
-    theme: 'system',
-    language: 'en',
     currency: 'ZAR',
     twoFactorEnabled: false,
     loginAlerts: true
@@ -113,25 +105,43 @@ export default function SettingsPage() {
     try {
       setError('')
       setLoading(true)
-      const response = await fetch('/api/users/settings')
       
-      if (response.ok) {
-        const data = await response.json()
-        if (data.success && data.settings) {
-          setSettings(data.settings)
-        } else {
-          // Fallback to session data if settings are empty
-          setSettings(prev => ({
-            ...prev,
-            firstName: session?.user?.firstName || '',
-            lastName: session?.user?.lastName || '',
-            email: session?.user?.email || ''
-          }))
+      // Fetch both profile and settings data
+      const [profileResponse, settingsResponse] = await Promise.all([
+        fetch('/api/users/profile'),
+        fetch('/api/users/settings')
+      ])
+      
+      let profileData = {}
+      let settingsData = {}
+      
+      if (profileResponse.ok) {
+        const profile = await profileResponse.json()
+        if (profile.success && profile.data) {
+          profileData = {
+            firstName: profile.data.firstName || '',
+            lastName: profile.data.lastName || '',
+            email: profile.data.email || '',
+            phone: profile.data.phone || '',
+            dateOfBirth: profile.data.dateOfBirth || ''
+          }
         }
-      } else {
-        const errorData = await response.json()
-        setError(errorData.error || 'Failed to fetch settings')
       }
+      
+      if (settingsResponse.ok) {
+        const settings = await settingsResponse.json()
+        if (settings.success && settings.settings) {
+          settingsData = settings.settings
+        }
+      }
+      
+      // Merge profile and settings data
+      setSettings(prev => ({
+        ...prev,
+        ...profileData,
+        ...settingsData
+      }))
+      
     } catch (error) {
       console.error('Error fetching settings:', error)
       setError('Failed to fetch settings')
@@ -146,25 +156,45 @@ export default function SettingsPage() {
     setSuccessMessage('')
     
     try {
-      const response = await fetch('/api/users/settings', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(settings)
-      })
+      // Separate profile data from settings data
+      const profileData = {
+        firstName: settings.firstName,
+        lastName: settings.lastName,
+        phone: settings.phone,
+        dateOfBirth: settings.dateOfBirth
+      }
+      
+      const settingsData = {
+        emailNotifications: settings.emailNotifications,
+        smsNotifications: settings.smsNotifications,
+        profileVisibility: settings.profileVisibility,
+        showPurchaseHistory: settings.showPurchaseHistory,
+        allowDataCollection: settings.allowDataCollection,
+        currency: settings.currency,
+        loginAlerts: settings.loginAlerts
+      }
+      
+      // Update both profile and settings
+      const [profileResponse, settingsResponse] = await Promise.all([
+        fetch('/api/users/profile', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(profileData)
+        }),
+        fetch('/api/users/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(settingsData)
+        })
+      ])
 
-      if (response.ok) {
-        const data = await response.json()
-        if (data.success) {
-          setSuccessMessage('Settings saved successfully!')
-          setTimeout(() => setSuccessMessage(''), 3000)
-        } else {
-          setError(data.error || 'Failed to save settings')
-        }
+      if (profileResponse.ok && settingsResponse.ok) {
+        setSuccessMessage('Settings saved successfully!')
+        setTimeout(() => setSuccessMessage(''), 3000)
       } else {
-        const errorData = await response.json()
-        setError(errorData.error || 'Failed to save settings')
+        const profileError = profileResponse.ok ? null : await profileResponse.json()
+        const settingsError = settingsResponse.ok ? null : await settingsResponse.json()
+        setError(profileError?.error || settingsError?.error || 'Failed to save settings')
       }
     } catch (error) {
       console.error('Error saving settings:', error)
@@ -192,13 +222,12 @@ export default function SettingsPage() {
       setError('')
       setSuccessMessage('')
       
-      const response = await fetch('/api/users/settings', {
+      const response = await fetch('/api/users/change-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          action: 'change-password',
           currentPassword,
           newPassword
         })
@@ -217,7 +246,7 @@ export default function SettingsPage() {
         }
       } else {
         const errorData = await response.json()
-        setError(errorData.error || 'Failed to change password')
+        setError(errorData.error || errorData.message || 'Failed to change password')
       }
     } catch (error) {
       console.error('Error changing password:', error)
@@ -236,15 +265,11 @@ export default function SettingsPage() {
       setSaving(true)
       setError('')
       
-      const response = await fetch('/api/users/settings', {
-        method: 'POST',
+      const response = await fetch('/api/users/account', {
+        method: 'DELETE',
         headers: {
           'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          action: 'delete-account',
-          confirm: true
-        })
+        }
       })
 
       if (response.ok) {
@@ -552,75 +577,6 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Display Settings */}
-        <div className="bg-white rounded-xl shadow-sm border p-6">
-          <div className="flex items-center mb-6">
-            <Globe className="w-5 h-5 text-primary mr-2" />
-            <h2 className="font-heading text-xl font-semibold text-primary">
-              Display & Language
-            </h2>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Theme
-              </label>
-              <div className="flex gap-2">
-                {[
-                  { value: 'light', icon: Sun, label: 'Light' },
-                  { value: 'dark', icon: Moon, label: 'Dark' },
-                  { value: 'system', icon: Monitor, label: 'System' }
-                ].map(({ value, icon: Icon, label }) => (
-                  <button
-                    key={value}
-                    onClick={() => setSettings(prev => ({ ...prev, theme: value as 'light' | 'dark' | 'system' }))}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-md border transition-colors ${
-                      settings.theme === value 
-                        ? 'border-primary bg-primary/10 text-primary' 
-                        : 'border-gray-300 hover:border-gray-400'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span className="text-sm">{label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Language
-              </label>
-              <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                value={settings.language}
-                onChange={(e) => setSettings(prev => ({ ...prev, language: e.target.value }))}
-              >
-                <option value="en">English</option>
-                <option value="af">Afrikaans</option>
-                <option value="zu">Zulu</option>
-                <option value="xh">Xhosa</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Currency
-              </label>
-              <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                value={settings.currency}
-                onChange={(e) => setSettings(prev => ({ ...prev, currency: e.target.value }))}
-              >
-                <option value="ZAR">South African Rand (R)</option>
-                <option value="USD">US Dollar ($)</option>
-                <option value="EUR">Euro (€)</option>
-                <option value="GBP">British Pound (£)</option>
-              </select>
-            </div>
-          </div>
-        </div>
 
         {/* Security Settings */}
         <div className="bg-white rounded-xl shadow-sm border p-6">

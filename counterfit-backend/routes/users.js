@@ -114,7 +114,7 @@ router.get('/profile', protect, async (req, res) => {
   try {
     const { data: user, error } = await supabase
       .from('User')
-      .select('id, email, firstName, lastName, role, avatar, createdAt')
+      .select('id, email, firstName, lastName, role, avatar, phone, dateOfBirth, createdAt')
       .eq('id', req.user.id)
       .single();
 
@@ -144,22 +144,24 @@ router.get('/profile', protect, async (req, res) => {
 // @access  Private
 router.put('/profile', protect, async (req, res) => {
   try {
-    const { firstName, lastName, avatar } = req.body;
+    const { firstName, lastName, avatar, phone, dateOfBirth } = req.body;
     
     // Only allow updating certain fields
     const updateData = {
       updatedAt: new Date().toISOString()
     };
 
-    if (firstName) updateData.firstName = firstName;
-    if (lastName) updateData.lastName = lastName;
+    if (firstName !== undefined) updateData.firstName = firstName;
+    if (lastName !== undefined) updateData.lastName = lastName;
     if (avatar !== undefined) updateData.avatar = avatar;
+    if (phone !== undefined) updateData.phone = phone;
+    if (dateOfBirth !== undefined) updateData.dateOfBirth = dateOfBirth;
 
     const { data: user, error } = await supabase
       .from('User')
       .update(updateData)
       .eq('id', req.user.id)
-      .select('id, email, firstName, lastName, role, avatar, createdAt')
+      .select('id, email, firstName, lastName, role, avatar, phone, dateOfBirth, createdAt')
       .single();
 
     if (error) {
@@ -801,6 +803,118 @@ router.put('/settings', protect, async (req, res) => {
     });
   } catch (error) {
     console.error('Update settings error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// @desc    Change user password
+// @route   POST /api/users/change-password
+// @access  Private
+router.post('/change-password', protect, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password and new password are required'
+      });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 8 characters long'
+      });
+    }
+
+    // Get current user with password
+    const { data: user, error: userError } = await supabase
+      .from('User')
+      .select('id, password')
+      .eq('id', req.user.id)
+      .single();
+
+    if (userError) {
+      console.error('❌ Supabase error:', userError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch user'
+      });
+    }
+
+    // Verify current password
+    const bcrypt = require('bcryptjs');
+    const isValidPassword = await bcrypt.compare(currentPassword, user.password);
+    
+    if (!isValidPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password is incorrect'
+      });
+    }
+
+    // Hash new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 12);
+
+    // Update password
+    const { error: updateError } = await supabase
+      .from('User')
+      .update({ 
+        password: hashedNewPassword,
+        updatedAt: new Date().toISOString()
+      })
+      .eq('id', req.user.id);
+
+    if (updateError) {
+      console.error('❌ Supabase error:', updateError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to update password'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// @desc    Delete user account
+// @route   DELETE /api/users/account
+// @access  Private
+router.delete('/account', protect, async (req, res) => {
+  try {
+    // Delete user account
+    const { error } = await supabase
+      .from('User')
+      .delete()
+      .eq('id', req.user.id);
+
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to delete account'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Account deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete account error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'

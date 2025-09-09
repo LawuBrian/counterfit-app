@@ -62,7 +62,7 @@ export default function HomePage() {
         if (collectionsResponse.success) {
           setFeaturedCollections(collectionsResponse.data)
         }
-      } catch (error) {
+    } catch (error) {
         console.error('Error fetching data:', error)
       } finally {
         setLoading(false)
@@ -175,11 +175,7 @@ export default function HomePage() {
                           FEATURED
                         </div>
                       )}
-                      {product.status === 'new' && (
-                        <div className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                          NEW
-                        </div>
-                      )}
+                      {/* Removed invalid 'new' status badge */}
                     </div>
                     
                     {/* Quick actions */}
@@ -196,8 +192,8 @@ export default function HomePage() {
                   <div className="p-4">
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="font-heading font-semibold text-gray-900 group-hover:text-primary transition-colors">
-                        {product.name}
-                      </h3>
+                      {product.name}
+                    </h3>
                       <div className="flex items-center gap-1">
                         {[...Array(5)].map((_, i) => (
                           <Star key={i} className="w-3 h-3 text-yellow-400 fill-current" />
@@ -214,9 +210,9 @@ export default function HomePage() {
                         <span className="font-heading text-lg font-bold text-primary">
                           R{product.price}
                         </span>
-                        {product.originalPrice && product.originalPrice > product.price && (
+                        {product.comparePrice && product.comparePrice > 0 && product.comparePrice > product.price && (
                           <span className="text-sm text-gray-500 line-through">
-                            R{product.originalPrice}
+                            R{product.comparePrice}
                           </span>
                         )}
                       </div>
@@ -237,7 +233,7 @@ export default function HomePage() {
                 <Package className="w-8 h-8 text-gray-400" />
               </div>
               <p className="text-gray-500">No featured products available at the moment.</p>
-            </div>
+          </div>
           )}
           
           <div className="text-center mt-12">
@@ -450,7 +446,7 @@ export default function HomePage() {
               <div key={value.title} className="text-center group">
                 <div className="w-24 h-24 mx-auto mb-8 bg-gradient-to-br from-primary to-secondary rounded-3xl flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-500">
                   <value.icon className="w-12 h-12 text-white" />
-                </div>
+              </div>
                 <h3 className="font-heading text-2xl font-bold text-primary mb-4 group-hover:text-secondary transition-colors">
                   {value.title}
                 </h3>
@@ -479,8 +475,8 @@ export default function HomePage() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-6 max-w-2xl mx-auto mb-8">
-            <input 
-              type="email" 
+            <input
+              type="email"
               placeholder="Enter your email address" 
               className="flex-1 px-6 py-4 rounded-2xl border-0 bg-white/10 backdrop-blur-sm text-white placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 text-lg"
             />

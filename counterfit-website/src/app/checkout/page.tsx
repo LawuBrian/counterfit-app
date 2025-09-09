@@ -63,7 +63,58 @@ export default function CheckoutPage() {
       router.push('/cart')
       return
     }
+
+    // Load user's saved addresses and pre-fill form
+    loadUserAddresses()
   }, [session, status, router, cartItems])
+
+  const loadUserAddresses = async () => {
+    try {
+      const response = await fetch('/api/users/addresses')
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.addresses && data.addresses.length > 0) {
+          // Find default address or use first one
+          const defaultAddress = data.addresses.find((addr: any) => addr.isDefault) || data.addresses[0]
+          
+          // Pre-fill form with saved address
+          setFormData({
+            firstName: defaultAddress.firstName || session?.user?.firstName || '',
+            lastName: defaultAddress.lastName || session?.user?.lastName || '',
+            email: session?.user?.email || '',
+            phone: defaultAddress.phone || '',
+            street: defaultAddress.street || '',
+            city: defaultAddress.city || '',
+            state: defaultAddress.state || '',
+            postalCode: defaultAddress.postalCode || '',
+            country: defaultAddress.country || 'ZA'
+          })
+
+          // Calculate shipping if postal code is available
+          if (defaultAddress.postalCode) {
+            calculateShippingRates(defaultAddress.postalCode)
+          }
+        } else {
+          // Pre-fill with session data if no saved addresses
+          setFormData(prev => ({
+            ...prev,
+            firstName: session?.user?.firstName || '',
+            lastName: session?.user?.lastName || '',
+            email: session?.user?.email || ''
+          }))
+        }
+      }
+    } catch (error) {
+      console.error('Error loading user addresses:', error)
+      // Still pre-fill with session data on error
+      setFormData(prev => ({
+        ...prev,
+        firstName: session?.user?.firstName || '',
+        lastName: session?.user?.lastName || '',
+        email: session?.user?.email || ''
+      }))
+    }
+  }
 
   // Calculate shipping rates when postal code changes
   const calculateShippingRates = async (postalCode: string) => {
@@ -119,6 +170,50 @@ export default function CheckoutPage() {
     } else {
       setShippingRates([])
       setSelectedShippingRate(null)
+    }
+  }
+
+  const saveAddressForFutureUse = async (address: any) => {
+    try {
+      // Check if this address already exists
+      const response = await fetch('/api/users/addresses')
+      if (response.ok) {
+        const data = await response.json()
+        const existingAddresses = data.addresses || []
+        
+        // Check if an address with the same details already exists
+        const addressExists = existingAddresses.some((existingAddr: any) => 
+          existingAddr.street === address.address &&
+          existingAddr.city === address.city &&
+          existingAddr.postalCode === address.postalCode
+        )
+        
+        if (!addressExists) {
+          // Save new address
+          await fetch('/api/users/addresses', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              type: 'home',
+              isDefault: existingAddresses.length === 0, // Make first address default
+              firstName: address.firstName,
+              lastName: address.lastName,
+              street: address.address,
+              city: address.city,
+              state: address.state,
+              postalCode: address.postalCode,
+              country: address.country,
+              phone: address.phone
+            })
+          })
+          console.log('✅ Address saved for future use')
+        }
+      }
+    } catch (error) {
+      console.error('⚠️ Failed to save address for future use:', error)
+      // Don't fail checkout if address saving fails
     }
   }
 
@@ -195,6 +290,9 @@ export default function CheckoutPage() {
       const orderData = await orderResponse.json()
       console.log('✅ Order created:', orderData)
       console.log('🔍 Order data structure:', JSON.stringify(orderData, null, 2))
+
+      // Save the address for future use
+      await saveAddressForFutureUse(shippingAddress)
 
       // Safely extract order information
       const order = orderData.data || orderData.order || orderData

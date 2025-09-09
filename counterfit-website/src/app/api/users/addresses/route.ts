@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://counterfit-backend.onrender.com'
+import { supabase } from '@/lib/supabase'
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,40 +14,24 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    if (!session.user?.accessToken) {
+    // Fetch user addresses from Supabase
+    const { data: addresses, error } = await supabase
+      .from('UserAddresses')
+      .select('*')
+      .eq('userId', session.user.id)
+      .order('createdAt', { ascending: false })
+
+    if (error) {
+      console.error('❌ Addresses fetch error:', error)
       return NextResponse.json(
-        { error: 'No access token found - please login again' },
-        { status: 401 }
+        { error: 'Failed to fetch addresses' },
+        { status: 500 }
       )
     }
 
-    // Fetch user addresses from backend
-    const response = await fetch(`${BACKEND_URL}/api/users/addresses`, {
-      headers: {
-        'Authorization': `Bearer ${session.user.accessToken}`,
-        'Content-Type': 'application/json'
-      }
-    })
-
-    if (!response.ok) {
-      if (response.status === 503 || response.status === 502) {
-        return NextResponse.json({
-          success: true,
-          addresses: [],
-          message: 'Backend temporarily unavailable - addresses will appear when service is restored'
-        })
-      }
-      
-      return NextResponse.json(
-        { error: 'Failed to fetch addresses from backend' },
-        { status: response.status }
-      )
-    }
-
-    const data = await response.json()
     return NextResponse.json({
       success: true,
-      addresses: data.addresses || []
+      addresses: addresses || []
     })
 
   } catch (error) {
@@ -66,55 +49,75 @@ export async function POST(request: NextRequest) {
     
     if (!session) {
       return NextResponse.json(
-        { error: 'Unauthorized - Please login to add address' },
-        { status: 401 }
-      )
-    }
-
-    if (!session.user?.accessToken) {
-      return NextResponse.json(
-        { error: 'No access token found - please login again' },
+        { error: 'Unauthorized - Please login to add addresses' },
         { status: 401 }
       )
     }
 
     const body = await request.json()
+    const {
+      type,
+      isDefault,
+      firstName,
+      lastName,
+      company,
+      address1,
+      address2,
+      city,
+      province,
+      postalCode,
+      country,
+      phone
+    } = body
 
-    // Add new address to backend
-    const response = await fetch(`${BACKEND_URL}/api/users/addresses`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${session.user.accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
-    })
+    // If this is being set as default, unset other defaults of the same type
+    if (isDefault) {
+      await supabase
+        .from('UserAddresses')
+        .update({ isDefault: false })
+        .eq('userId', session.user.id)
+        .eq('type', type)
+    }
 
-    if (!response.ok) {
-      if (response.status === 503 || response.status === 502) {
-        return NextResponse.json({
-          success: true,
-          message: 'Backend temporarily unavailable - address will be added when service is restored'
-        })
-      }
-      
+    // Create new address
+    const { data: address, error } = await supabase
+      .from('UserAddresses')
+      .insert([{
+        userId: session.user.id,
+        type,
+        isDefault: isDefault || false,
+        firstName,
+        lastName,
+        company,
+        address1,
+        address2,
+        city,
+        province,
+        postalCode,
+        country: country || 'South Africa',
+        phone
+      }])
+      .select()
+      .single()
+
+    if (error) {
+      console.error('❌ Address creation error:', error)
       return NextResponse.json(
-        { error: 'Failed to add address to backend' },
-        { status: response.status }
+        { error: 'Failed to create address' },
+        { status: 500 }
       )
     }
 
-    const data = await response.json()
     return NextResponse.json({
       success: true,
-      address: data.address || data,
-      message: 'Address added successfully'
+      address,
+      message: 'Address created successfully'
     })
 
   } catch (error) {
-    console.error('Address add API error:', error)
+    console.error('Address creation API error:', error)
     return NextResponse.json(
-      { error: 'Internal server error - failed to add address' },
+      { error: 'Internal server error - failed to create address' },
       { status: 500 }
     )
   }
@@ -126,49 +129,71 @@ export async function PUT(request: NextRequest) {
     
     if (!session) {
       return NextResponse.json(
-        { error: 'Unauthorized - Please login to update address' },
-        { status: 401 }
-      )
-    }
-
-    if (!session.user?.accessToken) {
-      return NextResponse.json(
-        { error: 'No access token found - please login again' },
+        { error: 'Unauthorized - Please login to update addresses' },
         { status: 401 }
       )
     }
 
     const body = await request.json()
-    const { id, ...addressData } = body
+    const {
+      id,
+      type,
+      isDefault,
+      firstName,
+      lastName,
+      company,
+      address1,
+      address2,
+      city,
+      province,
+      postalCode,
+      country,
+      phone
+    } = body
 
-    // Update address in backend
-    const response = await fetch(`${BACKEND_URL}/api/users/addresses/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${session.user.accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(addressData)
-    })
+    // If this is being set as default, unset other defaults of the same type
+    if (isDefault) {
+      await supabase
+        .from('UserAddresses')
+        .update({ isDefault: false })
+        .eq('userId', session.user.id)
+        .eq('type', type)
+        .neq('id', id)
+    }
 
-    if (!response.ok) {
-      if (response.status === 503 || response.status === 502) {
-        return NextResponse.json({
-          success: true,
-          message: 'Backend temporarily unavailable - address will be updated when service is restored'
-        })
-      }
-      
+    // Update address
+    const { data: address, error } = await supabase
+      .from('UserAddresses')
+      .update({
+        type,
+        isDefault: isDefault || false,
+        firstName,
+        lastName,
+        company,
+        address1,
+        address2,
+        city,
+        province,
+        postalCode,
+        country: country || 'South Africa',
+        phone
+      })
+      .eq('id', id)
+      .eq('userId', session.user.id)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('❌ Address update error:', error)
       return NextResponse.json(
-        { error: 'Failed to update address in backend' },
-        { status: response.status }
+        { error: 'Failed to update address' },
+        { status: 500 }
       )
     }
 
-    const data = await response.json()
     return NextResponse.json({
       success: true,
-      address: data.address || data,
+      address,
       message: 'Address updated successfully'
     })
 
@@ -187,48 +212,33 @@ export async function DELETE(request: NextRequest) {
     
     if (!session) {
       return NextResponse.json(
-        { error: 'Unauthorized - Please login to delete address' },
-        { status: 401 }
-      )
-    }
-
-    if (!session.user?.accessToken) {
-      return NextResponse.json(
-        { error: 'No access token found - please login again' },
+        { error: 'Unauthorized - Please login to delete addresses' },
         { status: 401 }
       )
     }
 
     const { searchParams } = new URL(request.url)
-    const id = searchParams.get('id')
+    const addressId = searchParams.get('id')
 
-    if (!id) {
+    if (!addressId) {
       return NextResponse.json(
         { error: 'Address ID is required' },
         { status: 400 }
       )
     }
 
-    // Delete address from backend
-    const response = await fetch(`${BACKEND_URL}/api/users/addresses/${id}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${session.user.accessToken}`,
-        'Content-Type': 'application/json'
-      }
-    })
+    // Delete address
+    const { error } = await supabase
+      .from('UserAddresses')
+      .delete()
+      .eq('id', addressId)
+      .eq('userId', session.user.id)
 
-    if (!response.ok) {
-      if (response.status === 503 || response.status === 502) {
-        return NextResponse.json({
-          success: true,
-          message: 'Backend temporarily unavailable - address will be deleted when service is restored'
-        })
-      }
-      
+    if (error) {
+      console.error('❌ Address deletion error:', error)
       return NextResponse.json(
-        { error: 'Failed to delete address from backend' },
-        { status: response.status }
+        { error: 'Failed to delete address' },
+        { status: 500 }
       )
     }
 
@@ -238,7 +248,7 @@ export async function DELETE(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Address delete API error:', error)
+    console.error('Address deletion API error:', error)
     return NextResponse.json(
       { error: 'Internal server error - failed to delete address' },
       { status: 500 }
