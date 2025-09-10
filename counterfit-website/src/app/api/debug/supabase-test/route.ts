@@ -71,8 +71,14 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Supabase test error:', error)
+    let errorMessage = 'Unknown error'
+    if (error instanceof Error) {
+      errorMessage = error.message
+    } else if (typeof error === 'string') {
+      errorMessage = error
+    }
     return NextResponse.json(
-      { error: 'Failed to test Supabase access', details: error.message },
+      { error: 'Failed to test Supabase access', details: errorMessage },
       { status: 500 }
     )
   }
