@@ -72,6 +72,8 @@ export default function AdminOrdersPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [error, setError] = useState('')
+  const [localTrackingNumber, setLocalTrackingNumber] = useState('')
+  const [localNotes, setLocalNotes] = useState('')
 
   useEffect(() => {
     if (status === 'loading') return
@@ -358,6 +360,8 @@ export default function AdminOrdersPage() {
                           size="sm"
                           onClick={() => {
                             setSelectedOrder(order)
+                            setLocalTrackingNumber(order.trackingNumber || '')
+                            setLocalNotes(order.notes || '')
                             setShowOrderDetails(true)
                           }}
                         >
@@ -485,16 +489,14 @@ export default function AdminOrdersPage() {
                     <input
                       type="text"
                       className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      value={selectedOrder.trackingNumber || ''}
-                      onChange={(e) => {
-                        // Update tracking number on blur
-                        e.target.onBlur = () => {
-                          if (e.target.value !== selectedOrder.trackingNumber) {
-                            updateOrderStatus(selectedOrder.id, selectedOrder.status, { trackingNumber: e.target.value })
-                          }
+                      value={localTrackingNumber}
+                      onChange={(e) => setLocalTrackingNumber(e.target.value)}
+                      onBlur={(e) => {
+                        if (e.target.value !== selectedOrder.trackingNumber) {
+                          updateOrderStatus(selectedOrder.id, selectedOrder.status, { trackingNumber: e.target.value })
                         }
                       }}
-                      placeholder="Enter tracking number"
+                      placeholder=""
                     />
                   </div>
                   
@@ -518,13 +520,11 @@ export default function AdminOrdersPage() {
                   <textarea
                     className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     rows={3}
-                    value={selectedOrder.notes || ''}
-                    onChange={(e) => {
-                      // Update notes on blur
-                      e.target.onBlur = () => {
-                        if (e.target.value !== selectedOrder.notes) {
-                          updateOrderStatus(selectedOrder.id, selectedOrder.status, { notes: e.target.value })
-                        }
+                    value={localNotes}
+                    onChange={(e) => setLocalNotes(e.target.value)}
+                    onBlur={(e) => {
+                      if (e.target.value !== selectedOrder.notes) {
+                        updateOrderStatus(selectedOrder.id, selectedOrder.status, { notes: e.target.value })
                       }
                     }}
                     placeholder="Add internal notes about this order..."
@@ -611,10 +611,15 @@ export default function AdminOrdersPage() {
                     Shipping Address
                   </h3>
                   <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-gray-900">
+                    <p className="text-gray-900 font-medium">
                       {selectedOrder.shippingAddress.firstName} {selectedOrder.shippingAddress.lastName}
                     </p>
-                    <p className="text-gray-600">{selectedOrder.shippingAddress.street}</p>
+                    {selectedOrder.shippingAddress.street && (
+                      <p className="text-gray-600">{selectedOrder.shippingAddress.street}</p>
+                    )}
+                    {selectedOrder.shippingAddress.address && (
+                      <p className="text-gray-600">{selectedOrder.shippingAddress.address}</p>
+                    )}
                     {selectedOrder.shippingAddress.apartment && (
                       <p className="text-gray-600">{selectedOrder.shippingAddress.apartment}</p>
                     )}

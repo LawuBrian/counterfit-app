@@ -3,9 +3,10 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { ArrowRight, Star, Heart, Share2, Plus, Minus, ShoppingBag, Truck, Shield, RotateCcw } from 'lucide-react'
+import { ArrowRight, Star, Heart, Share2, Plus, Minus, ShoppingBag, Truck, Shield, RotateCcw, X } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useCart } from '@/contexts/CartContext'
+import { useWishlist } from '@/contexts/WishlistContext'
 import { useParams } from 'next/navigation'
 import { getImageUrl } from '@/lib/utils'
 import { formatPrice } from '@/lib/api'
@@ -43,6 +44,18 @@ interface ProductData {
     allowBackorder: boolean
   }
   inStock: boolean
+  sizeGuide?: {
+    enabled: boolean
+    title: string
+    measurements: Array<{
+      size: string
+      chest?: string
+      waist?: string
+      hips?: string
+      length?: string
+    }>
+    instructions?: string
+  }
 }
 
 export default function ProductPage() {
@@ -55,8 +68,10 @@ export default function ProductPage() {
   const [selectedColor, setSelectedColor] = useState<string>('')
   const [quantity, setQuantity] = useState(1)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [showSizeGuide, setShowSizeGuide] = useState(false)
   
   const { addToCart } = useCart()
+  const { addToWishlist, removeFromWishlist, isInWishlist, loading: wishlistLoading } = useWishlist()
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -153,6 +168,16 @@ export default function ProductPage() {
     
     // Show success feedback
     alert(`Added ${quantity} ${product.name} (${selectedSize}) to cart!`)
+  }
+
+  const handleWishlistToggle = async () => {
+    if (!product) return
+
+    if (isInWishlist(product.id)) {
+      await removeFromWishlist(product.id)
+    } else {
+      await addToWishlist(product.id)
+    }
   }
 
   const originalPrice = product.comparePrice && product.comparePrice > 0 && product.comparePrice > (product.price || 0) ? product.comparePrice : null
@@ -260,7 +285,17 @@ export default function ProductPage() {
 
               {/* Size Selection */}
               <div>
-                <h3 className="font-heading text-lg font-semibold text-primary mb-3">Size</h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-heading text-lg font-semibold text-primary">Size</h3>
+                  {product.sizeGuide?.enabled && (
+                    <button
+                      onClick={() => setShowSizeGuide(true)}
+                      className="text-sm text-primary hover:text-primary/80 underline"
+                    >
+                      Size Guide
+                    </button>
+                  )}
+                </div>
                 <div className="flex flex-wrap gap-3">
                   {product.sizes.map((size) => (
                     <button
@@ -339,11 +374,12 @@ export default function ProductPage() {
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => {}} // Wishlist functionality not implemented in this version
-                  className={`${false ? 'bg-red-50 border-red-200 text-red-600' : ''}`}
+                  onClick={handleWishlistToggle}
+                  disabled={wishlistLoading}
+                  className={`${isInWishlist(product.id) ? 'bg-red-50 border-red-200 text-red-600' : ''}`}
                 >
-                  <Heart className={`mr-2 h-5 w-5 ${false ? 'fill-current' : ''}`} />
-                  Save
+                  <Heart className={`mr-2 h-5 w-5 ${isInWishlist(product.id) ? 'fill-current text-red-600' : ''}`} />
+                  {isInWishlist(product.id) ? 'Saved' : 'Save'}
                 </Button>
                 <Button variant="outline">
                   <Share2 className="mr-2 h-5 w-5" />
@@ -404,15 +440,6 @@ export default function ProductPage() {
                   {/* Specifications data not available in the new product structure, so this will be empty */}
                 </dl>
               </div>
-              <div className="bg-background rounded-2xl p-6">
-                <h3 className="font-heading text-xl font-semibold text-primary mb-4">Size Guide</h3>
-                <p className="font-paragraph text-secondary mb-4">
-                  For the best fit, please refer to our size guide or contact our customer service team.
-                </p>
-                <Button variant="outline" className="w-full">
-                  View Size Guide
-                </Button>
-              </div>
             </div>
           </div>
         </div>
@@ -436,6 +463,84 @@ export default function ProductPage() {
           </div>
         </div>
       </section>
+
+      {/* Size Guide Modal */}
+      {showSizeGuide && product.sizeGuide?.enabled && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b">
+              <div className="flex items-center justify-between">
+                <h2 className="font-heading text-2xl font-bold text-primary">
+                  {product.sizeGuide.title}
+                </h2>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowSizeGuide(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {product.sizeGuide.instructions && (
+                <div>
+                  <h3 className="font-semibold text-lg mb-3">How to Measure</h3>
+                  <p className="text-gray-600 leading-relaxed">
+                    {product.sizeGuide.instructions}
+                  </p>
+                </div>
+              )}
+
+              {product.sizeGuide.measurements && product.sizeGuide.measurements.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-lg mb-4">Size Chart</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse border border-gray-300">
+                      <thead>
+                        <tr className="bg-gray-50">
+                          <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Size</th>
+                          {product.sizeGuide.measurements[0]?.chest && (
+                            <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Chest (cm)</th>
+                          )}
+                          {product.sizeGuide.measurements[0]?.waist && (
+                            <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Waist (cm)</th>
+                          )}
+                          {product.sizeGuide.measurements[0]?.hips && (
+                            <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Hips (cm)</th>
+                          )}
+                          {product.sizeGuide.measurements[0]?.length && (
+                            <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Length (cm)</th>
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {product.sizeGuide.measurements.map((measurement, index) => (
+                          <tr key={index} className="hover:bg-gray-50">
+                            <td className="border border-gray-300 px-4 py-2 font-medium">{measurement.size}</td>
+                            {measurement.chest && (
+                              <td className="border border-gray-300 px-4 py-2">{measurement.chest}</td>
+                            )}
+                            {measurement.waist && (
+                              <td className="border border-gray-300 px-4 py-2">{measurement.waist}</td>
+                            )}
+                            {measurement.hips && (
+                              <td className="border border-gray-300 px-4 py-2">{measurement.hips}</td>
+                            )}
+                            {measurement.length && (
+                              <td className="border border-gray-300 px-4 py-2">{measurement.length}</td>
+                            )}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

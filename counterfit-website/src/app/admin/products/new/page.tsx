@@ -65,6 +65,18 @@ interface ProductFormData {
     description: string
     keywords: string[]
   }
+  sizeGuide?: {
+    enabled: boolean
+    title: string
+    measurements: Array<{
+      size: string
+      chest?: string
+      waist?: string
+      hips?: string
+      length?: string
+    }>
+    instructions?: string
+  }
 }
 
 const initialFormData: ProductFormData = {
@@ -104,6 +116,12 @@ const initialFormData: ProductFormData = {
     title: '',
     description: '',
     keywords: []
+  },
+  sizeGuide: {
+    enabled: false,
+    title: 'Size Guide',
+    measurements: [],
+    instructions: ''
   }
 }
 
@@ -191,6 +209,39 @@ export default function NewProductPage() {
       colors: prev.colors.filter((_, i) => i !== index)
     }))
   }
+
+  // Calculate total stock from sizes and colors
+  const calculateTotalStock = (sizes: typeof formData.sizes, colors: typeof formData.colors) => {
+    if (colors.length > 0 && sizes.length > 0) {
+      // If both sizes and colors exist, multiply them (each size-color combination)
+      const sizeStock = sizes.reduce((sum, size) => sum + size.stock, 0)
+      const colorStock = colors.reduce((sum, color) => sum + color.stock, 0)
+      return Math.min(sizeStock, colorStock) // Use the limiting factor
+    } else if (sizes.length > 0) {
+      // Only sizes exist
+      return sizes.reduce((sum, size) => sum + size.stock, 0)
+    } else if (colors.length > 0) {
+      // Only colors exist
+      return colors.reduce((sum, color) => sum + color.stock, 0)
+    }
+    return 0
+  }
+
+  // Update total stock whenever sizes or colors change
+  useEffect(() => {
+    if (formData.inventory.trackQuantity) {
+      const totalStock = calculateTotalStock(formData.sizes, formData.colors)
+      if (totalStock !== formData.inventory.quantity) {
+        setFormData(prev => ({
+          ...prev,
+          inventory: {
+            ...prev.inventory,
+            quantity: totalStock
+          }
+        }))
+      }
+    }
+  }, [formData.sizes, formData.colors, formData.inventory.trackQuantity])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -387,7 +438,14 @@ export default function NewProductPage() {
               
               {/* Sizes */}
               <div className="mb-8">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Available Sizes</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">Available Sizes</h3>
+                  {formData.sizes.length > 0 && (
+                    <span className="text-sm text-gray-600">
+                      Total size stock: {formData.sizes.reduce((sum, size) => sum + size.stock, 0)}
+                    </span>
+                  )}
+                </div>
                 <p className="text-sm text-gray-600 mb-4">
                   Select sizes for your product. Use "One Size Fits All" for accessories like caps, scarves, or items that don't require specific sizing.
                 </p>
@@ -442,7 +500,14 @@ export default function NewProductPage() {
               {/* Colors */}
               <div>
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-medium text-gray-900">Available Colors</h3>
+                  <div className="flex items-center justify-between w-full">
+                    <h3 className="text-lg font-medium text-gray-900">Available Colors</h3>
+                    {formData.colors.length > 0 && (
+                      <span className="text-sm text-gray-600">
+                        Total color stock: {formData.colors.reduce((sum, color) => sum + color.stock, 0)}
+                      </span>
+                    )}
+                  </div>
                   <Button type="button" onClick={addColor}>
                     <Plus className="mr-2 h-4 w-4" />
                     Add Color
@@ -493,6 +558,148 @@ export default function NewProductPage() {
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+
+            {/* Size Guide */}
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">Size Guide</h2>
+              
+              <div className="space-y-4">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.sizeGuide?.enabled || false}
+                    onChange={(e) => handleNestedInputChange('sizeGuide', 'enabled', e.target.checked)}
+                    className="rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">Enable Size Guide</span>
+                </label>
+
+                {formData.sizeGuide?.enabled && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Size Guide Title
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        value={formData.sizeGuide?.title || ''}
+                        onChange={(e) => handleNestedInputChange('sizeGuide', 'title', e.target.value)}
+                        placeholder="Size Guide"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Fitting Instructions
+                      </label>
+                      <textarea
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        value={formData.sizeGuide?.instructions || ''}
+                        onChange={(e) => handleNestedInputChange('sizeGuide', 'instructions', e.target.value)}
+                        placeholder="How to measure instructions..."
+                      />
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-medium text-gray-900">Size Measurements</h3>
+                        <Button 
+                          type="button" 
+                          onClick={() => {
+                            const newMeasurements = [...(formData.sizeGuide?.measurements || []), {
+                              size: '',
+                              chest: '',
+                              waist: '',
+                              hips: '',
+                              length: ''
+                            }]
+                            handleNestedInputChange('sizeGuide', 'measurements', newMeasurements)
+                          }}
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add Size
+                        </Button>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        {formData.sizeGuide?.measurements?.map((measurement, index) => (
+                          <div key={index} className="grid grid-cols-6 gap-2 p-3 bg-gray-50 rounded-lg">
+                            <input
+                              type="text"
+                              placeholder="Size"
+                              className="px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                              value={measurement.size}
+                              onChange={(e) => {
+                                const newMeasurements = [...(formData.sizeGuide?.measurements || [])]
+                                newMeasurements[index] = { ...newMeasurements[index], size: e.target.value }
+                                handleNestedInputChange('sizeGuide', 'measurements', newMeasurements)
+                              }}
+                            />
+                            <input
+                              type="text"
+                              placeholder="Chest (cm)"
+                              className="px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                              value={measurement.chest || ''}
+                              onChange={(e) => {
+                                const newMeasurements = [...(formData.sizeGuide?.measurements || [])]
+                                newMeasurements[index] = { ...newMeasurements[index], chest: e.target.value }
+                                handleNestedInputChange('sizeGuide', 'measurements', newMeasurements)
+                              }}
+                            />
+                            <input
+                              type="text"
+                              placeholder="Waist (cm)"
+                              className="px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                              value={measurement.waist || ''}
+                              onChange={(e) => {
+                                const newMeasurements = [...(formData.sizeGuide?.measurements || [])]
+                                newMeasurements[index] = { ...newMeasurements[index], waist: e.target.value }
+                                handleNestedInputChange('sizeGuide', 'measurements', newMeasurements)
+                              }}
+                            />
+                            <input
+                              type="text"
+                              placeholder="Hips (cm)"
+                              className="px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                              value={measurement.hips || ''}
+                              onChange={(e) => {
+                                const newMeasurements = [...(formData.sizeGuide?.measurements || [])]
+                                newMeasurements[index] = { ...newMeasurements[index], hips: e.target.value }
+                                handleNestedInputChange('sizeGuide', 'measurements', newMeasurements)
+                              }}
+                            />
+                            <input
+                              type="text"
+                              placeholder="Length (cm)"
+                              className="px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                              value={measurement.length || ''}
+                              onChange={(e) => {
+                                const newMeasurements = [...(formData.sizeGuide?.measurements || [])]
+                                newMeasurements[index] = { ...newMeasurements[index], length: e.target.value }
+                                handleNestedInputChange('sizeGuide', 'measurements', newMeasurements)
+                              }}
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const newMeasurements = formData.sizeGuide?.measurements?.filter((_, i) => i !== index) || []
+                                handleNestedInputChange('sizeGuide', 'measurements', newMeasurements)
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -634,15 +841,45 @@ export default function NewProductPage() {
                   <>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Quantity
+                        Total Quantity
                       </label>
-                      <input
-                        type="number"
-                        min="0"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                        value={formData.inventory.quantity}
-                        onChange={(e) => handleNestedInputChange('inventory', 'quantity', parseInt(e.target.value) || 0)}
-                      />
+                      <div className="space-y-2">
+                        <input
+                          type="number"
+                          min="0"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                          value={formData.inventory.quantity}
+                          onChange={(e) => handleNestedInputChange('inventory', 'quantity', parseInt(e.target.value) || 0)}
+                        />
+                        <div className="flex items-center justify-between text-sm text-gray-600">
+                          <div>
+                            {formData.sizes.length > 0 || formData.colors.length > 0 ? (
+                              <>
+                                Calculated from sizes/colors: {calculateTotalStock(formData.sizes, formData.colors)}
+                                {calculateTotalStock(formData.sizes, formData.colors) !== formData.inventory.quantity && (
+                                  <span className="text-amber-600 ml-2">⚠️ Manual override active</span>
+                                )}
+                              </>
+                            ) : (
+                              'Add sizes or colors to auto-calculate total stock'
+                            )}
+                          </div>
+                          {(formData.sizes.length > 0 || formData.colors.length > 0) && 
+                           calculateTotalStock(formData.sizes, formData.colors) !== formData.inventory.quantity && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const calculatedStock = calculateTotalStock(formData.sizes, formData.colors)
+                                handleNestedInputChange('inventory', 'quantity', calculatedStock)
+                              }}
+                            >
+                              Sync Stock
+                            </Button>
+                          )}
+                        </div>
+                      </div>
                     </div>
 
                     <div>

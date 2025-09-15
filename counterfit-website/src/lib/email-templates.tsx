@@ -352,3 +352,4 @@ export const OrderDeliveredTemplate = ({ order }: { order: OrderEmailData }) => 
     </body>
   </html>
 )
+

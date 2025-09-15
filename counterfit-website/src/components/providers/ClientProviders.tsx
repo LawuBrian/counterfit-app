@@ -2,6 +2,7 @@
 
 import { SessionProvider } from "next-auth/react"
 import { CartProvider } from "@/contexts/CartContext"
+import { WishlistProvider } from "@/contexts/WishlistContext"
 import { ReactNode } from "react"
 
 interface ClientProvidersProps {
@@ -12,7 +13,9 @@ export default function ClientProviders({ children }: ClientProvidersProps) {
   return (
     <SessionProvider>
       <CartProvider>
-        {children}
+        <WishlistProvider>
+          {children}
+        </WishlistProvider>
       </CartProvider>
     </SessionProvider>
   )

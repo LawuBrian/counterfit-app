@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { getFeaturedProducts, getFeaturedCollections, formatPrice, Product, Collection } from '@/lib/api'
 import { useVisitorTracking } from '@/lib/visitorTracking'
+import { useWishlist } from '@/contexts/WishlistContext'
 
 export default function HomePage() {
   const [showAdminInfo, setShowAdminInfo] = useState(false)
@@ -17,6 +18,7 @@ export default function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
   const [featuredCollections, setFeaturedCollections] = useState<Collection[]>([])
   const [loading, setLoading] = useState(true)
+  const { addToWishlist, removeFromWishlist, isInWishlist, loading: wishlistLoading } = useWishlist()
   
   // Track visitor analytics
   useVisitorTracking('/', 'Counterfit - Luxury Streetwear')
@@ -180,8 +182,24 @@ export default function HomePage() {
                     
                     {/* Quick actions */}
                     <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <button className="w-8 h-8 bg-white/90 rounded-full flex items-center justify-center hover:bg-white transition-colors">
-                        <Heart className="w-4 h-4 text-gray-600" />
+                      <button 
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          if (isInWishlist(product.id)) {
+                            removeFromWishlist(product.id)
+                          } else {
+                            addToWishlist(product.id)
+                          }
+                        }}
+                        disabled={wishlistLoading}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center hover:bg-white transition-colors ${
+                          isInWishlist(product.id) ? 'bg-red-100' : 'bg-white/90'
+                        }`}
+                      >
+                        <Heart className={`w-4 h-4 ${
+                          isInWishlist(product.id) ? 'text-red-600 fill-current' : 'text-gray-600'
+                        }`} />
                       </button>
                       <button className="w-8 h-8 bg-white/90 rounded-full flex items-center justify-center hover:bg-white transition-colors">
                         <Eye className="w-4 h-4 text-gray-600" />
