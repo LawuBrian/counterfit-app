@@ -248,11 +248,12 @@ export default function EditProductPage() {
     return 0
   }
 
-  // Update total stock whenever sizes or colors change
+  // Update total stock whenever sizes or colors change (but not when inventory.quantity changes to prevent loops)
   useEffect(() => {
     if (formData?.inventory.trackQuantity) {
       const totalStock = calculateTotalStock(formData.sizes, formData.colors)
-      if (totalStock !== formData.inventory.quantity) {
+      // Only update if there's a significant difference to prevent infinite loops
+      if (Math.abs(totalStock - formData.inventory.quantity) > 0) {
         setFormData(prev => prev ? ({
           ...prev,
           inventory: {
@@ -262,6 +263,8 @@ export default function EditProductPage() {
         }) : null)
       }
     }
+    // Deliberately exclude formData.inventory.quantity from dependencies to prevent infinite loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData?.sizes, formData?.colors, formData?.inventory.trackQuantity])
 
   const handleSubmit = async (e: React.FormEvent) => {

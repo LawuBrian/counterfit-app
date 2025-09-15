@@ -3,9 +3,10 @@
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Search, User, ShoppingBag, Menu, X, Lock } from "lucide-react"
+import { Search, User, ShoppingBag, Menu, X, Lock, Heart } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useCart } from "@/contexts/CartContext"
+import { useWishlist } from "@/contexts/WishlistContext"
 import { useSession, signOut } from "next-auth/react"
 import { usePathname } from "next/navigation"
 
@@ -14,6 +15,7 @@ export default function Header() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const { getTotalItems } = useCart()
+  const { wishlist } = useWishlist()
   const { data: session } = useSession()
   const pathname = usePathname()
 
@@ -130,6 +132,18 @@ export default function Header() {
             <Link href="/contact" className={getLinkClasses('/contact')}>
               Contact
             </Link>
+            
+            {/* Wishlist - Only for authenticated users */}
+            {session && (
+              <Link href="/wishlist" className={getLinkClasses('/wishlist')}>
+                Wishlist
+                {wishlist.length > 0 && (
+                  <span className="ml-1 bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
+                    {wishlist.length}
+                  </span>
+                )}
+              </Link>
+            )}
           </nav>
 
           {/* Right Side Actions */}
@@ -180,6 +194,18 @@ export default function Header() {
                   <span className="sm:hidden">Sign In</span>
                 </Link>
               </Button>
+            )}
+            
+            {/* Wishlist - Only for authenticated users */}
+            {session && (
+              <Link href="/wishlist" className="p-1.5 lg:p-2 text-secondary hover:text-primary transition-colors relative">
+                <Heart className="h-4 w-4 lg:h-5 lg:w-5" />
+                {wishlist.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {wishlist.length}
+                  </span>
+                )}
+              </Link>
             )}
             
             {/* Cart - Available to all users */}
@@ -292,6 +318,22 @@ export default function Header() {
                 >
                   Contact
                 </Link>
+                
+                {/* Wishlist - Only for authenticated users */}
+                {session && (
+                  <Link 
+                    href="/wishlist" 
+                    className={getMobileLinkClasses('/wishlist')}
+                    onClick={toggleMobileMenu}
+                  >
+                    Wishlist
+                    {wishlist.length > 0 && (
+                      <span className="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
+                        {wishlist.length}
+                      </span>
+                    )}
+                  </Link>
+                )}
               </div>
               
               <div className="mt-8 pt-8 border-t border-gray-200">
@@ -304,7 +346,11 @@ export default function Header() {
                         My Account
                       </Button>
                     </Link>
-                    <div className="flex items-center justify-center">
+                    <div className="flex items-center justify-center space-x-6">
+                      <Link href="/wishlist" className="flex items-center gap-2 text-primary" onClick={toggleMobileMenu}>
+                        <Heart className="h-5 w-5" />
+                        <span>Wishlist ({wishlist.length})</span>
+                      </Link>
                       <Link href="/cart" className="flex items-center gap-2 text-primary" onClick={toggleMobileMenu}>
                         <ShoppingBag className="h-5 w-5" />
                         <span>Cart ({getTotalItems()})</span>
