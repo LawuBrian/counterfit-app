@@ -3,7 +3,7 @@ const { supabase } = require('../lib/supabase');
 const { protect, adminOnly } = require('../middleware/auth');
 const router = express.Router();
 
-// @desc    Create new order
+// @desc    Create new order (ONLY for completed payments)
 // @route   POST /api/orders
 // @access  Private
 router.post('/', protect, async (req, res) => {
@@ -12,22 +12,40 @@ router.post('/', protect, async (req, res) => {
     console.log('📦 Request body:', JSON.stringify(req.body, null, 2))
     console.log('👤 User ID from token:', req.user.id)
     
+    // ⚠️ IMPORTANT: Only create orders with confirmed payment
+    // This prevents orders from being created without payment
+    const { paymentId, paymentStatus, ...orderData } = req.body;
+    
+    // Validate payment is completed before creating order
+    if (!paymentId && paymentStatus !== 'paid') {
+      console.warn('⚠️ Attempted to create order without payment confirmation')
+      console.warn('PaymentId:', paymentId, 'PaymentStatus:', paymentStatus)
+      return res.status(400).json({
+        success: false,
+        message: 'Order cannot be created without payment confirmation',
+        error: 'Payment required'
+      });
+    }
+    
     // Generate UUID for order ID
     const orderId = require('crypto').randomUUID();
     
-    const orderData = {
-      id: orderId, // Add the generated UUID
-      ...req.body,
+    const finalOrderData = {
+      id: orderId,
+      ...orderData,
       userId: req.user.id,
+      paymentId,
+      paymentStatus: paymentStatus || 'paid', // Default to paid if paymentId exists
+      status: 'confirmed', // Orders with payment start as confirmed
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     }
 
-    console.log('📋 Final order data:', JSON.stringify(orderData, null, 2))
+    console.log('📋 Final order data:', JSON.stringify(finalOrderData, null, 2))
 
     const { data: order, error } = await supabase
       .from('Order')
-      .insert(orderData)
+      .insert(finalOrderData)
       .select()
       .single();
 
@@ -40,10 +58,12 @@ router.post('/', protect, async (req, res) => {
       });
     }
 
-    console.log('✅ Order created successfully:', {
+    console.log('✅ Order created successfully with payment:', {
       id: order.id,
       orderNumber: order.orderNumber,
-      totalAmount: order.totalAmount
+      totalAmount: order.totalAmount,
+      paymentId: order.paymentId,
+      paymentStatus: order.paymentStatus
     })
 
     res.status(201).json({

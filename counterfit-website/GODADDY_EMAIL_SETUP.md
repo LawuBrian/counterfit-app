@@ -173,3 +173,4 @@ nslookup -type=TXT _dmarc.counterfit.co.za
 
 **After setup, your emails should go to inbox instead of spam! 🎉**
 
+

@@ -25,7 +25,8 @@ router.get('/public-stats', async (req, res) => {
     const revenueResult = await supabase
       .from('Order')
       .select('totalAmount')
-      .eq('paymentStatus', 'paid');
+      .eq('paymentStatus', 'paid')
+      .neq('status', 'draft');
 
     const totalRevenue = revenueResult.data?.reduce((sum, order) => sum + parseFloat(order.totalAmount), 0) || 0;
 
@@ -68,9 +69,9 @@ router.get('/stats', async (req, res) => {
     ] = await Promise.all([
       supabase.from('User').select('id', { count: 'exact' }),
       supabase.from('Product').select('id', { count: 'exact' }).eq('status', 'published'),
-      supabase.from('Order').select('id', { count: 'exact' }),
+      supabase.from('Order').select('id', { count: 'exact' }).neq('status', 'draft'),
       supabase.from('Collection').select('id', { count: 'exact' }).eq('status', 'published'),
-      supabase.from('Order').select('*, User(id, firstName, lastName, email)').order('createdAt', { ascending: false }).limit(5),
+      supabase.from('Order').select('*, User(id, firstName, lastName, email)').neq('status', 'draft').order('createdAt', { ascending: false }).limit(5),
       supabase.from('Product').select('*').eq('status', 'published').order('salesCount', { ascending: false }).limit(5)
     ]);
 
@@ -78,7 +79,8 @@ router.get('/stats', async (req, res) => {
     const revenueResult = await supabase
       .from('Order')
       .select('totalAmount')
-      .eq('paymentStatus', 'paid');
+      .eq('paymentStatus', 'paid')
+      .neq('status', 'draft');
 
     const totalRevenue = revenueResult.data?.reduce((sum, order) => sum + parseFloat(order.totalAmount), 0) || 0;
 
@@ -105,7 +107,7 @@ router.get('/stats', async (req, res) => {
   }
 });
 
-// @desc    Get all orders for admin
+// @desc    Get all orders for admin (excludes draft orders)
 // @route   GET /api/admin/orders
 // @access  Private/Admin
 router.get('/orders', async (req, res) => {
@@ -115,9 +117,10 @@ router.get('/orders', async (req, res) => {
     let query = supabase
       .from('Order')
       .select('*, User(id, firstName, lastName, email)')
+      .neq('status', 'draft') // ⚠️ IMPORTANT: Exclude draft orders from admin view
       .order('createdAt', { ascending: false });
 
-    if (status) {
+    if (status && status !== 'draft') { // Don't allow filtering by draft status
       query = query.eq('status', status);
     }
 

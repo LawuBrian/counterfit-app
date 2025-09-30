@@ -98,24 +98,58 @@ async function handlePaymentSucceeded(data: any) {
       return
     }
     
-    // Update order status in backend
-    const updateResponse = await fetch(`${BACKEND_URL}/api/orders/${orderId}/status`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        // Use webhook secret as authentication for internal calls
-        'X-Webhook-Secret': process.env.YOCO_WEBHOOK_SECRET || ''
-      },
-      body: JSON.stringify({
+    // ⚠️ IMPORTANT: Convert draft order to real order when payment succeeds
+    try {
+      const { supabase } = await import('@/lib/supabase')
+      
+      // Get the draft order
+      const { data: draftOrder, error: fetchError } = await supabase
+        .from('Order')
+        .select('*')
+        .eq('id', orderId)
+        .single()
+      
+      if (fetchError || !draftOrder) {
+        console.error('❌ Draft order not found:', orderId)
+        return
+      }
+      
+      console.log('📋 Converting draft order to real order:', draftOrder.orderNumber)
+      
+      // Create real order with payment confirmation
+      const realOrderData = {
+        ...draftOrder,
+        id: draftOrder.userId + '-' + Date.now(), // New real order ID
+        status: 'confirmed', // Confirmed status for paid orders
         paymentStatus: 'paid',
         paymentId: paymentId,
-        status: 'confirmed', // Move from pending to confirmed
         updatedAt: new Date().toISOString()
+      }
+      
+      // Insert the real order
+      const { data: realOrder, error: insertError } = await supabase
+        .from('Order')
+        .insert([realOrderData])
+        .select()
+        .single()
+      
+      if (insertError) {
+        console.error('❌ Failed to create real order:', insertError)
+        return
+      }
+      
+      // Delete the draft order
+      await supabase
+        .from('Order')
+        .delete()
+        .eq('id', orderId)
+      
+      console.log('✅ Order converted successfully:', {
+        draftId: orderId,
+        realId: realOrder.id,
+        orderNumber: realOrder.orderNumber,
+        paymentId: paymentId
       })
-    })
-    
-    if (updateResponse.ok) {
-      console.log('✅ Order payment status updated successfully')
       
       // Send payment confirmation email
       try {
@@ -123,8 +157,8 @@ async function handlePaymentSucceeded(data: any) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            orderId,
-            orderNumber,
+            orderId: realOrder.id,
+            orderNumber: realOrder.orderNumber,
             paymentId
           })
         })
@@ -133,8 +167,29 @@ async function handlePaymentSucceeded(data: any) {
         console.warn('⚠️ Failed to send payment confirmation email:', emailError)
       }
       
-    } else {
-      console.error('❌ Failed to update order payment status')
+    } catch (supabaseError) {
+      console.error('❌ Error converting draft to real order:', supabaseError)
+      
+      // Fallback: try to update existing order
+      const updateResponse = await fetch(`${BACKEND_URL}/api/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Webhook-Secret': process.env.YOCO_WEBHOOK_SECRET || ''
+        },
+        body: JSON.stringify({
+          paymentStatus: 'paid',
+          paymentId: paymentId,
+          status: 'confirmed',
+          updatedAt: new Date().toISOString()
+        })
+      })
+      
+      if (updateResponse.ok) {
+        console.log('✅ Fallback: Order payment status updated via backend')
+      } else {
+        console.error('❌ Both Supabase and backend update failed')
+      }
     }
     
   } catch (error) {

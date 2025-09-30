@@ -67,144 +67,95 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate order data
-    const orderData = {
+    // ⚠️ IMPORTANT: Create draft order only - real order created when payment confirmed
+    const draftOrderData = {
       userId: session.user.id,
       orderNumber: generateOrderNumber(),
       items,
       totalAmount: parseFloat(totalAmount),
-      status: 'pending',
+      status: 'draft', // Draft status until payment is confirmed
       paymentStatus: 'pending',
       paymentMethod,
       trackingNumber: generateTrackingNumber(),
-      carrier: 'PostNet', // Default carrier
+      carrier: 'PostNet',
       shippingAddress,
       billingAddress: billingAddress || shippingAddress,
       notes: notes || ''
     }
 
-    console.log('📋 Generated order data:', JSON.stringify(orderData, null, 2))
-    console.log('🌐 Calling backend API:', `${BACKEND_URL}/api/orders`)
-    console.log('🔑 Authorization header:', `Bearer ${session.user.accessToken ? 'TOKEN_PRESENT' : 'NO_TOKEN'}`)
-
-    // Try to create order in backend first, fallback to Supabase
+    console.log('📋 Creating draft order:', JSON.stringify(draftOrderData, null, 2))
+    
     let order
-    let orderSource = 'backend'
     
     try {
-      console.log('🌐 Trying to create order in backend...')
-      const response = await fetch(`${BACKEND_URL}/api/orders`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.user.accessToken}`
-        },
-        body: JSON.stringify(orderData)
-      })
-
-      if (response.ok) {
-        const backendOrder = await response.json()
-        order = backendOrder.data || backendOrder.order || backendOrder
-        console.log('✅ Order created in backend:', JSON.stringify(order, null, 2))
-      } else {
-        throw new Error(`Backend error: ${response.status}`)
-      }
-    } catch (backendError) {
-      console.warn('⚠️ Backend failed, creating order directly in Supabase:', backendError)
+      const { supabase } = await import('@/lib/supabase')
       
-      // Fallback to Supabase
-      try {
-        const { supabase } = await import('@/lib/supabase')
-        
-        // Create order in Supabase
-        const { data: supabaseOrder, error } = await supabase
-          .from('Order')
-          .insert([{
-            id: orderData.userId + '-' + Date.now(), // Generate unique ID
-            orderNumber: orderData.orderNumber,
-            status: orderData.status,
-            totalAmount: orderData.totalAmount,
-            subtotal: orderData.totalAmount,
-            tax: 0,
-            shipping: 0,
-            paymentStatus: orderData.paymentStatus,
-            paymentId: null,
-            trackingNumber: orderData.trackingNumber,
-            carrier: orderData.carrier,
-            notes: orderData.notes,
-            paymentMethod: orderData.paymentMethod,
-            userId: orderData.userId,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          }])
-          .select()
-          .single()
+      // Create draft order in Supabase
+      const { data: draftOrder, error } = await supabase
+        .from('Order')
+        .insert([{
+          id: draftOrderData.userId + '-draft-' + Date.now(),
+          orderNumber: draftOrderData.orderNumber,
+          status: 'draft', // Draft status - not visible in admin until paid
+          totalAmount: draftOrderData.totalAmount,
+          subtotal: draftOrderData.totalAmount,
+          tax: 0,
+          shipping: 0,
+          paymentStatus: 'pending',
+          paymentId: null,
+          trackingNumber: draftOrderData.trackingNumber,
+          carrier: draftOrderData.carrier,
+          notes: draftOrderData.notes,
+          paymentMethod: draftOrderData.paymentMethod,
+          userId: draftOrderData.userId,
+          items: JSON.stringify(draftOrderData.items),
+          shippingAddress: JSON.stringify(draftOrderData.shippingAddress),
+          billingAddress: JSON.stringify(draftOrderData.billingAddress),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }])
+        .select()
+        .single()
 
-        if (error) throw error
+      if (error) throw error
+      
+      order = draftOrder
+      console.log('✅ Draft order created:', {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        status: order.status,
+        totalAmount: order.totalAmount
+      })
         
-        // Create shipping address
-        await supabase
-          .from('ShippingAddress')
-          .insert([{
-            firstName: orderData.shippingAddress.firstName,
-            lastName: orderData.shippingAddress.lastName,
-            address1: orderData.shippingAddress.address,
-            city: orderData.shippingAddress.city,
-            province: orderData.shippingAddress.state,
-            postalCode: orderData.shippingAddress.postalCode,
-            country: orderData.shippingAddress.country,
-            phone: orderData.shippingAddress.phone,
-            orderId: supabaseOrder.id
-          }])
-
-        // Create order items
-        for (const item of orderData.items) {
-          await supabase
-            .from('OrderItem')
-            .insert([{
-              quantity: item.quantity,
-              price: item.price,
-              orderId: supabaseOrder.id,
-              productId: item.id
-            }])
-        }
-
-        order = {
-          id: supabaseOrder.id,
-          orderNumber: supabaseOrder.orderNumber,
-          totalAmount: supabaseOrder.totalAmount,
-          trackingNumber: orderData.trackingNumber,
-          status: supabaseOrder.status,
-          paymentStatus: supabaseOrder.paymentStatus
-        }
-        
-        orderSource = 'supabase'
-        console.log('✅ Order created in Supabase:', JSON.stringify(order, null, 2))
-      } catch (supabaseError) {
-        console.error('❌ Both backend and Supabase failed:', supabaseError)
-        return NextResponse.json(
-          { error: 'Failed to create order - both backend and database are unavailable' },
-          { status: 500 }
-        )
-      }
+    } catch (error) {
+      console.error('❌ Failed to create draft order:', error)
+      return NextResponse.json(
+        { error: 'Failed to create checkout session - please try again' },
+        { status: 500 }
+      )
     }
 
     // Return order data for Yoco payment
     return NextResponse.json({
       success: true,
-      message: 'Order created successfully',
+      message: 'Draft order created - proceed to payment',
       order: {
         id: order.id,
         orderNumber: order.orderNumber,
         totalAmount: order.totalAmount,
-        trackingNumber: order.trackingNumber
-      }
+        trackingNumber: order.trackingNumber,
+        status: order.status,
+        paymentStatus: order.paymentStatus,
+        items: draftOrderData.items,
+        shippingAddress: draftOrderData.shippingAddress
+      },
+      source: 'draft'
     })
 
   } catch (error) {
     console.error('❌ Checkout error:', error)
     return NextResponse.json(
-      { error: 'Internal server error during checkout' },
+      { error: 'Server error during checkout' },
       { status: 500 }
     )
   }
