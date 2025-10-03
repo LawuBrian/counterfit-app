@@ -22,3 +22,4 @@ FROM information_schema.role_table_grants
 WHERE table_name IN ('UserSettings', 'UserAddresses', 'UserPaymentMethods')
 AND grantee = 'authenticated';
 
+

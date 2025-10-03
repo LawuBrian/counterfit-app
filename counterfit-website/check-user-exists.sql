@@ -24,3 +24,4 @@ LIMIT 5;
 -- Count total users
 SELECT COUNT(*) as total_users FROM "User";
 
+

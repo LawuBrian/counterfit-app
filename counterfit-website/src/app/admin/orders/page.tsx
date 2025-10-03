@@ -19,7 +19,8 @@ import {
   Download,
   Mail,
   Phone,
-  Shield
+  Shield,
+  AlertTriangle
 } from 'lucide-react'
 import Link from 'next/link'
 import OrderWorkflowGuide from './workflow-guide'
@@ -34,12 +35,14 @@ interface OrderUser {
 
 interface OrderItem {
   id: string
-  productId: string
-  productName: string
+  productId?: string
+  productName?: string
+  name?: string // Alternative name field
   quantity: number
   price: number
   size?: string
   color?: string
+  image?: string // Product image
 }
 
 interface Order {
@@ -52,6 +55,7 @@ interface Order {
   status: string
   paymentStatus: string
   paymentMethod?: string
+  paymentId?: string // Payment ID from Yoco
   trackingNumber?: string
   carrier?: string
   estimatedDelivery?: string
@@ -631,25 +635,121 @@ export default function AdminOrdersPage() {
                 </div>
               )}
 
-              {/* Order Items */}
-              <div>
-                <h3 className="font-semibold text-lg mb-4">Order Items</h3>
-                <div className="space-y-4">
-                  {selectedOrder.items?.map((item, index) => (
-                    <div key={index} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                      <div>
-                        <h4 className="font-medium text-gray-900">{item.productName}</h4>
-                        <p className="text-sm text-gray-600">
-                          Quantity: {item.quantity}
-                          {item.size && ` • Size: ${item.size}`}
-                          {item.color && ` • Color: ${item.color}`}
-                        </p>
-                      </div>
-                      <p className="font-semibold text-gray-900">
-                        R{(item.price * item.quantity).toFixed(2)}
+              {/* Payment Validation Warning */}
+              {selectedOrder.paymentStatus === 'pending' && !selectedOrder.paymentId && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <AlertTriangle className="w-5 h-5 text-red-500 mr-2" />
+                    <div>
+                      <h4 className="font-semibold text-red-800">⚠️ Payment Not Confirmed</h4>
+                      <p className="text-red-700 text-sm mt-1">
+                        This order was created without payment confirmation. Customer may not have completed payment.
+                        <br />
+                        <strong>Do not ship</strong> until payment is verified in your Yoco dashboard.
                       </p>
+                      <div className="mt-2 flex gap-2">
+                        <button 
+                          onClick={() => window.open('https://dashboard.yoco.com', '_blank')}
+                          className="text-xs bg-red-100 hover:bg-red-200 text-red-800 px-2 py-1 rounded"
+                        >
+                          Check Yoco Dashboard
+                        </button>
+                        <button 
+                          onClick={() => updateOrderStatus(selectedOrder.id, 'cancelled')}
+                          className="text-xs bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded"
+                        >
+                          Cancel Order
+                        </button>
+                      </div>
                     </div>
-                  ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Order Items - Enhanced Display */}
+              <div>
+                <h3 className="font-semibold text-lg mb-4 flex items-center">
+                  <Package className="w-5 h-5 mr-2" />
+                  Order Items ({selectedOrder.items?.length || 0} items)
+                </h3>
+                <div className="space-y-4">
+                  {selectedOrder.items?.map((item, index) => {
+                    // Parse items if it's a string
+                    let parsedItem = item;
+                    if (typeof item === 'string') {
+                      try {
+                        parsedItem = JSON.parse(item);
+                      } catch (e) {
+                        console.warn('Failed to parse item:', item);
+                      }
+                    }
+                    
+                    return (
+                      <div key={index} className="border border-gray-200 rounded-lg p-4 bg-white">
+                        <div className="flex items-start gap-4">
+                          {/* Product Image */}
+                          {parsedItem.image && (
+                            <div className="flex-shrink-0">
+                              <img 
+                                src={parsedItem.image} 
+                                alt={parsedItem.name || parsedItem.productName}
+                                className="w-16 h-16 object-cover rounded-lg border"
+                                onError={(e) => {
+                                  e.currentTarget.src = '/placeholder-product.jpg';
+                                }}
+                              />
+                            </div>
+                          )}
+                          
+                          {/* Product Details */}
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900 text-lg">
+                              {parsedItem.name || parsedItem.productName || 'Unknown Product'}
+                            </h4>
+                            
+                            {/* Product Attributes */}
+                            <div className="mt-2 space-y-1">
+                              <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                                <span className="flex items-center">
+                                  <strong>Qty:</strong> <span className="ml-1 font-medium">{parsedItem.quantity}</span>
+                                </span>
+                                {parsedItem.size && (
+                                  <span className="flex items-center">
+                                    <strong>Size:</strong> <span className="ml-1 font-medium">{parsedItem.size}</span>
+                                  </span>
+                                )}
+                                {parsedItem.color && (
+                                  <span className="flex items-center">
+                                    <strong>Color:</strong> <span className="ml-1 font-medium">{parsedItem.color}</span>
+                                  </span>
+                                )}
+                                <span className="flex items-center">
+                                  <strong>Unit Price:</strong> <span className="ml-1 font-medium">R{parsedItem.price?.toFixed(2)}</span>
+                                </span>
+                              </div>
+                              
+                              {/* Product ID for tracking */}
+                              {parsedItem.id && (
+                                <div className="text-xs text-gray-500 font-mono">
+                                  Product ID: {parsedItem.id}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Price */}
+                          <div className="text-right">
+                            <div className="text-lg font-bold text-gray-900">
+                              R{((parsedItem.price || 0) * (parsedItem.quantity || 1)).toFixed(2)}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {parsedItem.quantity} × R{(parsedItem.price || 0).toFixed(2)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
