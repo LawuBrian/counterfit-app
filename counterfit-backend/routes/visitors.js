@@ -140,33 +140,37 @@ router.put('/duration', async (req, res) => {
       })
     }
 
-         const { data: visitor, error } = await supabase
-       .from('visitors')
-       .update({
-         visitduration: duration,
-         updatedat: new Date().toISOString()
-       })
+    // Don't use .single() - it errors if no record found
+    const { data: visitors, error } = await supabase
+      .from('visitors')
+      .update({
+        visitduration: duration,
+        updatedat: new Date().toISOString()
+      })
       .eq('sessionid', sessionId)
       .select()
-      .single()
 
     if (error) {
       console.error('Error updating duration:', error)
       return res.status(500).json({
         success: false,
-        message: 'Failed to update visit duration'
+        message: 'Failed to update visit duration',
+        error: error.message
       })
     }
 
+    // Return success even if no rows updated (session may have expired)
     res.json({
       success: true,
-      data: visitor
+      data: visitors?.[0] || null,
+      updated: visitors?.length > 0
     })
   } catch (error) {
     console.error('Duration update error:', error)
     res.status(500).json({
       success: false,
-      message: 'Failed to update visit duration'
+      message: 'Failed to update visit duration',
+      error: error.message
     })
   }
 })
