@@ -15,8 +15,18 @@ const { testSupabaseConnection } = require('./lib/supabase');
 // Trust proxy for rate limiting (important for Render)
 app.set('trust proxy', 1);
 
-// Security middleware
-app.use(helmet());
+// Security middleware with custom configuration for CORS
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginEmbedderPolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:", "http:"],
+      connectSrc: ["'self'", "https://counterfit.co.za", "https://www.counterfit.co.za", "http://localhost:3000"],
+    },
+  },
+}));
 app.use(compression());
 app.use(morgan('combined'));
 
@@ -259,6 +269,26 @@ app.get('/health', (req, res) => {
     status: 'OK',
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
+  });
+});
+
+// Debug auth endpoint
+app.get('/api/debug/auth', (req, res) => {
+  const authHeader = req.headers.authorization;
+  const hasToken = authHeader && authHeader.startsWith('Bearer');
+  
+  res.json({
+    hasAuthHeader: !!authHeader,
+    hasToken,
+    authHeaderPreview: authHeader ? authHeader.substring(0, 20) + '...' : null,
+    jwtSecretSet: !!process.env.JWT_SECRET,
+    jwtSecretLength: process.env.JWT_SECRET?.length,
+    environment: process.env.NODE_ENV,
+    corsOrigins: [
+      'http://localhost:3000',
+      'https://counterfit.co.za',
+      'https://www.counterfit.co.za'
+    ]
   });
 });
 

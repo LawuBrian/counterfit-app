@@ -1,0 +1,99 @@
+﻿
+www.counterfit.co.za/:1 [Intervention] Images loaded lazily and replaced with placeholders. Load events are deferred. See https://go.microsoft.com/fwlink/?linkid=2048113
+layout-872747b47b69bd99.js:1 🔄 No user session, clearing wishlist
+layout-872747b47b69bd99.js:1 🔄 User session found, fetching wishlist for: 6060b8f4-e90f-4e81-b7d5-fa2850c59ec5
+DSC02274EDIT-1757935887196.jpeg:1 
+ 
+ Failed to load resource: net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin
+DSC01855EDIT4-1757935393399.jpeg:1 
+ 
+ Failed to load resource: net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin
+DSC02021EDIT-1757935679208.jpeg:1 
+ 
+ Failed to load resource: net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin
+DSC02092EDIT3-1757935327256.jpeg:1 
+ 
+ Failed to load resource: net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin
+api/users/wishlist:1 
+ 
+ Failed to load resource: the server responded with a status of 401 ()
+layout-872747b47b69bd99.js:1 
+ Failed to fetch wishlist: 401 
+DSC02006EDIT-1757935747903.jpeg:1 
+ 
+ Failed to load resource: net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin
+DSC01788EDIT-1757935944724.jpeg:1 
+ 
+ Failed to load resource: net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin
+DSC019052-1757935564700.jpeg:1 
+ 
+ Failed to load resource: net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin
+DSC02203EDIT2-1757935257368.jpeg:1 
+ 
+ Failed to load resource: net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin
+api/admin/orders?limit=5:1 
+ 
+ Failed to load resource: the server responded with a status of 401 ()
+counterfit-backend.o…visitors/duration:1 
+ 
+ Failed to load resource: the server responded with a status of 500 ()
+page-24325622b562e1ae.js:1 📊 Frontend received stats data: 
+Object
+IMG0608-1758537714547.jpeg:1 
+ 
+ Failed to load resource: net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin
+DSC01855EDIT4-1757935393399.jpeg:1 
+ 
+ Failed to load resource: net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin
+DSC02203EDIT2-1757935257368.jpeg:1 
+ 
+ Failed to load resource: net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin
+DSC02092EDIT3-1757935327256.jpeg:1 
+ 
+ Failed to load resource: net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin
+DSC019052-1757935564700.jpeg:1 
+ 
+ Failed to load resource: net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin
+page-0df04295ee845c1b.js:1 🖼️ getImageUrl called with: https://counterfit-backend.onrender.com/uploads/images/outerwear/DSC02274EDIT-1757935887196.jpeg
+page-0df04295ee845c1b.js:1 🌐 Backend URL detected, returning as-is
+page-0df04295ee845c1b.js:1 🖼️ getImageUrl called with: https://counterfit-backend.onrender.com/uploads/images/outerwear/DSC02021EDIT-1757935679208.jpeg
+page-0df04295ee845c1b.js:1 🌐 Backend URL detected, returning as-is
+page-0df04295ee845c1b.js:1 🖼️ getImageUrl called with: https://counterfit-backend.onrender.com/uploads/images/outerwear/DSC02092EDIT3-1757935327256.jpeg
+page-0df04295ee845c1b.js:1 🌐 Backend URL detected, returning as-is
+page-0df04295ee845c1b.js:1 🖼️ getImageUrl called with: https://counterfit-backend.onrender.com/uploads/images/outerwear/DSC01855EDIT4-1757935393399.jpeg
+page-0df04295ee845c1b.js:1 🌐 Backend URL detected, returning as-is
+page-0df04295ee845c1b.js:1 🖼️ getImageUrl called with: https://counterfit-backend.onrender.com/uploads/images/outerwear/DSC01788EDIT-1757935944724.jpeg
+page-0df04295ee845c1b.js:1 🌐 Backend URL detected, returning as-is
+page-0df04295ee845c1b.js:1 🖼️ getImageUrl called with: https://counterfit-backend.onrender.com/uploads/images/outerwear/DSC019052-1757935564700.jpeg
+page-0df04295ee845c1b.js:1 🌐 Backend URL detected, returning as-is
+page-0df04295ee845c1b.js:1 🖼️ getImageUrl called with: https://counterfit-backend.onrender.com/uploads/images/outerwear/DSC02006EDIT-1757935747903.jpeg
+page-0df04295ee845c1b.js:1 🌐 Backend URL detected, returning as-is
+page-0df04295ee845c1b.js:1 🖼️ getImageUrl called with: https://counterfit-backend.onrender.com/uploads/images/tops/DSC02203EDIT2-1757935257368.jpeg
+page-0df04295ee845c1b.js:1 🌐 Backend URL detected, returning as-is
+page-0df04295ee845c1b.js:1 🖼️ getImageUrl called with: https://counterfit-backend.onrender.com/uploads/images/accessories/SKULLCAPZOOMJPG-1757935800956.jpeg
+page-0df04295ee845c1b.js:1 🌐 Backend URL detected, returning as-is
+page-0df04295ee845c1b.js:1 🖼️ getImageUrl called with: https://counterfit-backend.onrender.com/uploads/images/outerwear/LUXURYJACKET.jpeg
+page-0df04295ee845c1b.js:1 🌐 Backend URL detected, returning as-is
+page-0df04295ee845c1b.js:1 🖼️ getImageUrl called with: https://counterfit-backend.onrender.com/uploads/images/outerwear/BLACKJACKET.jpeg
+page-0df04295ee845c1b.js:1 🌐 Backend URL detected, returning as-is
+page-0df04295ee845c1b.js:1 🖼️ getImageUrl called with: https://counterfit-backend.onrender.com/uploads/images/outerwear/CAMOJACKETBETTER.jpeg
+page-0df04295ee845c1b.js:1 🌐 Backend URL detected, returning as-is
+page-0df04295ee845c1b.js:1 🖼️ getImageUrl called with: https://counterfit-backend.onrender.com/uploads/images/outerwear/FURRYGREYJACKET.jpeg
+page-0df04295ee845c1b.js:1 🌐 Backend URL detected, returning as-is
+page-0df04295ee845c1b.js:1 🖼️ getImageUrl called with: https://counterfit-backend.onrender.com/uploads/images/outerwear/WHITEJACKET.jpeg
+page-0df04295ee845c1b.js:1 🌐 Backend URL detected, returning as-is
+page-0df04295ee845c1b.js:1 🖼️ getImageUrl called with: https://counterfit-backend.onrender.com/uploads/images/tops/WHITESHIRT-1755857420699.jpeg
+page-0df04295ee845c1b.js:1 🌐 Backend URL detected, returning as-is
+page-0df04295ee845c1b.js:1 🖼️ getImageUrl called with: https://counterfit-backend.onrender.com/uploads/images/bottoms/COUNTERFITPANTS.jpeg
+page-0df04295ee845c1b.js:1 🌐 Backend URL detected, returning as-is
+page-0df04295ee845c1b.js:1 🖼️ getImageUrl called with: https://counterfit-backend.onrender.com/uploads/images/tops/BLACKSHIRT-1757935504130.jpeg
+page-0df04295ee845c1b.js:1 🌐 Backend URL detected, returning as-is
+DSC02274EDIT-1757935887196.jpeg:1 
+ 
+ Failed to load resource: net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin
+DSC01855EDIT4-1757935393399.jpeg:1 
+ 
+ Failed to load resource: net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin
+DSC01788EDIT-1757935944724.jpeg:1 
+ 
+ Failed to load resource: net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin
