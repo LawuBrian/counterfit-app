@@ -220,7 +220,7 @@ app.use('/api/products', require('./routes/products'));
 app.use('/api/collections', require('./routes/collections'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/users', require('./routes/users'));
-app.use('/api/upload', require('./routes/upload'));
+app.use('/api/upload', require('./routes/upload-supabase'));
 app.use('/api/test', require('./routes/test'));
 app.use('/api/visitors', require('./routes/visitors'));
 
