@@ -71,9 +71,9 @@ async function uploadToSupabase(fileBuffer, filename, category, mimetype) {
 }
 
 // @desc    Upload single organized image to Supabase
-// @route   POST /api/upload/image?category=outerwear
+// @route   POST /api/upload/product-image?category=outerwear
 // @access  Private/Admin
-router.post('/image', protect, adminOnly, upload.single('image'), async (req, res) => {
+router.post('/product-image', protect, adminOnly, upload.single('image'), async (req, res) => {
   try {
     console.log('📸 POST /api/upload/image - Single organized upload to Supabase');
     
@@ -130,9 +130,9 @@ router.post('/image', protect, adminOnly, upload.single('image'), async (req, re
 });
 
 // @desc    Upload multiple organized images to Supabase
-// @route   POST /api/upload/images?category=outerwear
+// @route   POST /api/upload/product-images?category=outerwear
 // @access  Private/Admin
-router.post('/images', protect, adminOnly, upload.array('images', 10), async (req, res) => {
+router.post('/product-images', protect, adminOnly, upload.array('images', 10), async (req, res) => {
   try {
     console.log('📸 POST /api/upload/images - Multiple organized uploads to Supabase');
     console.log(`📦 Received ${req.files?.length || 0} files`);
