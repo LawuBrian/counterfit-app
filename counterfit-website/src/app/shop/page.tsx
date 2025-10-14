@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -12,6 +13,7 @@ type ViewMode = 'grid' | 'list'
 type SortOption = 'featured' | 'price-low' | 'price-high' | 'newest' | 'name-asc' | 'name-desc'
 
 export default function ShopPage() {
+  const searchParams = useSearchParams()
   const [products, setProducts] = useState<Product[]>([])
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
@@ -29,6 +31,22 @@ export default function ShopPage() {
 
   const categories = ["outerwear", "tops", "bottoms", "accessories"]
 
+  // Initialize filters from URL parameters
+  useEffect(() => {
+    const urlSearch = searchParams.get('search')
+    const urlCategory = searchParams.get('category')
+    const urlFeatured = searchParams.get('featured')
+    const urlIsNew = searchParams.get('isNew')
+    
+    setFilters(prev => ({
+      ...prev,
+      search: urlSearch || '',
+      category: urlCategory || '',
+      featured: urlFeatured === 'true',
+      isNew: urlIsNew === 'true'
+    }))
+  }, [searchParams])
+
   // Combined effect for filtering and sorting
   useEffect(() => {
     if (products.length > 0) {
@@ -41,7 +59,11 @@ export default function ShopPage() {
     try {
       const response = await getProducts({
         status: 'active',
-        limit: 100
+        limit: 100,
+        category: filters.category || undefined,
+        featured: filters.featured || undefined,
+        isNew: filters.isNew || undefined,
+        search: filters.search || undefined
       })
       
       if (response.success) {
@@ -60,26 +82,13 @@ export default function ShopPage() {
 
   useEffect(() => {
     fetchProducts()
-  }, [])
+  }, [filters])
 
   const applyFiltersAndSorting = useCallback(() => {
-    // First apply filters
+    // Apply client-side filters (only price filter since others are handled server-side)
     let filtered = products.filter(product => {
-      // Category filter
-      if (filters.category && product.category !== filters.category) return false
-      
       // Price filter
       if (product.price > filters.maxPrice) return false
-      
-      // Search filter
-      if (filters.search && !product.name.toLowerCase().includes(filters.search.toLowerCase()) && 
-          !product.description?.toLowerCase().includes(filters.search.toLowerCase())) return false
-      
-      // Featured filter
-      if (filters.featured && !product.featured) return false
-      
-      // New filter
-      if (filters.isNew && !product.isNew) return false
       
       return true
     })
@@ -105,7 +114,7 @@ export default function ShopPage() {
     })
     
     setFilteredProducts(sorted)
-  }, [products, filters, sortBy])
+  }, [products, filters.maxPrice, sortBy])
 
   const handleFilterChange = (key: string, value: any) => {
     setFilters(prev => ({ ...prev, [key]: value }))

@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
                 <li>✨ Early access to new collections and limited editions</li>
                 <li>🎁 Exclusive subscriber-only discounts and promotions</li>
                 <li>📱 Behind-the-scenes content and styling tips</li>
-                <li>🚚 Free shipping on your first order</li>
+                <li>🚚 Priority shipping on your first order</li>
                 <li>🎯 Personalized recommendations based on your style</li>
               </ul>
             </div>
