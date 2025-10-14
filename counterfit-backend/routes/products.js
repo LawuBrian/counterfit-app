@@ -36,6 +36,7 @@ router.get('/', [
       search,
       sort = '-createdAt',
       featured,
+      isNew,
       status = 'active'
     } = req.query;
 
@@ -52,6 +53,10 @@ router.get('/', [
     
     if (featured === 'true') {
       query = query.eq('featured', true);
+    }
+    
+    if (isNew === 'true') {
+      query = query.eq('isNew', true);
     }
     
     if (search) {

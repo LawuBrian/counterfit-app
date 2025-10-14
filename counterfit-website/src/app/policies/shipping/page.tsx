@@ -71,14 +71,14 @@ export default function ShippingPolicyPage() {
               </div>
 
               <div className="bg-gray-50 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-primary mb-3">Free Shipping</h3>
+                <h3 className="text-lg font-semibold text-primary mb-3">Standard Shipping</h3>
                 <p className="text-secondary mb-3">
-                  <strong>Cost:</strong> FREE<br />
+                  <strong>Cost:</strong> R99<br />
                   <strong>Delivery Time:</strong> 3-5 business days<br />
-                  <strong>Requirement:</strong> Orders over R1,500
+                  <strong>Coverage:</strong> Nationwide delivery
                 </p>
                 <p className="text-sm text-gray-600">
-                  Free shipping is automatically applied to qualifying orders.
+                  Standard shipping rates apply to all orders.
                 </p>
               </div>
             </section>
