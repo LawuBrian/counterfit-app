@@ -26,3 +26,16 @@ export function getImageUrl(imagePath: string): string {
   // Default case - return as is
   return imagePath
 }
+
+// Helper function to get the primary image from a product's images array
+export function getPrimaryImage(images: Array<{ url: string; alt?: string; isPrimary: boolean }>) {
+  if (!images || images.length === 0) {
+    return { url: '/placeholder-product.jpg', alt: 'No image available' }
+  }
+  
+  // Find the primary image
+  const primaryImage = images.find(img => img.isPrimary)
+  
+  // Return primary image if found, otherwise return first image
+  return primaryImage || images[0]
+}

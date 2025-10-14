@@ -468,8 +468,8 @@ export default function ShopPage() {
                   <Link key={product.id} href={getProductUrl(product)} className={`rounded-xl text-primary bg-white group overflow-hidden border border-gray-200 shadow-md hover:shadow-xl transition-all duration-300 block ${viewMode === 'list' ? 'flex' : ''}`}>
                     <div className={`relative overflow-hidden ${viewMode === 'list' ? 'w-48 h-48' : 'aspect-[4/5]'} ${viewMode === 'list' ? 'rounded-l-xl' : 'rounded-t-xl'}`}>
                       <Image
-                        src={getImageUrl(product.images[0]?.url || '/placeholder-product.jpg')}
-                        alt={product.images[0]?.alt || product.name}
+                        src={getImageUrl(product.images.find(img => img.isPrimary)?.url || product.images[0]?.url || '/placeholder-product.jpg')}
+                        alt={product.images.find(img => img.isPrimary)?.alt || product.images[0]?.alt || product.name}
                         fill
                         className="object-cover group-hover:scale-105 transition-transform duration-500"
                       />
