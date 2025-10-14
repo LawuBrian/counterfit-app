@@ -394,7 +394,7 @@ export default function AdminDashboard() {
                       <div className="flex items-center gap-3">
                         {product.images && product.images.length > 0 && product.images[0] && (
                           <img 
-                            src={getImageUrl(product.images[0].url || product.images[0])} 
+                            src={getImageUrl(product.images.find(img => img.isPrimary)?.url || product.images[0]?.url || product.images[0])} 
                             alt={product.name}
                             className="w-12 h-12 object-cover rounded-lg"
                           />

@@ -14,12 +14,11 @@ export async function GET(request: NextRequest) {
 
     console.log('🔍 Fetching featured products order from Supabase...')
 
-    // Get featured products with their order from Supabase
+    // Get featured products with their order from Supabase (include all statuses for admin management)
     const { data: products, error } = await supabase
       .from('Product')
       .select('id, name, images, featured, featuredOrder, status')
       .eq('featured', true)
-      .eq('status', 'active')
       .order('featuredOrder', { ascending: true, nullsLast: true })
       .order('createdAt', { ascending: false })
 
