@@ -70,8 +70,8 @@ function SortableProductItem({ product, index }: { product: Product; index: numb
         <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100">
           {product.images?.[0]?.url ? (
             <Image
-              src={getImageUrl(product.images[0].url)}
-              alt={product.images[0].alt || product.name}
+              src={getImageUrl(product.images.find(img => img.isPrimary)?.url || product.images[0]?.url)}
+              alt={product.images.find(img => img.isPrimary)?.alt || product.images[0]?.alt || product.name}
               fill
               className="object-cover"
             />

@@ -443,7 +443,7 @@ export default function AdminProductsPage() {
                         <div className="flex-shrink-0 h-12 w-12">
                           <img
                             className="h-12 w-12 rounded-lg object-cover"
-                            src={getImageUrl(product.images[0]?.url || '/placeholder-product.jpg')}
+                            src={getImageUrl(product.images.find(img => img.isPrimary)?.url || product.images[0]?.url || '/placeholder-product.jpg')}
                             alt={product.name}
                           />
                         </div>
