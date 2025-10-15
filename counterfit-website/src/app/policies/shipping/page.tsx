@@ -61,7 +61,7 @@ export default function ShippingPolicyPage() {
               <div className="bg-gray-50 rounded-lg p-6 mb-6">
                 <h3 className="text-lg font-semibold text-primary mb-3">Express Shipping</h3>
                 <p className="text-secondary mb-3">
-                  <strong>Cost:</strong> R149.00<br />
+                  <strong>Cost:</strong> From R149<br />
                   <strong>Delivery Time:</strong> 1-2 business days<br />
                   <strong>Coverage:</strong> Major metropolitan areas
                 </p>
@@ -73,12 +73,12 @@ export default function ShippingPolicyPage() {
               <div className="bg-gray-50 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-primary mb-3">Standard Shipping</h3>
                 <p className="text-secondary mb-3">
-                  <strong>Cost:</strong> R99<br />
+                  <strong>Cost:</strong> From R89<br />
                   <strong>Delivery Time:</strong> 3-5 business days<br />
                   <strong>Coverage:</strong> Nationwide delivery
                 </p>
                 <p className="text-sm text-gray-600">
-                  Standard shipping rates apply to all orders.
+                  Shipping rates are calculated based on destination and package size.
                 </p>
               </div>
             </section>

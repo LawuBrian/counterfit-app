@@ -81,7 +81,7 @@ function CheckoutSuccessContent() {
                   <div className="flex justify-between">
                     <span className="text-secondary">Shipping</span>
                     <span className="font-medium">
-                      {order.shipping === 0 ? 'Free' : `R${order.shipping.toLocaleString()}`}
+                      R{order.shipping.toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between">
