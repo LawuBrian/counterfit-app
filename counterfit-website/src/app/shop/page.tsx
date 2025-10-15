@@ -12,8 +12,29 @@ import { useWishlist } from '@/contexts/WishlistContext'
 type ViewMode = 'grid' | 'list'
 type SortOption = 'featured' | 'price-low' | 'price-high' | 'newest' | 'name-asc' | 'name-desc'
 
-function ShopPageContent() {
+// Component that uses useSearchParams - needs its own Suspense boundary
+function SearchParamsHandler({ onFiltersChange }: { onFiltersChange: (filters: any) => void }) {
   const searchParams = useSearchParams()
+
+  // Initialize filters from URL parameters
+  useEffect(() => {
+    const urlSearch = searchParams.get('search')
+    const urlCategory = searchParams.get('category')
+    const urlFeatured = searchParams.get('featured')
+    const urlIsNew = searchParams.get('isNew')
+    
+    onFiltersChange({
+      search: urlSearch || '',
+      category: urlCategory || '',
+      featured: urlFeatured === 'true',
+      isNew: urlIsNew === 'true'
+    })
+  }, [searchParams, onFiltersChange])
+
+  return null // This component doesn't render anything
+}
+
+function ShopPageContent() {
   const [products, setProducts] = useState<Product[]>([])
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
@@ -31,21 +52,13 @@ function ShopPageContent() {
 
   const categories = ["outerwear", "tops", "bottoms", "accessories"]
 
-  // Initialize filters from URL parameters
-  useEffect(() => {
-    const urlSearch = searchParams.get('search')
-    const urlCategory = searchParams.get('category')
-    const urlFeatured = searchParams.get('featured')
-    const urlIsNew = searchParams.get('isNew')
-    
+  // Handle URL parameter changes
+  const handleUrlFiltersChange = useCallback((urlFilters: any) => {
     setFilters(prev => ({
       ...prev,
-      search: urlSearch || '',
-      category: urlCategory || '',
-      featured: urlFeatured === 'true',
-      isNew: urlIsNew === 'true'
+      ...urlFilters
     }))
-  }, [searchParams])
+  }, [])
 
   // Combined effect for filtering and sorting
   useEffect(() => {
@@ -137,6 +150,11 @@ function ShopPageContent() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* URL Parameters Handler */}
+      <Suspense fallback={null}>
+        <SearchParamsHandler onFiltersChange={handleUrlFiltersChange} />
+      </Suspense>
+      
       {/* Hero Section */}
       <section className="relative py-20 lg:py-32 overflow-hidden bg-gradient-to-r from-primary to-primary/90">
         <div className="absolute inset-0 z-0">
