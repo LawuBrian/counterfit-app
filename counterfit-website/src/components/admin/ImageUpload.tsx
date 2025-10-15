@@ -144,17 +144,38 @@ export default function ImageUpload({ images, onChange, maxImages = 10, category
   }
 
   const updateImage = (index: number, field: string, value: any) => {
-    const updatedImages = images.map((img, i) => 
-      i === index ? { ...img, [field]: value } : img
-    )
+    console.log(`🔄 ImageUpload: Updating image ${index}, field: ${field}, value: ${value}`)
+    console.log('📋 Before update:', images.map((img, i) => `${i}: ${img.isPrimary ? '⭐' : '○'} (${img.url.split('/').pop()})`).join(' '))
+    
+    // Create a deep copy to avoid mutation issues
+    const updatedImages = images.map((img, i) => ({
+      ...img,
+      ...(i === index ? { [field]: value } : {})
+    }))
     
     // If setting as primary, unset others
-    if (field === 'isPrimary' && value) {
+    if (field === 'isPrimary' && value === true) {
+      console.log('🎯 Setting as primary, unsetting others...')
       updatedImages.forEach((img, i) => {
-        if (i !== index) img.isPrimary = false
+        if (i !== index) {
+          console.log(`   Unsetting image ${i}`)
+          img.isPrimary = false
+        }
       })
     }
     
+    // Ensure at least one image is primary if we're unchecking the only primary
+    if (field === 'isPrimary' && value === false) {
+      const hasPrimary = updatedImages.some((img, i) => i !== index && img.isPrimary)
+      if (!hasPrimary && updatedImages.length > 0) {
+        console.log('⚠️ No primary image would remain, keeping current as primary')
+        updatedImages[index].isPrimary = true
+        return // Don't update if we're preventing the last primary from being unchecked
+      }
+    }
+    
+    console.log('📋 After update:', updatedImages.map((img, i) => `${i}: ${img.isPrimary ? '⭐' : '○'} (${img.url.split('/').pop()})`).join(' '))
+    console.log('🚀 Calling onChange with updated images')
     onChange(updatedImages)
   }
 
@@ -242,7 +263,11 @@ export default function ImageUpload({ images, onChange, maxImages = 10, category
           
           <div className="space-y-3">
             {images.map((image, index) => (
-              <div key={index} className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+              <div key={index} className={`flex items-center gap-4 p-4 rounded-lg transition-all ${
+                image.isPrimary 
+                  ? 'border-2 border-primary bg-primary/5 shadow-md' 
+                  : 'border border-gray-200 bg-gray-50'
+              }`}>
                 {/* Image Preview */}
                 <div className="flex-shrink-0">
                   <img
@@ -265,17 +290,22 @@ export default function ImageUpload({ images, onChange, maxImages = 10, category
                     className="w-full px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   />
                   
-                  <label className="flex items-center text-sm">
+                  <label className="flex items-center text-sm cursor-pointer">
                     <input
                       type="checkbox"
                       checked={image.isPrimary}
-                      onChange={(e) => updateImage(index, 'isPrimary', e.target.checked)}
-                      className="rounded border-gray-300 text-primary focus:ring-primary mr-2"
+                      onChange={(e) => {
+                        console.log(`🎯 Checkbox clicked for image ${index}, checked: ${e.target.checked}`)
+                        updateImage(index, 'isPrimary', e.target.checked)
+                      }}
+                      className="rounded border-gray-300 text-primary focus:ring-primary mr-2 cursor-pointer"
                     />
-                    <span className="text-gray-700">Primary image</span>
+                    <span className={`${image.isPrimary ? 'text-primary font-semibold' : 'text-gray-700'}`}>
+                      Primary image
+                    </span>
                     {image.isPrimary && (
                       <span className="ml-2 px-2 py-1 bg-primary text-white text-xs rounded-full">
-                        Primary
+                        ⭐ Primary
                       </span>
                     )}
                   </label>

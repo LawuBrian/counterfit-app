@@ -165,6 +165,10 @@ export default function EditProductPage() {
   }
 
   const handleInputChange = (field: string, value: any) => {
+    if (field === 'images') {
+      console.log('📸 Edit Product: Images updated')
+      console.log('📋 New images:', value.map((img: any, i: number) => `${i}: ${img.isPrimary ? '⭐' : '○'} (${img.url.split('/').pop()})`).join(' '))
+    }
     setFormData(prev => prev ? ({
       ...prev,
       [field]: value
