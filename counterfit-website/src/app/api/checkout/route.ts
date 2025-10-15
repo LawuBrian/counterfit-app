@@ -94,7 +94,6 @@ export async function POST(request: NextRequest) {
       const { data: draftOrder, error } = await supabase
         .from('Order')
         .insert([{
-          id: draftOrderData.userId + '-draft-' + Date.now(),
           orderNumber: draftOrderData.orderNumber,
           status: 'draft', // Draft status - not visible in admin until paid
           totalAmount: draftOrderData.totalAmount,
