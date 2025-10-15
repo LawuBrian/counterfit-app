@@ -277,7 +277,8 @@ export default function CheckoutPage() {
           items: orderItems,
           totalAmount: calculateTotal(),
           shippingAddress: shippingAddress,
-          billingAddress: shippingAddress
+          billingAddress: shippingAddress,
+          shippingRate: selectedShippingRate
         })
       })
 

@@ -39,7 +39,8 @@ export async function POST(request: NextRequest) {
       shippingAddress, 
       billingAddress,
       paymentMethod = 'yoco',
-      notes 
+      notes,
+      shippingRate
     } = requestBody
 
     // Validate required fields
@@ -98,9 +99,9 @@ export async function POST(request: NextRequest) {
           orderNumber: draftOrderData.orderNumber,
           status: 'draft', // Draft status - not visible in admin until paid
           totalAmount: draftOrderData.totalAmount,
-          subtotal: draftOrderData.totalAmount,
+          subtotal: draftOrderData.totalAmount - (shippingRate?.price || 0),
           tax: 0,
-          shipping: 0,
+          shipping: shippingRate?.price || 0,
           paymentStatus: 'pending',
           paymentId: null,
           trackingNumber: draftOrderData.trackingNumber,

@@ -47,7 +47,7 @@ async function testCreateOrder() {
       totalAmount: 100.00,
       subtotal: 100.00,
       tax: 0.00,
-      shipping: 0.00,
+      shipping: 89.00,
       paymentStatus: 'PENDING',
       paymentId: null,
       trackingNumber: 'TEST-TRACK-' + Date.now(),
