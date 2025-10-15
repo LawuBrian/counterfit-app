@@ -90,10 +90,15 @@ export async function POST(request: NextRequest) {
     try {
       const { supabase } = await import('@/lib/supabase')
       
+      // Generate UUID for the order
+      const { randomUUID } = await import('crypto')
+      const orderId = randomUUID()
+      
       // Create draft order in Supabase
       const { data: draftOrder, error } = await supabase
         .from('Order')
         .insert([{
+          id: orderId,
           orderNumber: draftOrderData.orderNumber,
           status: 'draft', // Draft status - not visible in admin until paid
           totalAmount: draftOrderData.totalAmount,

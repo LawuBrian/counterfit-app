@@ -2,6 +2,7 @@
 -- This script tests if order creation works after applying the fixes
 
 -- Test inserting a draft order (similar to what the checkout API does)
+-- Note: id column is omitted to let the database auto-generate UUID
 INSERT INTO "Order" (
     "orderNumber",
     status,
