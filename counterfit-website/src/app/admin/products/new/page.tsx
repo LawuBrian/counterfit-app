@@ -144,7 +144,7 @@ export default function NewProductPage() {
   }, [session, status, router])
 
   const handleInputChange = (field: string, value: any) => {
-    if (field === 'images') {
+    if (process.env.NODE_ENV === 'development' && field === 'images') {
       console.log('📸 New Product: Images updated')
       console.log('📋 New images:', value.map((img: any, i: number) => `${i}: ${img.isPrimary ? '⭐' : '○'} (${img.url.split('/').pop()})`).join(' '))
     }

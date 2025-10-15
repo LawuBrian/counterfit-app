@@ -211,20 +211,26 @@ export default function ImageUpload({ images, onChange, maxImages = 10, category
   }
 
   const removeImage = (index: number) => {
-    console.log(`🗑️ Removing image ${index}`)
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🗑️ Removing image ${index}`)
+    }
     const wasRemovingPrimary = images[index].isPrimary
     const updatedImages = images.filter((_, i) => i !== index)
     
     // If removed image was primary and there are other images, make first one primary
     if (wasRemovingPrimary && updatedImages.length > 0) {
-      console.log('🎯 Removed image was primary, setting first remaining image as primary')
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🎯 Removed image was primary, setting first remaining image as primary')
+      }
       updatedImages[0].isPrimary = true
     }
     
     // Validate the final image list
     const validatedImages = validateImages(updatedImages)
     
-    console.log('📋 After removal:', validatedImages.map((img, i) => `${i}: ${img.isPrimary ? '⭐' : '○'} (${img.url.split('/').pop()})`).join(' '))
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📋 After removal:', validatedImages.map((img, i) => `${i}: ${img.isPrimary ? '⭐' : '○'} (${img.url.split('/').pop()})`).join(' '))
+    }
     onChange(validatedImages)
   }
 
@@ -334,7 +340,9 @@ export default function ImageUpload({ images, onChange, maxImages = 10, category
                         type="checkbox"
                         checked={image.isPrimary}
                         onChange={(e) => {
-                          console.log(`🎯 Checkbox clicked for image ${index}, checked: ${e.target.checked}`)
+                          if (process.env.NODE_ENV === 'development') {
+                            console.log(`🎯 Checkbox clicked for image ${index}, checked: ${e.target.checked}`)
+                          }
                           updateImage(index, 'isPrimary', e.target.checked)
                         }}
                         className="rounded border-gray-300 text-primary focus:ring-primary mr-2 cursor-pointer"
@@ -373,8 +381,8 @@ export default function ImageUpload({ images, onChange, maxImages = 10, category
         </div>
       )}
       
-      {/* Debug info - remove in production */}
-      {images.length > 0 && (
+      {/* Debug info - only in development */}
+      {process.env.NODE_ENV === 'development' && images.length > 0 && (
         <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <h5 className="text-sm font-medium text-blue-800 mb-2">Primary Image Status:</h5>
           <div className="text-xs text-blue-700">
