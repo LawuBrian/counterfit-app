@@ -34,6 +34,15 @@ function SearchParamsHandler({ onFiltersChange }: { onFiltersChange: (filters: a
   return null // This component doesn't render anything
 }
 
+// Wrapper component for SearchParamsHandler with Suspense
+function SearchParamsWrapper({ onFiltersChange }: { onFiltersChange: (filters: any) => void }) {
+  return (
+    <Suspense fallback={null}>
+      <SearchParamsHandler onFiltersChange={onFiltersChange} />
+    </Suspense>
+  )
+}
+
 function ShopPageContent() {
   const [products, setProducts] = useState<Product[]>([])
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
@@ -151,9 +160,7 @@ function ShopPageContent() {
   return (
     <div className="min-h-screen bg-background">
       {/* URL Parameters Handler */}
-      <Suspense fallback={null}>
-        <SearchParamsHandler onFiltersChange={handleUrlFiltersChange} />
-      </Suspense>
+      <SearchParamsWrapper onFiltersChange={handleUrlFiltersChange} />
       
       {/* Hero Section */}
       <section className="relative py-20 lg:py-32 overflow-hidden bg-gradient-to-r from-primary to-primary/90">
