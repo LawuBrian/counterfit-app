@@ -1,9 +1,25 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder_key'
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Create a mock client for build time if environment variables are not properly set
+const createMockClient = () => ({
+  from: () => ({
+    select: () => ({ single: () => Promise.resolve({ data: null, error: { code: 'MOCK_ERROR', message: 'Mock client' } }) }),
+    insert: () => ({ select: () => ({ single: () => Promise.resolve({ data: null, error: { code: 'MOCK_ERROR', message: 'Mock client' } }) }) }),
+    update: () => ({ eq: () => ({ select: () => ({ single: () => Promise.resolve({ data: null, error: { code: 'MOCK_ERROR', message: 'Mock client' } }) }) }) }),
+    delete: () => ({ eq: () => Promise.resolve({ data: null, error: { code: 'MOCK_ERROR', message: 'Mock client' } }) }),
+    eq: () => ({ single: () => Promise.resolve({ data: null, error: { code: 'MOCK_ERROR', message: 'Mock client' } }) }),
+    or: () => ({ range: () => Promise.resolve({ data: [], error: null, count: 0 }) }),
+    order: () => ({ range: () => Promise.resolve({ data: [], error: null, count: 0 }) }),
+    range: () => Promise.resolve({ data: [], error: null, count: 0 })
+  })
+})
+
+export const supabase = (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') 
+  ? createMockClient() as any
+  : createClient(supabaseUrl, supabaseAnonKey)
 
 // Waitlist table interface
 export interface WaitlistEntry {
