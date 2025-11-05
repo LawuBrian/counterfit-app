@@ -8,16 +8,18 @@ import { useState, useEffect } from "react"
 import { useCart } from "@/contexts/CartContext"
 import { useWishlist } from "@/contexts/WishlistContext"
 import { useSession, signOut } from "next-auth/react"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const [isAdmin, setIsAdmin] = useState(false)
   const { getTotalItems } = useCart()
   const { wishlist } = useWishlist()
   const { data: session } = useSession()
   const pathname = usePathname()
+  const router = useRouter()
 
   // Check if user is admin (either through session or URL parameter)
   useEffect(() => {
@@ -47,6 +49,22 @@ export default function Header() {
 
   const toggleSearch = () => {
     setIsSearchOpen(!isSearchOpen)
+    if (!isSearchOpen) {
+      setSearchQuery('')
+    }
+  }
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      router.push(`/shop?search=${encodeURIComponent(searchQuery.trim())}`)
+      setIsSearchOpen(false)
+      setSearchQuery('')
+    }
+  }
+
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value)
   }
 
   const isActiveLink = (href: string) => {
@@ -223,21 +241,23 @@ export default function Header() {
       {isSearchOpen && (
         <div className="absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-lg">
           <div className="max-w-screen-2xl mx-auto px-6 lg:px-8 py-4">
-            <div className="flex items-center gap-4">
+            <form onSubmit={handleSearch} className="flex items-center gap-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-secondary/60" />
                 <input
                   type="text"
-                  placeholder="Search products, collections..."
+                  placeholder="Search products..."
+                  value={searchQuery}
+                  onChange={handleSearchInputChange}
                   className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                   autoFocus
                 />
               </div>
-              <Button onClick={toggleSearch}>Search</Button>
-              <button onClick={toggleSearch} className="p-2 text-secondary hover:text-primary">
+              <Button type="submit" disabled={!searchQuery.trim()}>Search</Button>
+              <button type="button" onClick={toggleSearch} className="p-2 text-secondary hover:text-primary">
                 <X className="h-5 w-5" />
               </button>
-            </div>
+            </form>
           </div>
         </div>
       )}

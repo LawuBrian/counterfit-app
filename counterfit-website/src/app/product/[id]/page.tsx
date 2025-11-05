@@ -401,8 +401,8 @@ export default function ProductPage() {
                   <div className="flex items-center gap-3">
                     <Truck className="w-5 h-5 text-primary" />
                     <div>
-                      <div className="font-medium text-primary text-sm">Free Shipping</div>
-                      <div className="text-xs text-secondary/60">Orders over R1000</div>
+                      <div className="font-medium text-primary text-sm">Fast Shipping</div>
+                      <div className="text-xs text-secondary/60">3-5 business days</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">

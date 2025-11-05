@@ -53,12 +53,12 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/shop?category=new" className="font-paragraph text-sm text-primary-foreground/80 hover:text-primary-foreground transition-colors">
+                <Link href="/shop?isNew=true" className="font-paragraph text-sm text-primary-foreground/80 hover:text-primary-foreground transition-colors">
                   New Arrivals
                 </Link>
               </li>
               <li>
-                <Link href="/shop?category=featured" className="font-paragraph text-sm text-primary-foreground/80 hover:text-primary-foreground transition-colors">
+                <Link href="/shop?featured=true" className="font-paragraph text-sm text-primary-foreground/80 hover:text-primary-foreground transition-colors">
                   Featured
                 </Link>
               </li>

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -11,7 +12,38 @@ import { useWishlist } from '@/contexts/WishlistContext'
 type ViewMode = 'grid' | 'list'
 type SortOption = 'featured' | 'price-low' | 'price-high' | 'newest' | 'name-asc' | 'name-desc'
 
-export default function ShopPage() {
+// Component that uses useSearchParams - needs its own Suspense boundary
+function SearchParamsHandler({ onFiltersChange }: { onFiltersChange: (filters: any) => void }) {
+  const searchParams = useSearchParams()
+
+  // Initialize filters from URL parameters
+  useEffect(() => {
+    const urlSearch = searchParams.get('search')
+    const urlCategory = searchParams.get('category')
+    const urlFeatured = searchParams.get('featured')
+    const urlIsNew = searchParams.get('isNew')
+    
+    onFiltersChange({
+      search: urlSearch || '',
+      category: urlCategory || '',
+      featured: urlFeatured === 'true',
+      isNew: urlIsNew === 'true'
+    })
+  }, [searchParams, onFiltersChange])
+
+  return null // This component doesn't render anything
+}
+
+// Wrapper component for SearchParamsHandler with Suspense
+function SearchParamsWrapper({ onFiltersChange }: { onFiltersChange: (filters: any) => void }) {
+  return (
+    <Suspense fallback={null}>
+      <SearchParamsHandler onFiltersChange={onFiltersChange} />
+    </Suspense>
+  )
+}
+
+function ShopPageContent() {
   const [products, setProducts] = useState<Product[]>([])
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
@@ -29,6 +61,14 @@ export default function ShopPage() {
 
   const categories = ["outerwear", "tops", "bottoms", "accessories"]
 
+  // Handle URL parameter changes
+  const handleUrlFiltersChange = useCallback((urlFilters: any) => {
+    setFilters(prev => ({
+      ...prev,
+      ...urlFilters
+    }))
+  }, [])
+
   // Combined effect for filtering and sorting
   useEffect(() => {
     if (products.length > 0) {
@@ -41,7 +81,11 @@ export default function ShopPage() {
     try {
       const response = await getProducts({
         status: 'active',
-        limit: 100
+        limit: 100,
+        category: filters.category || undefined,
+        featured: filters.featured || undefined,
+        isNew: filters.isNew || undefined,
+        search: filters.search || undefined
       })
       
       if (response.success) {
@@ -60,26 +104,13 @@ export default function ShopPage() {
 
   useEffect(() => {
     fetchProducts()
-  }, [])
+  }, [filters])
 
   const applyFiltersAndSorting = useCallback(() => {
-    // First apply filters
+    // Apply client-side filters (only price filter since others are handled server-side)
     let filtered = products.filter(product => {
-      // Category filter
-      if (filters.category && product.category !== filters.category) return false
-      
       // Price filter
       if (product.price > filters.maxPrice) return false
-      
-      // Search filter
-      if (filters.search && !product.name.toLowerCase().includes(filters.search.toLowerCase()) && 
-          !product.description?.toLowerCase().includes(filters.search.toLowerCase())) return false
-      
-      // Featured filter
-      if (filters.featured && !product.featured) return false
-      
-      // New filter
-      if (filters.isNew && !product.isNew) return false
       
       return true
     })
@@ -105,7 +136,7 @@ export default function ShopPage() {
     })
     
     setFilteredProducts(sorted)
-  }, [products, filters, sortBy])
+  }, [products, filters.maxPrice, sortBy])
 
   const handleFilterChange = (key: string, value: any) => {
     setFilters(prev => ({ ...prev, [key]: value }))
@@ -128,6 +159,9 @@ export default function ShopPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* URL Parameters Handler */}
+      <SearchParamsWrapper onFiltersChange={handleUrlFiltersChange} />
+      
       {/* Hero Section */}
       <section className="relative py-20 lg:py-32 overflow-hidden bg-gradient-to-r from-primary to-primary/90">
         <div className="absolute inset-0 z-0">
@@ -573,5 +607,79 @@ export default function ShopPage() {
         }
       `}</style>
     </div>
+  )
+}
+
+// Loading component for Suspense fallback
+function ShopPageLoading() {
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Hero Section */}
+      <section className="relative py-20 lg:py-32 overflow-hidden bg-gradient-to-r from-primary to-primary/90">
+        <div className="absolute inset-0 z-0">
+          <img
+            src="/images/hero/Shop_hero.jpeg"
+            alt="Shop Hero"
+            className="w-full h-full object-cover opacity-20"
+          />
+          <div className="absolute inset-0 bg-black/40"></div>
+        </div>
+        <div className="relative z-10 max-w-screen-2xl mx-auto px-6 lg:px-8 text-center">
+          <div className="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 shadow hover:bg-primary/80 mb-6 bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30">
+            <Zap className="w-3 h-3 mr-1" />
+            New Arrivals Available
+          </div>
+          <h1 className="font-heading text-4xl lg:text-6xl font-bold text-primary-foreground mb-4">Shop Collection</h1>
+          <p className="font-paragraph text-lg text-primary-foreground/90 max-w-2xl mx-auto">
+            Experience Paki and Jareed's vision through our complete collection of luxury streetwear that blends innovation with timeless design.
+          </p>
+        </div>
+      </section>
+
+      {/* Loading Content */}
+      <div className="max-w-screen-2xl mx-auto px-6 lg:px-8 py-12">
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Desktop Sidebar Skeleton */}
+          <div className="lg:w-80 hidden lg:block">
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-lg sticky top-24">
+              <div className="h-6 bg-gray-200 rounded mb-6 animate-pulse"></div>
+              <div className="space-y-4">
+                <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Products Loading Grid */}
+          <div className="flex-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className="rounded-xl bg-white border border-gray-200 shadow-md animate-pulse">
+                  <div className="aspect-[4/5] bg-gray-200 rounded-t-xl"></div>
+                  <div className="p-6">
+                    <div className="h-6 bg-gray-200 rounded mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded mb-3"></div>
+                    <div className="flex justify-between items-center">
+                      <div className="h-6 w-20 bg-gray-200 rounded"></div>
+                      <div className="h-8 w-24 bg-gray-200 rounded"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Main component with Suspense boundary
+export default function ShopPage() {
+  return (
+    <Suspense fallback={<ShopPageLoading />}>
+      <ShopPageContent />
+    </Suspense>
   )
 }

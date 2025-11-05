@@ -106,8 +106,12 @@ export default function ImageUpload({ images, onChange, maxImages = 10, category
       }
 
       const updatedImages = [...images, ...newImages]
-      console.log('🔄 Updating images state:', updatedImages)
-      onChange(updatedImages)
+      
+      // Validate the final image list
+      const validatedImages = validateImages(updatedImages)
+      
+      console.log('🔄 Updating images state:', validatedImages)
+      onChange(validatedImages)
       
     } catch (error) {
       console.error('❌ Upload error:', error)
@@ -143,30 +147,91 @@ export default function ImageUpload({ images, onChange, maxImages = 10, category
     handleFiles(e.target.files)
   }
 
+  // Validation function to ensure image data integrity
+  const validateImages = (imageList: typeof images) => {
+    const primaryCount = imageList.filter(img => img.isPrimary).length
+    if (primaryCount === 0 && imageList.length > 0) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('⚠️ No primary image found, setting first image as primary')
+      }
+      imageList[0].isPrimary = true
+    } else if (primaryCount > 1) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn(`⚠️ Multiple primary images found (${primaryCount}), keeping only the first one`)
+      }
+      let foundFirst = false
+      imageList.forEach(img => {
+        if (img.isPrimary && !foundFirst) {
+          foundFirst = true
+        } else if (img.isPrimary) {
+          img.isPrimary = false
+        }
+      })
+    }
+    return imageList
+  }
+
   const updateImage = (index: number, field: string, value: any) => {
-    const updatedImages = images.map((img, i) => 
-      i === index ? { ...img, [field]: value } : img
-    )
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🔄 ImageUpload: Updating image ${index}, field: ${field}, value: ${value}`)
+      console.log('📋 Before update:', images.map((img, i) => `${i}: ${img.isPrimary ? '⭐' : '○'} (${img.url.split('/').pop()})`).join(' '))
+    }
+    
+    // Create a deep copy to avoid mutation issues
+    const updatedImages = images.map((img, i) => ({
+      url: img.url,
+      alt: img.alt,
+      isPrimary: img.isPrimary,
+      ...(i === index ? { [field]: value } : {})
+    }))
     
     // If setting as primary, unset others
-    if (field === 'isPrimary' && value) {
+    if (field === 'isPrimary' && value === true) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🎯 Setting as primary, unsetting others...')
+      }
       updatedImages.forEach((img, i) => {
-        if (i !== index) img.isPrimary = false
+        if (i !== index && img.isPrimary) {
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`   Unsetting image ${i}`)
+          }
+          img.isPrimary = false
+        }
       })
     }
     
-    onChange(updatedImages)
+    // Validate and fix any issues
+    const validatedImages = validateImages(updatedImages)
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📋 After update:', validatedImages.map((img, i) => `${i}: ${img.isPrimary ? '⭐' : '○'} (${img.url.split('/').pop()})`).join(' '))
+      console.log('🚀 Calling onChange with updated images')
+    }
+    onChange(validatedImages)
   }
 
   const removeImage = (index: number) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🗑️ Removing image ${index}`)
+    }
+    const wasRemovingPrimary = images[index].isPrimary
     const updatedImages = images.filter((_, i) => i !== index)
     
     // If removed image was primary and there are other images, make first one primary
-    if (images[index].isPrimary && updatedImages.length > 0) {
+    if (wasRemovingPrimary && updatedImages.length > 0) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🎯 Removed image was primary, setting first remaining image as primary')
+      }
       updatedImages[0].isPrimary = true
     }
     
-    onChange(updatedImages)
+    // Validate the final image list
+    const validatedImages = validateImages(updatedImages)
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📋 After removal:', validatedImages.map((img, i) => `${i}: ${img.isPrimary ? '⭐' : '○'} (${img.url.split('/').pop()})`).join(' '))
+    }
+    onChange(validatedImages)
   }
 
   return (
@@ -242,7 +307,11 @@ export default function ImageUpload({ images, onChange, maxImages = 10, category
           
           <div className="space-y-3">
             {images.map((image, index) => (
-              <div key={index} className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+              <div key={index} className={`flex items-center gap-4 p-4 rounded-lg transition-all ${
+                image.isPrimary 
+                  ? 'border-2 border-primary bg-primary/5 shadow-md' 
+                  : 'border border-gray-200 bg-gray-50'
+              }`}>
                 {/* Image Preview */}
                 <div className="flex-shrink-0">
                   <img
@@ -265,20 +334,29 @@ export default function ImageUpload({ images, onChange, maxImages = 10, category
                     className="w-full px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   />
                   
-                  <label className="flex items-center text-sm">
-                    <input
-                      type="checkbox"
-                      checked={image.isPrimary}
-                      onChange={(e) => updateImage(index, 'isPrimary', e.target.checked)}
-                      className="rounded border-gray-300 text-primary focus:ring-primary mr-2"
-                    />
-                    <span className="text-gray-700">Primary image</span>
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center text-sm cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={image.isPrimary}
+                        onChange={(e) => {
+                          if (process.env.NODE_ENV === 'development') {
+                            console.log(`🎯 Checkbox clicked for image ${index}, checked: ${e.target.checked}`)
+                          }
+                          updateImage(index, 'isPrimary', e.target.checked)
+                        }}
+                        className="rounded border-gray-300 text-primary focus:ring-primary mr-2 cursor-pointer"
+                      />
+                      <span className={`${image.isPrimary ? 'text-primary font-semibold' : 'text-gray-700'}`}>
+                        Primary image
+                      </span>
+                    </label>
                     {image.isPrimary && (
-                      <span className="ml-2 px-2 py-1 bg-primary text-white text-xs rounded-full">
-                        Primary
+                      <span className="px-2 py-1 bg-primary text-white text-xs rounded-full font-medium">
+                        ⭐ PRIMARY
                       </span>
                     )}
-                  </label>
+                  </div>
                 </div>
                 
                 {/* Remove Button */}
@@ -300,6 +378,26 @@ export default function ImageUpload({ images, onChange, maxImages = 10, category
       {images.length === 0 && (
         <div className="text-center py-4 text-gray-500 text-sm">
           No images uploaded yet
+        </div>
+      )}
+      
+      {/* Debug info - only in development */}
+      {process.env.NODE_ENV === 'development' && images.length > 0 && (
+        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <h5 className="text-sm font-medium text-blue-800 mb-2">Primary Image Status:</h5>
+          <div className="text-xs text-blue-700">
+            {(() => {
+              const primaryImages = images.filter(img => img.isPrimary)
+              if (primaryImages.length === 0) {
+                return '⚠️ No primary image set'
+              } else if (primaryImages.length === 1) {
+                const primaryIndex = images.findIndex(img => img.isPrimary)
+                return `✅ Image ${primaryIndex + 1} is set as primary: ${primaryImages[0].url.split('/').pop()}`
+              } else {
+                return `❌ Multiple primary images detected (${primaryImages.length})`
+              }
+            })()}
+          </div>
         </div>
       )}
     </div>
