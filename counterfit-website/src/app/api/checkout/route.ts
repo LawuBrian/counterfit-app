@@ -89,14 +89,14 @@ export async function POST(request: NextRequest) {
     let order
     
     try {
-      const { supabase } = await import('@/lib/supabase')
+      const { supabaseAdmin } = await import('@/lib/supabase-admin')
       
       // Generate UUID for the order
       const { randomUUID } = await import('crypto')
       const orderId = randomUUID()
       
-      // Create draft order in Supabase
-      const { data: draftOrder, error } = await supabase
+      // Create draft order in Supabase using admin client (bypasses RLS)
+      const { data: draftOrder, error } = await supabaseAdmin
         .from('Order')
         .insert([{
           id: orderId,
