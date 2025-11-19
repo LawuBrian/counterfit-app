@@ -9,6 +9,7 @@ import { useCart } from "@/contexts/CartContext"
 import { useWishlist } from "@/contexts/WishlistContext"
 import { useSession, signOut } from "next-auth/react"
 import { usePathname, useRouter } from "next/navigation"
+import BlackFridayBanner from "./BlackFridayBanner"
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -94,6 +95,7 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 bg-white lg:bg-background/95 lg:backdrop-blur-sm border-b border-shape-stroke">
+      <BlackFridayBanner />
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Mobile Menu Button */}

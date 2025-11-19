@@ -41,6 +41,7 @@ model Product {
   featured        Boolean  @default(false)
   isNew           Boolean  @default(false)
   isAvailable     Boolean  @default(true)
+  twoForOne       Boolean  @default(false)
   images          Json     // Array of image objects
   sizes           Json     // Array of size objects
   colors          Json     // Array of color objects

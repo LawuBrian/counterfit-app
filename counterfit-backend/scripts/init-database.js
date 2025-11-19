@@ -86,6 +86,7 @@ async function initDatabase() {
           featured BOOLEAN DEFAULT false,
           "isNew" BOOLEAN DEFAULT false,
           "isAvailable" BOOLEAN DEFAULT true,
+          "twoForOne" BOOLEAN DEFAULT false,
           images JSONB NOT NULL,
           sizes JSONB NOT NULL,
           colors JSONB NOT NULL,

@@ -19,6 +19,7 @@ export interface Product {
   featured: boolean
   isNew: boolean
   isAvailable: boolean
+  twoForOne?: boolean
   images: Array<{
     url: string
     alt?: string
@@ -236,6 +237,19 @@ export function formatPrice(price: number): string {
     return 'R0.00'
   }
   return `R${price.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}`
+}
+
+/**
+ * Calculate discount percentage and round to nearest 5
+ */
+export function calculateDiscountPercentage(originalPrice: number, salePrice: number): number {
+  if (!originalPrice || !salePrice || originalPrice <= salePrice || originalPrice <= 0) {
+    return 0
+  }
+  
+  const discount = ((originalPrice - salePrice) / originalPrice) * 100
+  // Round to nearest 5
+  return Math.round(discount / 5) * 5
 }
 
 export function getProductUrl(product: Product): string {

@@ -7,7 +7,7 @@ import { ArrowRight, Star, Zap, Tag, Sparkles, Shield, TrendingUp, Users, Shoppi
 import SignupForm from '@/components/SignupForm'
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { getFeaturedProducts, getFeaturedCollections, formatPrice, Product, Collection } from '@/lib/api'
+import { getFeaturedProducts, getFeaturedCollections, formatPrice, calculateDiscountPercentage, Product, Collection } from '@/lib/api'
 import { useVisitorTracking } from '@/lib/visitorTracking'
 import { useWishlist } from '@/contexts/WishlistContext'
 
@@ -172,12 +172,30 @@ export default function HomePage() {
                     
                     {/* Product badges */}
                     <div className="absolute top-4 left-4 flex flex-col gap-2">
+                      {product.twoForOne && (
+                        <div className="bg-purple-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
+                          2 FOR 1
+                        </div>
+                      )}
+                      {product.comparePrice && 
+                       typeof product.comparePrice === 'number' && 
+                       !isNaN(product.comparePrice) &&
+                       product.comparePrice > 0 && 
+                       product.comparePrice > (product.price || 0) && (
+                        <div className="bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
+                          SALE
+                        </div>
+                      )}
                       {product.featured && (
                         <div className="bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full">
                           FEATURED
                         </div>
                       )}
-                      {/* Removed invalid 'new' status badge */}
+                      {product.isNew && (
+                        <div className="bg-primary text-white text-xs font-bold px-2 py-1 rounded-full">
+                          NEW
+                        </div>
+                      )}
                     </div>
                     
                     {/* Quick actions */}
@@ -223,21 +241,36 @@ export default function HomePage() {
                       {product.description}
                     </p>
                     
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="font-heading text-lg font-bold text-primary">
-                          {formatPrice(product.price)}
+                    {(product.inventory?.quantity || 0) <= 10 && (product.inventory?.quantity || 0) > 0 && (
+                      <div className="mb-3">
+                        <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-full animate-pulse">
+                          ⚠️ Only {product.inventory?.quantity} left!
                         </span>
-                        {product.comparePrice && 
-                         typeof product.comparePrice === 'number' && 
-                         !isNaN(product.comparePrice) &&
-                         product.comparePrice > 0 && 
-                         product.comparePrice !== 0 &&
-                         product.comparePrice > (product.price || 0) ? (
-                          <span className="text-sm text-gray-500 line-through">
-                            {formatPrice(product.comparePrice)}
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-heading text-lg font-bold text-primary">
+                            {formatPrice(product.price)}
                           </span>
-                        ) : null}
+                          {product.comparePrice && 
+                           typeof product.comparePrice === 'number' && 
+                           !isNaN(product.comparePrice) &&
+                           product.comparePrice > 0 && 
+                           product.comparePrice !== 0 &&
+                           product.comparePrice > (product.price || 0) ? (
+                            <>
+                              <span className="text-sm text-gray-500 line-through">
+                                {formatPrice(product.comparePrice)}
+                              </span>
+                              <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded">
+                                {calculateDiscountPercentage(product.comparePrice, product.price)}% OFF
+                              </span>
+                            </>
+                          ) : null}
+                        </div>
                       </div>
                       
                       <Link href={`/product/${product.id}`}>

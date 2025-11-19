@@ -108,7 +108,7 @@ function CheckoutSuccessContent() {
                     <Package className="w-5 h-5 text-primary" />
                     <div>
                       <div className="font-medium text-primary">Standard Shipping</div>
-                      <div className="text-sm text-secondary">3-5 business days</div>
+                      <div className="text-sm text-secondary">4-5 business days</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">

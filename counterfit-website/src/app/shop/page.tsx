@@ -6,7 +6,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Star, Filter, Grid, List, SlidersHorizontal, Zap, Heart, Package, Search, X } from 'lucide-react'
-import { getProducts, getImageUrl, formatPrice, getProductUrl, type Product } from '@/lib/api'
+import { getProducts, getImageUrl, formatPrice, getProductUrl, calculateDiscountPercentage, type Product } from '@/lib/api'
 import { useWishlist } from '@/contexts/WishlistContext'
 
 type ViewMode = 'grid' | 'list'
@@ -510,6 +510,20 @@ function ShopPageContent() {
                       
                       {/* Badges */}
                       <div className="absolute top-4 left-4 flex flex-col gap-2">
+                        {product.twoForOne && (
+                          <div className="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold bg-purple-600 text-white shadow-sm">
+                            2 FOR 1
+                          </div>
+                        )}
+                        {product.comparePrice && 
+                         typeof product.comparePrice === 'number' && 
+                         !isNaN(product.comparePrice) &&
+                         product.comparePrice > 0 && 
+                         product.comparePrice > (product.price || 0) && (
+                          <div className="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold bg-red-600 text-white shadow-sm">
+                            SALE
+                          </div>
+                        )}
                         {product.featured && (
                           <div className="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold bg-black text-white shadow-sm">
                             <Star className="w-3 h-3 mr-1 fill-current" />
@@ -554,11 +568,36 @@ function ShopPageContent() {
                         <p className="font-paragraph text-sm text-secondary/80 mb-3 line-clamp-2">
                           {product.shortDescription || product.description}
                         </p>
+                        {(product.inventory?.quantity || 0) <= 10 && (product.inventory?.quantity || 0) > 0 && (
+                          <div className="mb-3">
+                            <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-full animate-pulse">
+                              ⚠️ Only {product.inventory?.quantity} left!
+                            </span>
+                          </div>
+                        )}
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="font-heading text-xl font-bold text-primary">
-                          {formatPrice(product.price)}
-                        </span>
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-heading text-xl font-bold text-primary">
+                              {formatPrice(product.price)}
+                            </span>
+                            {product.comparePrice && 
+                             typeof product.comparePrice === 'number' && 
+                             !isNaN(product.comparePrice) &&
+                             product.comparePrice > 0 && 
+                             product.comparePrice > (product.price || 0) ? (
+                              <>
+                                <span className="text-sm text-gray-500 line-through">
+                                  {formatPrice(product.comparePrice)}
+                                </span>
+                                <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded">
+                                  {calculateDiscountPercentage(product.comparePrice, product.price)}% OFF
+                                </span>
+                              </>
+                            ) : null}
+                          </div>
+                        </div>
                         <Button size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
                           View Details
                         </Button>

@@ -357,7 +357,7 @@ class OrderEmailService {
                 <ul style="margin: 0; padding-left: 20px; color: #343a40;">
                   <li style="margin-bottom: 8px;">We'll prepare your order for shipping</li>
                   <li style="margin-bottom: 8px;">You'll receive a tracking number once shipped</li>
-                  <li style="margin-bottom: 8px;">Estimated delivery: 3-5 business days</li>
+                  <li style="margin-bottom: 8px;">Estimated delivery: 4-5 business days</li>
                   <li>Contact us if you have any questions</li>
                 </ul>
               </div>

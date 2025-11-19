@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS "Product" (
     featured BOOLEAN DEFAULT false,
     "isNew" BOOLEAN DEFAULT false,
     "isAvailable" BOOLEAN DEFAULT true,
+    "twoForOne" BOOLEAN DEFAULT false,
     images JSONB NOT NULL, -- Array of image objects
     sizes JSONB NOT NULL, -- Array of size objects
     colors JSONB NOT NULL, -- Array of color objects

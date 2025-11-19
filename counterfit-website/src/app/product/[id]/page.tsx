@@ -9,7 +9,7 @@ import { useCart } from '@/contexts/CartContext'
 import { useWishlist } from '@/contexts/WishlistContext'
 import { useParams } from 'next/navigation'
 import { getImageUrl } from '@/lib/utils'
-import { formatPrice } from '@/lib/api'
+import { formatPrice, calculateDiscountPercentage } from '@/lib/api'
 
 // Define proper types for the product data
 interface ProductData {
@@ -212,14 +212,19 @@ export default function ProductPage() {
                   className="object-cover"
                   priority
                 />
-                {product.status && (
-                  <div className="absolute top-6 left-6">
+                <div className="absolute top-6 left-6 flex flex-col gap-2">
+                  {product.twoForOne && (
+                    <div className="inline-flex items-center rounded-md px-3 py-1 text-sm font-semibold bg-purple-600 text-white shadow-lg">
+                      2 FOR 1
+                    </div>
+                  )}
+                  {product.status && (
                     <div className="inline-flex items-center rounded-md px-3 py-1 text-sm font-semibold bg-black/80 text-white backdrop-blur-sm">
                       {product.status === 'Featured' && <Star className="w-3 h-3 mr-1 fill-current" />}
                       {product.status}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
               {/* Thumbnail Images */}
@@ -264,17 +269,34 @@ export default function ProductPage() {
                     ))}
                   </div>
                   <span className="text-sm text-secondary/60 ml-2">({product.inventory?.quantity || 0} in stock)</span>
+                  {(product.inventory?.quantity || 0) <= 10 && (product.inventory?.quantity || 0) > 0 && (
+                    <span className="ml-3 text-sm font-bold text-red-600 bg-red-50 px-3 py-1 rounded-full animate-pulse">
+                      ⚠️ Only {product.inventory?.quantity} left!
+                    </span>
+                  )}
                 </div>
 
                 {/* Price */}
-                <div className="flex items-center gap-4 mb-6">
-                  <span className="font-heading text-3xl font-bold text-primary">
-                    {formatPrice(product.price || 0)}
-                  </span>
-                  {originalPrice !== null && originalPrice > 0 && originalPrice > (product.price || 0) && (
-                    <span className="text-xl text-secondary/60 line-through">
-                      {formatPrice(originalPrice)}
+                <div className="flex flex-col gap-2 mb-6">
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <span className="font-heading text-3xl font-bold text-primary">
+                      {formatPrice(product.price || 0)}
                     </span>
+                    {originalPrice !== null && originalPrice > 0 && originalPrice > (product.price || 0) && (
+                      <>
+                        <span className="text-xl text-secondary/60 line-through">
+                          {formatPrice(originalPrice)}
+                        </span>
+                        <span className="text-sm font-bold text-red-600 bg-red-50 px-3 py-1 rounded">
+                          {calculateDiscountPercentage(originalPrice, product.price || 0)}% OFF
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  {originalPrice !== null && originalPrice > 0 && originalPrice > (product.price || 0) && (
+                    <p className="text-sm text-gray-600">
+                      You save {formatPrice(originalPrice - (product.price || 0))}
+                    </p>
                   )}
                 </div>
 
@@ -402,7 +424,7 @@ export default function ProductPage() {
                     <Truck className="w-5 h-5 text-primary" />
                     <div>
                       <div className="font-medium text-primary text-sm">Fast Shipping</div>
-                      <div className="text-xs text-secondary/60">3-5 business days</div>
+                      <div className="text-xs text-secondary/60">4-5 business days</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
