@@ -46,39 +46,15 @@ export default function ShippingPolicyPage() {
                 Shipping Methods & Delivery Times
               </h2>
               
-              <div className="bg-gray-50 rounded-lg p-6 mb-6">
+              <div className="bg-gray-50 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-primary mb-3">Standard Shipping</h3>
                 <p className="text-secondary mb-3">
-                  <strong>Cost:</strong> R99.00<br />
+                  <strong>Cost:</strong> R149.00<br />
                   <strong>Delivery Time:</strong> 4-5 business days<br />
                   <strong>Coverage:</strong> Nationwide delivery across South Africa
                 </p>
                 <p className="text-sm text-gray-600">
-                  Standard shipping is available for all orders and includes tracking.
-                </p>
-              </div>
-
-              <div className="bg-gray-50 rounded-lg p-6 mb-6">
-                <h3 className="text-lg font-semibold text-primary mb-3">Express Shipping</h3>
-                <p className="text-secondary mb-3">
-                  <strong>Cost:</strong> From R149<br />
-                  <strong>Delivery Time:</strong> 1-2 business days<br />
-                  <strong>Coverage:</strong> Major metropolitan areas
-                </p>
-                <p className="text-sm text-gray-600">
-                  Express shipping is available for orders placed before 2 PM on business days.
-                </p>
-              </div>
-
-              <div className="bg-gray-50 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-primary mb-3">Standard Shipping</h3>
-                <p className="text-secondary mb-3">
-                  <strong>Cost:</strong> From R89<br />
-                  <strong>Delivery Time:</strong> 4-5 business days<br />
-                  <strong>Coverage:</strong> Nationwide delivery
-                </p>
-                <p className="text-sm text-gray-600">
-                  Shipping rates are calculated based on destination and package size.
+                  Standard shipping is available for all orders and includes tracking. Flat rate of R149 for all orders.
                 </p>
               </div>
             </section>

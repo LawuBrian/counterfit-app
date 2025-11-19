@@ -113,19 +113,13 @@ export async function getShippingRates(
   } catch (error) {
     console.error('❌ Failed to get Fastway shipping rates:', error)
     
-    // Return fallback rates if API fails
+    // Return fallback rate - Standard shipping at R149
     return [
       {
         service: 'Standard Delivery',
-        price: 89.00,
-        deliveryTime: '4-5 business days',
-        description: 'Standard ground delivery'
-      },
-      {
-        service: 'Express Delivery',
         price: 149.00,
-        deliveryTime: '1-2 business days',
-        description: 'Express delivery service'
+        deliveryTime: '4-5 business days',
+        description: 'Standard delivery service'
       }
     ]
   }

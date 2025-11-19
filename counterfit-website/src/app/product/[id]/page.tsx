@@ -409,6 +409,22 @@ export default function ProductPage() {
                 </Button>
               </div>
 
+              {/* Pre-Order Notice */}
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
+                <div className="flex items-start">
+                  <Truck className="w-6 h-6 text-blue-600 mr-3 mt-1 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-semibold text-blue-900 mb-2">Pre-Order Item</h3>
+                    <p className="text-sm text-blue-800 mb-2">
+                      This item is available for pre-order. Orders will be shipped after production is complete.
+                    </p>
+                    <p className="text-sm text-blue-800">
+                      <strong>Shipping:</strong> R149 flat rate • Delivery: 4-5 business days after production
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* Features */}
               <div className="border-t border-gray-200 pt-8">
                 <h3 className="font-heading text-lg font-semibold text-primary mb-4">Features</h3>
@@ -423,7 +439,7 @@ export default function ProductPage() {
                   <div className="flex items-center gap-3">
                     <Truck className="w-5 h-5 text-primary" />
                     <div>
-                      <div className="font-medium text-primary text-sm">Fast Shipping</div>
+                      <div className="font-medium text-primary text-sm">Standard Shipping - R149</div>
                       <div className="text-xs text-secondary/60">4-5 business days</div>
                     </div>
                   </div>

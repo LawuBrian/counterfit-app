@@ -650,6 +650,22 @@ export default function CheckoutPage() {
               </div>
             </div>
 
+            {/* Pre-Order Notice */}
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
+              <div className="flex items-start">
+                <Truck className="h-6 w-6 text-blue-600 mr-3 mt-1 flex-shrink-0" />
+                <div>
+                  <h3 className="font-semibold text-blue-900 mb-2">Pre-Order Information</h3>
+                  <p className="text-sm text-blue-800 mb-2">
+                    This is a pre-order. Your items will be shipped after production is complete.
+                  </p>
+                  <p className="text-sm text-blue-800">
+                    Standard shipping (R149) will be applied to your order. Estimated delivery: 4-5 business days after production completion.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Checkout Button */}
             <Button
               onClick={handleCheckout}
