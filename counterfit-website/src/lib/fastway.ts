@@ -118,7 +118,7 @@ export async function getShippingRates(
       {
         service: 'Standard Delivery',
         price: 89.00,
-        deliveryTime: '3-5 business days',
+        deliveryTime: '4-5 business days',
         description: 'Standard ground delivery'
       },
       {

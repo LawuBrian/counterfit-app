@@ -265,9 +265,14 @@ export default function AdminDashboard() {
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h2 className="font-heading text-xl font-semibold text-primary">Recent Orders</h2>
-                <Button variant="outline" size="sm">
-                  <Link href="/admin/orders">View All Orders</Link>
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm">
+                    <Link href="/admin/orders">View All Orders</Link>
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    <Link href="/admin/preorders">Pre-Orders</Link>
+                  </Button>
+                </div>
               </div>
             </div>
             <div className="p-6">

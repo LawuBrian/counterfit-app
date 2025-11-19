@@ -134,7 +134,7 @@ export default function ContactPage() {
               },
               {
                 question: "How long does shipping take?",
-                answer: "Standard shipping takes 3-5 business days. Express shipping is available for 1-2 business days."
+                answer: "Standard shipping takes 4-5 business days. Express shipping is available for 1-2 business days."
               },
               {
                 question: "Do you ship internationally?",

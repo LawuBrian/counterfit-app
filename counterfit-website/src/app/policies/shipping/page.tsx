@@ -36,7 +36,7 @@ export default function ShippingPolicyPage() {
                 Orders placed on weekends or holidays will be processed on the next business day.
               </p>
               <p className="text-secondary mb-4">
-                During peak seasons (holidays, sales, new collections), processing times may extend to 3-5 business days.
+                During peak seasons (holidays, sales, new collections), processing times may extend to 4-5 business days.
               </p>
             </section>
 
@@ -50,7 +50,7 @@ export default function ShippingPolicyPage() {
                 <h3 className="text-lg font-semibold text-primary mb-3">Standard Shipping</h3>
                 <p className="text-secondary mb-3">
                   <strong>Cost:</strong> R99.00<br />
-                  <strong>Delivery Time:</strong> 3-5 business days<br />
+                  <strong>Delivery Time:</strong> 4-5 business days<br />
                   <strong>Coverage:</strong> Nationwide delivery across South Africa
                 </p>
                 <p className="text-sm text-gray-600">
@@ -74,7 +74,7 @@ export default function ShippingPolicyPage() {
                 <h3 className="text-lg font-semibold text-primary mb-3">Standard Shipping</h3>
                 <p className="text-secondary mb-3">
                   <strong>Cost:</strong> From R89<br />
-                  <strong>Delivery Time:</strong> 3-5 business days<br />
+                  <strong>Delivery Time:</strong> 4-5 business days<br />
                   <strong>Coverage:</strong> Nationwide delivery
                 </p>
                 <p className="text-sm text-gray-600">
@@ -94,7 +94,7 @@ export default function ShippingPolicyPage() {
               <ul className="list-disc list-inside text-secondary space-y-2 ml-4">
                 <li><strong>Gauteng:</strong> 1-3 business days</li>
                 <li><strong>Western Cape, KwaZulu-Natal, Free State:</strong> 2-4 business days</li>
-                <li><strong>Eastern Cape, Mpumalanga, Limpopo:</strong> 3-5 business days</li>
+                <li><strong>Eastern Cape, Mpumalanga, Limpopo:</strong> 4-5 business days</li>
                 <li><strong>Northern Cape, North West:</strong> 4-6 business days</li>
               </ul>
               <p className="text-secondary mb-4">

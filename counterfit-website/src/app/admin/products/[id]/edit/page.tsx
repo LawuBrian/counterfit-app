@@ -28,6 +28,7 @@ interface ProductFormData {
   featured: boolean
   isNew: boolean
   isAvailable: boolean
+  twoForOne: boolean
   images: Array<{
     url: string
     alt: string
@@ -124,6 +125,7 @@ export default function EditProductPage() {
           featured: data.data.featured || false,
           isNew: data.data.isNew || false,
           isAvailable: data.data.isAvailable || true,
+          twoForOne: data.data.twoForOne || false,
           images: data.data.images || [],
           sizes: data.data.sizes || [],
           colors: data.data.colors || [],
@@ -817,6 +819,16 @@ export default function EditProductPage() {
                       className="rounded border-gray-300 text-primary focus:ring-primary"
                     />
                     <span className="ml-2 text-sm text-gray-700">Available for Purchase</span>
+                  </label>
+
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={formData.twoForOne || false}
+                      onChange={(e) => handleInputChange('twoForOne', e.target.checked)}
+                      className="rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">2 for the Price of One</span>
                   </label>
                 </div>
               </div>

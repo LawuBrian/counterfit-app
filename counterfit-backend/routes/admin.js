@@ -338,6 +338,7 @@ router.post('/products', async (req, res) => {
       featured: req.body.featured || false,
       isNew: req.body.isNew || false,
       isAvailable: req.body.isAvailable !== undefined ? req.body.isAvailable : true,
+      twoForOne: req.body.twoForOne || false,
       totalStock: req.body.totalStock || 0,
       salesCount: req.body.salesCount || 0,
       createdAt: new Date().toISOString(),
